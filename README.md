@@ -1,0 +1,2 @@
+# RunDJ
+Pedometer + Spotify API
