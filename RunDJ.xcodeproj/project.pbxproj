@@ -6,6 +6,11 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		8FC6CEE92D62D00100F58371 /* SpotifyiOS.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8FC6CEE52D62CFB200F58371 /* SpotifyiOS.xcframework */; };
+		8FC6CEEA2D62D00100F58371 /* SpotifyiOS.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8FC6CEE52D62CFB200F58371 /* SpotifyiOS.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		8FD3D1E82D58939B00367F7C /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -23,15 +28,43 @@
 		};
 /* End PBXContainerItemProxy section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		8FC6CEEB2D62D00100F58371 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				8FC6CEEA2D62D00100F58371 /* SpotifyiOS.xcframework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		8FC6CEE52D62CFB200F58371 /* SpotifyiOS.xcframework */ = {isa = PBXFileReference; expectedSignature = "AppleDeveloperProgram:2FNC3A47ZF:Spotify"; lastKnownFileType = wrapper.xcframework; name = SpotifyiOS.xcframework; path = "frameworks/ios-sdk/SpotifyiOS.xcframework"; sourceTree = "<group>"; };
 		8FD3D1D52D58939A00367F7C /* RunDJ.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RunDJ.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8FD3D1E72D58939B00367F7C /* RunDJTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RunDJTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		8FD3D1F12D58939B00367F7C /* RunDJUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RunDJUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		8FC6CEED2D62D06100F58371 /* Exceptions for "RunDJ" folder in "RunDJ" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 8FD3D1D42D58939A00367F7C /* RunDJ */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		8FD3D1D72D58939A00367F7C /* RunDJ */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				8FC6CEED2D62D06100F58371 /* Exceptions for "RunDJ" folder in "RunDJ" target */,
+			);
 			path = RunDJ;
 			sourceTree = "<group>";
 		};
@@ -52,6 +85,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8FC6CEE92D62D00100F58371 /* SpotifyiOS.xcframework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -72,12 +106,21 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		8FC6CEE42D62CFB200F58371 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				8FC6CEE52D62CFB200F58371 /* SpotifyiOS.xcframework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		8FD3D1CC2D58939A00367F7C = {
 			isa = PBXGroup;
 			children = (
 				8FD3D1D72D58939A00367F7C /* RunDJ */,
 				8FD3D1EA2D58939B00367F7C /* RunDJTests */,
 				8FD3D1F42D58939B00367F7C /* RunDJUITests */,
+				8FC6CEE42D62CFB200F58371 /* Frameworks */,
 				8FD3D1D62D58939A00367F7C /* Products */,
 			);
 			sourceTree = "<group>";
@@ -102,6 +145,7 @@
 				8FD3D1D12D58939A00367F7C /* Sources */,
 				8FD3D1D22D58939A00367F7C /* Frameworks */,
 				8FD3D1D32D58939A00367F7C /* Resources */,
+				8FC6CEEB2D62D00100F58371 /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -399,6 +443,7 @@
 				DEVELOPMENT_TEAM = WH4UTP47U2;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = RunDJ/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -428,6 +473,7 @@
 				DEVELOPMENT_TEAM = WH4UTP47U2;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = RunDJ/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
