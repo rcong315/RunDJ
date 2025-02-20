@@ -13,6 +13,9 @@ struct RunDJApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .onOpenURL { url in
+                    SpotifyManager.shared.handleAuthCallback(url: url)
+                }
         }
     }
 }
