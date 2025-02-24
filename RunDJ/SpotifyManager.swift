@@ -8,11 +8,12 @@
 import UIKit
 import SpotifyiOS
 
-class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRemotePlayerStateDelegate {
+class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRemotePlayerStateDelegate, SPTSessionManagerDelegate {
     
     static let shared = SpotifyManager()
     private let clientID = "6f69b8394f8d46fc87b274b54a3d9f1b"
     private let redirectURI = "run-dj://auth"
+    private var refreshToken: String?
     private var accessToken: String?
     
     @Published var currentTrack: String? = "None"
@@ -25,23 +26,23 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
         
         static func == (lhs: ConnectionState, rhs: ConnectionState) -> Bool {
             switch (lhs, rhs) {
-            case (.connected, .connected):
-                return true
-            case (.disconnected, .disconnected):
-                return true
-            case (.error(let lhsError), .error(let rhsError)):
-                return lhsError == rhsError
-            default:
-                return false
+            case (.connected, .connected): return true
+            case (.disconnected, .disconnected): return true
+            case (.error(let lhsError), .error(let rhsError)): return lhsError == rhsError
+            default: return false
             }
         }
     }
     
     lazy var configuration: SPTConfiguration = {
         let config = SPTConfiguration(clientID: clientID, redirectURL: URL(string: redirectURI)!)
-        // Add a default track URI to play if nothing else is specified
         config.playURI = ""
         return config
+    }()
+    
+    lazy var sessionManager: SPTSessionManager = {
+        let manager = SPTSessionManager(configuration: configuration, delegate: self)
+        return manager
     }()
     
     lazy var appRemote: SPTAppRemote = {
@@ -50,79 +51,92 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
         return remote
     }()
     
-    func handleAuthCallback(url: URL) {
-        let parameters = appRemote.authorizationParameters(from: url)
+    func initiateSession() {
+        print("Initiating Spotify session...")
         
-        if let accessToken = parameters?[SPTAppRemoteAccessTokenKey] {
-            self.accessToken = accessToken
-            appRemote.connectionParameters.accessToken = accessToken
-            connect()
-        } else if let errorDescription = parameters?[SPTAppRemoteErrorDescriptionKey] {
-            DispatchQueue.main.async {
-                self.connectionState = .error("Auth Error: \(errorDescription)")
-            }
+        if appRemote.isConnected {
+            disconnect()
+        }
+        
+        let scopes: SPTScope = [
+            .appRemoteControl,
+            .userLibraryRead,
+            .playlistReadPrivate,
+            .streaming,
+            .userReadEmail,
+            .playlistModifyPublic,
+            .playlistModifyPrivate,
+            .userLibraryModify,
+            .userTopRead
+        ]
+        
+        self.accessToken = nil
+        
+        sessionManager.initiateSession(with: scopes, options: .default, campaign: "Run DJ")
+    }
+    
+    func handleURL(_ url: URL) {
+        print("Handling Spotify URL: \(url)")
+        let handled = sessionManager.application(UIApplication.shared, open: url)
+        print("URL handled by session manager: \(handled)")
+        
+        // For debugging
+        if let code = url.queryParameters?["code"] {
+            print("Auth code received: \(code)")
         }
     }
     
-    func authorizeAndPlay(playlistURI: String) {
-        // If we have an access token, try to connect directly
-        if let accessToken = self.accessToken {
-            appRemote.connectionParameters.accessToken = accessToken
-            connect()
+    func play(uri: String) {
+        guard appRemote.isConnected else {
+            print("Not connected to Spotify")
             return
         }
-        
-        // Otherwise, start the authorization flow
-        appRemote.authorizeAndPlayURI("spotify:playlist:\(playlistURI)") { [weak self] spotifyInstalled in
-            guard let self = self else { return }
-            
-            if !spotifyInstalled {
-                DispatchQueue.main.async {
-                    self.connectionState = .error("Error initializing Spotify")
-                }
+        print("Playing: \(uri)")
+        appRemote.playerAPI?.play("spotify:playlist:\(uri)", callback: { result, error in
+            if let error = error {
+                print("Error playing playlist: \(error)")
             }
-        }
-    }
-    
-    func playPresetPlaylist(stepsPerMinute: Double) {
-        let presetPlaylists = PresetPlaylists()
-        let roundedStepsPerMinute = Int(round(stepsPerMinute / 5.0) * 5)
-        if let playlistURI = presetPlaylists.playlists[roundedStepsPerMinute] {
-            authorizeAndPlay(playlistURI: playlistURI)
-            currentTrack = "\(roundedStepsPerMinute) BPM Playlist"
-        }
+        })
+        currentTrack = "\(uri)"
     }
     
     func skipToNext() {
-        print("skipToNext")
-        print(appRemote.playerAPI)
         appRemote.playerAPI?.skip(toNext: { result, error in
             if let error = error {
-                print("Error skipping to next track: \(error.localizedDescription)")
+                print("Error skipping to next track: \(error)")
             }
         })
-    }
-    
-    func connect() {
-        guard !appRemote.isConnected else { return }
-        
-        // Ensure Spotify app is running
-        if UIApplication.shared.canOpenURL(URL(string: "spotify:")!) {
-            UIApplication.shared.open(URL(string: "spotify:")!, options: [:]) { [weak self] success in
-                if success {
-                    // Give Spotify a moment to fully launch
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                        self?.appRemote.connect()
-                    }
-                }
-            }
-        }
     }
     
     func disconnect() {
         if appRemote.isConnected {
             appRemote.disconnect()
         }
+    }
+    
+    // MARK: - SPTSessionManagerDelegate
+    
+    func sessionManager(manager: SPTSessionManager, didInitiate session: SPTSession) {
+        print("Session initiated")
+        print("Access Token: \(session.accessToken)")
+        print("Expiration Date: \(session.expirationDate)")
+        appRemote.connectionParameters.accessToken = session.accessToken
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+            self.appRemote.connect()
+        }
+    }
+    
+    func sessionManager(manager: SPTSessionManager, didFailWith error: Error) {
+        print("Session failed with error: \(error)")
+        print("Error domain: \(error._domain)")
+        print("Error code: \(error._code)")
+        DispatchQueue.main.async {
+            self.connectionState = .error("Session failed: \(error.localizedDescription)")
+        }
+    }
+    
+    func sessionManager(manager: SPTSessionManager, didRenew session: SPTSession) {
+        appRemote.connectionParameters.accessToken = session.accessToken
     }
     
     // MARK: - SPTAppRemoteDelegate
@@ -133,35 +147,40 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
             self.connectionState = .connected
         }
         
+        print("Setting up player API")
         appRemote.playerAPI?.delegate = self
         appRemote.playerAPI?.subscribe(toPlayerState: { [weak self] result, error in
             if let error = error {
+                print("Player subscription error: \(error)")
                 DispatchQueue.main.async {
                     self?.connectionState = .error("Player subscription error: \(error.localizedDescription)")
                 }
+            } else {
+                print("Successfully subscribed to player state")
             }
         })
     }
     
     func appRemote(_ appRemote: SPTAppRemote, didFailConnectionAttemptWithError error: Error?) {
-        let errorMessage = error?.localizedDescription ?? "Unknown error"
-        print("Failed to connect to Spotify: \(errorMessage)")
-        DispatchQueue.main.async {
-            self.connectionState = .error("Connection failed: \(errorMessage)")
+        print("Connection attempt failed with error: \(String(describing: error))")
+        
+        // Check if it's an authentication error
+        if let error = error as NSError?,
+           error.domain == "com.spotify.app-remote.wamp-client",
+           error.code == -1001 {
+            // Token might be invalid, try to reinitiate session
+            print("Authentication failed, reinitiating session...")
+            DispatchQueue.main.async {
+                self.initiateSession()
+            }
         }
         
-        // Attempt to reconnect if it was a temporary error
-        if let error = error as NSError? {
-            if error.domain == "com.spotify.app-remote.transport" && error.code == -2000 {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-                    self.connect()
-                }
-            }
+        DispatchQueue.main.async {
+            self.connectionState = .error("Connection failed: \(error?.localizedDescription ?? "Unknown error")")
         }
     }
     
     func appRemote(_ appRemote: SPTAppRemote, didDisconnectWithError error: Error?) {
-        print("Disconnected from Spotify: \(error?.localizedDescription ?? "Unknown error")")
         DispatchQueue.main.async {
             self.connectionState = .disconnected
         }
@@ -172,5 +191,4 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
             self.currentTrack = playerState.track.name
         }
     }
-    
 }
