@@ -27,7 +27,7 @@ class PedometerManager: ObservableObject {
             
             DispatchQueue.main.async {
                 self.stepsPerMinute = (data.currentCadence?.doubleValue ?? 0.0) * 60
-                print(self.stepsPerMinute)
+                print("Steps per minute: \(self.stepsPerMinute)")
             }
         }
     }
