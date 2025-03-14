@@ -7,7 +7,7 @@
 
 import Foundation
 
-class PlaylistService: ObservableObject {
+class RunDJService: ObservableObject {
     private let baseURL = "https://rundjserver.onrender.com"
     private var accessToken: String?
     
