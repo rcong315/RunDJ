@@ -10,7 +10,7 @@ import SwiftData
 
 struct ContentView: View {
     @StateObject private var pedometerManager = PedometerManager()
-    @StateObject private var spotifyManager = SpotifyManager2.shared
+    @StateObject private var spotifyManager = SpotifyManager.shared
     @StateObject private var playlistService = RunDJService()
     
     @State private var showSpotifyError = false
