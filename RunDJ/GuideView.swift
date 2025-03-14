@@ -22,7 +22,7 @@ struct GuideView: View {
                     
                     GuideSection(title: "Features", content: """
                         • Automatic pace detection
-                        • Tempo-matched music selection based off of your favorite playlists and tracks
+                        • Tempo-matched music selection based off of your favorite tracks, artists, and playlists
                         • Skip songs with 'Next Song' button
                         """)
                     

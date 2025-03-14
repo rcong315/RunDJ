@@ -34,8 +34,8 @@ struct ContentView: View {
             Text("Status: \(connectionStateText)")
                 .padding()
             
-//            Text("Playing: \(spotifyManager.currentlyPlaying ?? "None")")
-//                .padding()
+            Text("Playing: \(spotifyManager.currentlyPlaying ?? "None")")
+                .padding()
             
             Text("Steps Per Minute: \(pedometerManager.stepsPerMinute)")
                 .padding()
@@ -66,7 +66,7 @@ struct ContentView: View {
             }
             
             Button(action: {
-//                spotifyManager.playPause()
+                spotifyManager.playPause()
             }) {
                 Text("Play/Pause")
                     .padding()
@@ -96,11 +96,22 @@ struct ContentView: View {
                 showSpotifyError = true
                 
                 // Use this approach if you want to directly clear without confirmation
-                // spotifyManager.clearSpotifyKeychain()
+                spotifyManager.clearSpotifyKeychain()
             }) {
                 Text("Clear Spotify Keychain (Debug)")
                     .padding()
                     .background(Color.red.opacity(0.8))
+                    .foregroundColor(.white)
+                    .cornerRadius(10)
+                    .font(.callout)
+            }
+            
+            Button(action: {
+                spotifyManager.printSpotifyKeychain()
+            }) {
+                Text("Print Spotify Keychain (Debug)")
+                    .padding()
+                    .background(Color.blue.opacity(0.8))
                     .foregroundColor(.white)
                     .cornerRadius(10)
                     .font(.callout)
@@ -119,24 +130,12 @@ struct ContentView: View {
             }
         }
         .alert(isPresented: $showSpotifyError) {
-            if errorMessage.contains("This will clear all Spotify authentication") {
-                // It's a keychain clear confirmation
-                return Alert(
-                    title: Text("Clear Keychain?"),
-                    message: Text(errorMessage),
-                    primaryButton: .destructive(Text("Clear")) {
-//                        spotifyManager.clearSpotifyKeychain()
-                    },
-                    secondaryButton: .cancel()
-                )
-            } else {
-                // It's a regular error message
-                return Alert(
-                    title: Text("Spotify Connection Error"),
-                    message: Text(errorMessage),
-                    dismissButton: .default(Text("OK"))
-                )
-            }
+            // It's a regular error message
+            return Alert(
+                title: Text("Spotify Connection Error"),
+                message: Text(errorMessage),
+                dismissButton: .default(Text("OK"))
+            )
         }
         .sheet(isPresented: $showingGuide) {
             GuideView()

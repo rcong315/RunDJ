@@ -13,6 +13,7 @@ class SpotifyManager2: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppR
     static let shared = SpotifyManager2()
     private let clientID = "6f69b8394f8d46fc87b274b54a3d9f1b"
     private let redirectURI = "run-dj://auth"
+    private let serverURL = "https://161e-136-52-108-136.ngrok-free.app"
     
     private let keychainServiceName = "com.rundj.spotifyauth"
     private let refreshTokenKey = "spotify_refresh_token"
@@ -220,14 +221,31 @@ class SpotifyManager2: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppR
         print("🧹 Spotify keychain data cleared successfully")
     }
     
+    func printSpotifyKeychain() {
+        print("🔍 Current Spotify authentication data in keychain:")
+        
+        let accessToken = accessToken
+        let tokenExpirationDate = tokenExpirationDate
+        let refreshToken = refreshToken
+        
+        print("access token: \(accessToken ?? "")")
+        print("refresh token: \(refreshToken ?? "")")
+        
+        let pstFormatter = DateFormatter()
+        pstFormatter.timeZone = TimeZone(identifier: "America/Los_Angeles")
+        pstFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        let pstDateString = pstFormatter.string(from: tokenExpirationDate ?? Date())
+        print("expires PST: \(pstDateString)")
+    }
+    
     // MARK: - Configuration
     
     lazy var configuration: SPTConfiguration = {
         let config = SPTConfiguration(clientID: clientID, redirectURL: URL(string: redirectURI)!)
         
         // Set server-side token swap and refresh URLs
-        if let tokenSwapURL = URL(string: "https://6449-136-52-108-136.ngrok-free.app/api/spotify/auth/token"),
-           let tokenRefreshURL = URL(string: "https://6449-136-52-108-136.ngrok-free.app/api/spotify/auth/refresh") {
+        if let tokenSwapURL = URL(string: "\(serverURL)/api/spotify/auth/token"),
+           let tokenRefreshURL = URL(string: "\(serverURL)/api/spotify/auth/refresh") {
             config.tokenSwapURL = tokenSwapURL
             config.tokenRefreshURL = tokenRefreshURL
             config.playURI = ""
@@ -267,13 +285,6 @@ class SpotifyManager2: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppR
             .userLibraryModify,
             .userTopRead
         ]
-        
-        // Check if we have a valid access token
-//        if isTokenValid {
-//            print("✅ Using existing valid token from keychain")
-//            connectToSpotify()
-//            return
-//        }
         
         sessionManager.initiateSession(with: scopes, options: .default, campaign: "Run DJ")
     }
@@ -362,9 +373,9 @@ class SpotifyManager2: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppR
         tokenExpirationDate = session.expirationDate
         
         appRemote.connectionParameters.accessToken = session.accessToken
-//        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-//            self.appRemote.connect()
-//        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+            self.appRemote.connect()
+        }
     }
     
     func sessionManager(manager: SPTSessionManager, didFailWith error: Error) {
