@@ -10,19 +10,32 @@ import SwiftData
 
 struct ContentView: View {
     @StateObject private var pedometerManager = PedometerManager()
-    @StateObject private var spotifyManager = SpotifyManager.shared
-    @StateObject private var playlistService = PlaylistService()
+    @StateObject private var spotifyManager = SpotifyManager2.shared
+    @StateObject private var playlistService = RunDJService()
     
     @State private var showSpotifyError = false
     @State private var errorMessage = ""
+    @State private var showingGuide = false
     
     var body: some View {
         VStack(spacing: 20) {
+            HStack {
+                Spacer()
+                Button(action: {
+                    showingGuide = true
+                }) {
+                    Image(systemName: "questionmark.circle")
+                        .font(.title2)
+                        .foregroundColor(.green)
+                }
+                .padding()
+            }
+            
             Text("Status: \(connectionStateText)")
                 .padding()
             
-            Text("Playing: \(spotifyManager.currentTrack ?? "None")")
-                .padding()
+//            Text("Playing: \(spotifyManager.currentlyPlaying ?? "None")")
+//                .padding()
             
             Text("Steps Per Minute: \(pedometerManager.stepsPerMinute)")
                 .padding()
@@ -53,6 +66,16 @@ struct ContentView: View {
             }
             
             Button(action: {
+//                spotifyManager.playPause()
+            }) {
+                Text("Play/Pause")
+                    .padding()
+                    .background(Color.orange)
+                    .foregroundColor(.white)
+                    .cornerRadius(10)
+            }
+            
+            Button(action: {
                 spotifyManager.skipToNext()
             }) {
                 Text("Next Song")
@@ -61,6 +84,29 @@ struct ContentView: View {
                     .foregroundColor(.white)
                     .cornerRadius(10)
             }
+            
+#if DEBUG
+            // Debug-only controls
+            Divider()
+                .padding(.vertical)
+            
+            Button(action: {
+                // Show confirmation dialog
+                errorMessage = "This will clear all Spotify authentication data. You'll need to log in again."
+                showSpotifyError = true
+                
+                // Use this approach if you want to directly clear without confirmation
+                // spotifyManager.clearSpotifyKeychain()
+            }) {
+                Text("Clear Spotify Keychain (Debug)")
+                    .padding()
+                    .background(Color.red.opacity(0.8))
+                    .foregroundColor(.white)
+                    .cornerRadius(10)
+                    .font(.callout)
+            }
+#endif
+            
         }
         .padding()
         .onChange(of: spotifyManager.connectionState) { _, newState in
@@ -72,11 +118,28 @@ struct ContentView: View {
                 break
             }
         }
-        .alert("Spotify Connection Error",
-               isPresented: $showSpotifyError) {
-            Button("OK", role: .cancel) { }
-        } message: {
-            Text(errorMessage)
+        .alert(isPresented: $showSpotifyError) {
+            if errorMessage.contains("This will clear all Spotify authentication") {
+                // It's a keychain clear confirmation
+                return Alert(
+                    title: Text("Clear Keychain?"),
+                    message: Text(errorMessage),
+                    primaryButton: .destructive(Text("Clear")) {
+//                        spotifyManager.clearSpotifyKeychain()
+                    },
+                    secondaryButton: .cancel()
+                )
+            } else {
+                // It's a regular error message
+                return Alert(
+                    title: Text("Spotify Connection Error"),
+                    message: Text(errorMessage),
+                    dismissButton: .default(Text("OK"))
+                )
+            }
+        }
+        .sheet(isPresented: $showingGuide) {
+            GuideView()
         }
     }
     

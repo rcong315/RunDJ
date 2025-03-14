@@ -22,7 +22,7 @@ struct RunDJApp: App {
             ContentView()
                 .onOpenURL { url in
                     print("onOpenURL received: \(url)")
-                    SpotifyManager.shared.handleURL(url)
+                    SpotifyManager2.shared.handleURL(url)
                 }
         }
     }
@@ -40,16 +40,17 @@ struct RunDJApp: App {
         
         func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey : Any] = [:]) -> Bool {
             print("Received URL: \(url)")
-            let handled = SpotifyManager.shared.sessionManager.application(app, open: url)
-            print("URL handled by Spotify: \(handled)")
-            return handled
+            let handled = SpotifyManager2.shared.sessionManager.application(app, open: url, options: options)
+//            SpotifyManager.shared.handleURL(url)
+            print("URL handled by Spotify")
+            return true
         }
         
         func application(_ application: UIApplication, continue userActivity: NSUserActivity, restorationHandler: @escaping ([UIUserActivityRestoring]?) -> Void) -> Bool {
             print("Continuing user activity: \(userActivity)")
             if let url = userActivity.webpageURL {
                 print("Received universal link URL: \(url)")
-                let handled = SpotifyManager.shared.sessionManager.application(application, open: url)
+                let handled = SpotifyManager2.shared.sessionManager.application(application, open: url)
                 print("Universal link handled by Spotify: \(handled)")
                 return handled
             }
