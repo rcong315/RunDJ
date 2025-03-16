@@ -40,8 +40,7 @@ struct RunDJApp: App {
         
         func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey : Any] = [:]) -> Bool {
             print("Received URL: \(url)")
-            let handled = SpotifyManager.shared.sessionManager.application(app, open: url, options: options)
-//            SpotifyManager.shared.handleURL(url)
+            SpotifyManager.shared.sessionManager.application(app, open: url, options: options)
             print("URL handled by Spotify")
             return true
         }

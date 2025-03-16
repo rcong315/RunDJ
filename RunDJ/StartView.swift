@@ -1,14 +1,14 @@
 //
-//  ContentView.swift
+//  StartView.swift
 //  RunDJ
 //
-//  Created by Richard Cong on 2/8/25.
+//  Created by Richard Cong on 3/15/25.
 //
 
 import SwiftUI
 import SwiftData
 
-struct ContentView: View {
+struct StartView: View {
     @StateObject private var pedometerManager = PedometerManager()
     @StateObject private var spotifyManager = SpotifyManager.shared
     @StateObject private var playlistService = RunDJService()
@@ -165,5 +165,5 @@ struct ContentView: View {
 }
 
 #Preview {
-    ContentView()
+    StartView()
 }

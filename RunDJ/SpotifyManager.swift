@@ -13,7 +13,7 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
     static let shared = SpotifyManager()
     private let clientID = "6f69b8394f8d46fc87b274b54a3d9f1b"
     private let redirectURI = "run-dj://auth"
-    private let serverURL = "https://161e-136-52-108-136.ngrok-free.app"
+    private let serverURL = "https://rundjserver.onrender.com"
     
     private let keychainServiceName = "com.rundj.spotifyauth"
     private let refreshTokenKey = "spotify_refresh_token"

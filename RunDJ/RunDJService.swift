@@ -27,7 +27,6 @@ class RunDJService: ObservableObject {
         request.httpMethod = "GET"
         //        request.addValue("access_token", forHTTPHeaderField: accessToken!)
         
-        var uri = ""
         let session = URLSession.shared
         let task = session.dataTask(with: request) { data, response, error -> Void in
             if let error = error {
