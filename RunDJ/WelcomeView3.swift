@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct WelcomeView: View {
+struct WelcomeView3: View {
     @State private var isAnimating: Bool = false
     @State private var showLoginView: Bool = false
     
@@ -194,6 +194,6 @@ struct SpotifyLoginView: View {
 
 struct WelcomeView_Previews: PreviewProvider {
     static var previews: some View {
-        WelcomeView()
+        WelcomeView3()
     }
 }

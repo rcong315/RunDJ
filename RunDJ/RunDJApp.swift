@@ -19,7 +19,7 @@ struct RunDJApp: App {
     
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            WelcomeView()
                 .onOpenURL { url in
                     print("onOpenURL received: \(url)")
                     SpotifyManager.shared.handleURL(url)
