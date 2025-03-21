@@ -110,7 +110,7 @@ struct WelcomeView: View {
     //    ]
     
     var body: some View {
-        NavigationStack {
+//        NavigationStack {
             ZStack {
                 // Dynamic background with color gradient
                 LinearGradient(colors: gradientColors,
@@ -286,17 +286,14 @@ struct WelcomeView: View {
                     .padding(.bottom, 15)
                 }
             }
-            .navigationBarHidden(true)
+//            .navigationBarHidden(true)
             .sheet(isPresented: $showHelpSheet) {
                 HelpViewRhythm()
             }
-            .navigationDestination(isPresented: $navigateToContentView) {
-                ContentView()
-            }
-        }
-        .sheet(isPresented: $showHelpSheet) {
-            HelpViewRhythm()
-        }
+//            .navigationDestination(isPresented: $navigateToContentView) {
+//                ContentView()
+//            }
+//        }
     }
 }
 

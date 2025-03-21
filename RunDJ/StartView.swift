@@ -2,166 +2,271 @@
 //  StartView.swift
 //  RunDJ
 //
-//  Created by Richard Cong on 3/15/25.
+//  Created by Richard Cong on 3/20/25.
 //
 
 import SwiftUI
-import SwiftData
 
 struct StartView: View {
     @StateObject private var pedometerManager = PedometerManager()
-    @StateObject private var spotifyManager = SpotifyManager.shared
-    @StateObject private var playlistService = RunDJService()
+
+    // The current gradient from the welcome page
+    let gradientColors = [
+        Color(red: 0.7, green: 1.0, blue: 0.2),
+        Color(red: 0.0, green: 0.6, blue: 0.3)
+    ]
     
-    @State private var showSpotifyError = false
-    @State private var errorMessage = ""
-    @State private var showingHelp = false
+    // State for the target BPM setting
+    @State private var targetBPM: Int = 160
+    
+    // State for animation
+    @State private var waveOffset: CGFloat = 0
+    @State private var isAnimating = false
     
     var body: some View {
-        VStack(spacing: 20) {
-            HStack {
-                Spacer()
-                Button(action: {
-                    showingHelp = true
-                }) {
-                    Image(systemName: "questionmark.circle")
-                        .font(.title2)
-                        .foregroundColor(.green)
+        ZStack {
+            // Background gradient matching the welcome page
+            LinearGradient(colors: gradientColors,
+                           startPoint: .topLeading,
+                           endPoint: .bottomTrailing)
+            .ignoresSafeArea()
+            
+            // Sound wave pattern overlay
+            GeometryReader { geo in
+                let width = geo.size.width
+                let height = geo.size.height
+                
+                ZStack {
+                    // Horizontal sound waves
+                    ForEach(0..<3) { i in
+                        SoundWave(amplitude: 20 + CGFloat(i * 5), frequency: 0.02, phase: waveOffset)
+                            .stroke(Color.white.opacity(0.15), lineWidth: 2)
+                            .frame(width: width, height: 80)
+                            .offset(y: height / 4 + CGFloat(i * 40))
+                    }
                 }
-                .padding()
+                .onAppear {
+                    withAnimation(Animation.linear(duration: 2).repeatForever(autoreverses: false)) {
+                        waveOffset += 2 * .pi
+                    }
+                }
             }
             
-            Text("Status: \(connectionStateText)")
-                .padding()
-            
-            Text("Playing: \(spotifyManager.currentlyPlaying ?? "None")")
-                .padding()
-            
-            Text("Steps Per Minute: \(pedometerManager.stepsPerMinute)")
-                .padding()
-            
-            Button(action: {
-                switch spotifyManager.connectionState {
-                case .disconnected:
-                    spotifyManager.initiateSession()
-                case .connected:
-                    playlistService.getPresetPlaylist(stepsPerMinute: pedometerManager.stepsPerMinute) { uri in
-                        if let uri = uri {
-                            print(uri)
-                            spotifyManager.play(uri: uri)
-                        } else {
-                            print("Failed to get playlist URI")
+            ScrollView {
+                VStack {
+                    // Header
+                    HStack {
+                        Button(action: {
+                            // Action to go back to welcome view
+                        }) {
+                            Image(systemName: "chevron.left")
+                                .font(.system(size: 20))
+                                .foregroundColor(.white)
+                                .padding(.leading, 20)
+                        }
+                        
+                        Spacer()
+                        
+                        Text("Start")
+                            .font(.system(size: 22, weight: .bold))
+                            .foregroundColor(.white)
+                        
+                        Spacer()
+                        
+                        Button(action: {
+                            // Settings action
+                        }) {
+                            Image(systemName: "gear")
+                                .font(.system(size: 20))
+                                .foregroundColor(.white)
+                                .padding(.trailing, 20)
                         }
                     }
+                    .padding(.top, 20)
                     
-                case .error:
-                    spotifyManager.initiateSession()
+                    Spacer()
+                        .frame(height: 40)
+                    
+                    // SECTION 1: Current Steps Per Minute Display
+                    VStack(spacing: 15) {
+                        Text("OPTION 1: MATCH MY CURRENT PACE")
+                            .font(.system(size: 16, weight: .semibold))
+                            .tracking(1)
+                            .foregroundColor(.white.opacity(0.9))
+                        
+                        ZStack {
+                            // Background Circle
+                            Circle()
+                                .fill(Color.white.opacity(0.15))
+                                .frame(width: 180, height: 180)
+                            
+                            // Pulsating Circle
+                            Circle()
+                                .stroke(Color.white, lineWidth: isAnimating ? 1 : 3)
+                                .frame(width: 190, height: 190)
+                                .onAppear {
+                                    withAnimation(Animation.easeInOut(duration: 0.8).repeatForever(autoreverses: true)) {
+                                        isAnimating.toggle()
+                                    }
+                                }
+                            
+                            VStack(spacing: 5) {
+                                Text("\(pedometerManager.stepsPerMinute)")
+                                    .font(.system(size: 62, weight: .bold))
+                                    .foregroundColor(.white)
+                                
+                                Text("STEPS/MIN")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .tracking(1)
+                                    .foregroundColor(.white.opacity(0.7))
+                            }
+                        }
+                        .padding(.vertical, 20)
+                        
+                        // Start button for current steps section
+                        Button(action: {
+                            // Action to start with current pace
+                        }) {
+                            HStack {
+                                Image(systemName: "play.fill")
+                                    .font(.system(size: 16))
+                                
+                                Text("START WITH CURRENT PACE")
+                                    .font(.system(size: 14, weight: .bold))
+                            }
+                            .foregroundColor(gradientColors[1])
+                            .frame(width: 260, height: 55)
+                            .background(
+                                RoundedRectangle(cornerRadius: 28)
+                                    .fill(Color.white)
+                            )
+                        }
+                    }
+//                    .padding(.bottom, 30)
+                    
+                    // Section Divider
+                    HStack {
+                        Rectangle()
+                            .fill(Color.white.opacity(0.3))
+                            .frame(height: 1)
+                        
+                        Text("OR")
+                            .font(.system(size: 30, weight: .bold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 15)
+                        
+                        Rectangle()
+                            .fill(Color.white.opacity(0.3))
+                            .frame(height: 1)
+                    }
+                    .padding(.horizontal, 30)
+                    .padding(.vertical, 20)
+                    
+                    // SECTION 2: BPM Setting Section
+                    VStack(spacing: 20) {
+                        Text("OPTION 2: SET CUSTOM BPM")
+                            .font(.system(size: 16, weight: .semibold))
+                            .tracking(1)
+                            .foregroundColor(.white.opacity(0.9))
+                            .padding(.bottom, 10)
+                        
+                        // BPM Selector
+                        HStack(spacing: 20) {
+                            Button(action: {
+                                if targetBPM > 130 {
+                                    targetBPM -= 5
+                                }
+                            }) {
+                                Image(systemName: "minus.circle.fill")
+                                    .font(.system(size: 34))
+                                    .foregroundColor(.white)
+                            }
+                            
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 20)
+                                    .fill(Color.white.opacity(0.2))
+                                    .frame(width: 120, height: 70)
+                                
+                                Text("\(targetBPM)")
+                                    .font(.system(size: 40, weight: .bold))
+                                    .foregroundColor(.white)
+                            }
+                            
+                            Button(action: {
+                                if targetBPM < 190 {
+                                    targetBPM += 5
+                                }
+                            }) {
+                                Image(systemName: "plus.circle.fill")
+                                    .font(.system(size: 34))
+                                    .foregroundColor(.white)
+                            }
+                        }
+                        
+                        // BPM Range indicator
+                        Text("Range: 130-190 BPM")
+                            .font(.system(size: 14))
+                            .foregroundColor(.white.opacity(0.7))
+                            .padding(.top, 5)
+                            .padding(.bottom, 20)
+                            
+                        // Action Button for custom BPM
+                        Button(action: {
+                            // Start matching music action
+                        }) {
+                            HStack {
+                                Image(systemName: "music.note")
+                                    .font(.system(size: 16))
+                                
+                                Text("START WITH CUSTOM BPM")
+                                    .font(.system(size: 14, weight: .bold))
+                            }
+                            .foregroundColor(gradientColors[1])
+                            .frame(width: 260, height: 55)
+                            .background(
+                                RoundedRectangle(cornerRadius: 28)
+                                    .fill(Color.white)
+                            )
+                        }
+                    }
+                    .padding(.bottom, 40)
+                    
+                    // Footer
+                    HStack(spacing: 2) {
+                        Text("PERFECT BEATS FOR PERFECT RUNS")
+                            .font(.system(size: 10, weight: .medium))
+                            .tracking(1)
+                            .foregroundColor(.white.opacity(0.7))
+                    }
+                    .padding(.bottom, 15)
                 }
-            }) {
-                Text(buttonText)
-                    .padding()
-                    .background(Color.green)
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
+                .padding(.vertical, 10)
             }
-            
-            Button(action: {
-                spotifyManager.playPause()
-            }) {
-                Text("Play/Pause")
-                    .padding()
-                    .background(Color.orange)
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
-            }
-            
-            Button(action: {
-                spotifyManager.skipToNext()
-            }) {
-                Text("Next Song")
-                    .padding()
-                    .background(Color.orange)
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
-            }
-            
-#if DEBUG
-            // Debug-only controls
-            Divider()
-                .padding(.vertical)
-            
-            Button(action: {
-                // Show confirmation dialog
-                errorMessage = "This will clear all Spotify authentication data. You'll need to log in again."
-                showSpotifyError = true
-                
-                // Use this approach if you want to directly clear without confirmation
-                spotifyManager.clearSpotifyKeychain()
-            }) {
-                Text("Clear Spotify Keychain (Debug)")
-                    .padding()
-                    .background(Color.red.opacity(0.8))
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
-                    .font(.callout)
-            }
-            
-            Button(action: {
-                spotifyManager.printSpotifyKeychain()
-            }) {
-                Text("Print Spotify Keychain (Debug)")
-                    .padding()
-                    .background(Color.blue.opacity(0.8))
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
-                    .font(.callout)
-            }
-#endif
-            
-        }
-        .padding()
-        .onChange(of: spotifyManager.connectionState) { _, newState in
-            switch newState {
-            case .error(let message):
-                errorMessage = message
-                showSpotifyError = true
-            default:
-                break
-            }
-        }
-        .alert(isPresented: $showSpotifyError) {
-            // It's a regular error message
-            return Alert(
-                title: Text("Spotify Connection Error"),
-                message: Text(errorMessage),
-                dismissButton: .default(Text("OK"))
-            )
-        }
-        .sheet(isPresented: $showingHelp) {
-            HelpView()
         }
     }
+}
+
+struct BPMStat: View {
+    let icon: String
+    let value: String
+    let label: String
     
-    private var connectionStateText: String {
-        switch spotifyManager.connectionState {
-        case .connected:
-            return "Connected"
-        case .disconnected:
-            return "Disconnected"
-        case .error(let message):
-            return "Error: \(message)"
+    var body: some View {
+        VStack(spacing: 5) {
+            Image(systemName: icon)
+                .font(.system(size: 16))
+                .foregroundColor(.white)
+            
+            Text(value)
+                .font(.system(size: 18, weight: .bold))
+                .foregroundColor(.white)
+            
+            Text(label)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(.white.opacity(0.7))
         }
+        .frame(width: 70)
     }
-    
-    private var buttonText: String {
-        switch spotifyManager.connectionState {
-        case .connected:
-            return "Play Music"
-        case .disconnected, .error:
-            return "Connect to Spotify"
-        }
-    }
-    
 }
 
 #Preview {
