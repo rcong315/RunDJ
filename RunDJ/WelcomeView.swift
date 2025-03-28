@@ -14,10 +14,10 @@ struct WelcomeView: View {
     @State private var navigateToContentView = false
     
     //    Original red
-    //    let gradientColors = [
-    //        Color(red: 0.98, green: 0.3, blue: 0.3),
-    //        Color(red: 0.9, green: 0.2, blue: 0.5)
-    //    ]
+    let gradientColors = [
+        Color(red: 0.98, green: 0.3, blue: 0.3),
+        Color(red: 0.9, green: 0.2, blue: 0.5)
+    ]
     
     //    Blue to Purple
     //    let gradientColors = [
@@ -80,10 +80,10 @@ struct WelcomeView: View {
     //    ]
     
     //    Lime to Emerald
-    let gradientColors = [
-        Color(red: 0.7, green: 1.0, blue: 0.2),
-        Color(red: 0.0, green: 0.6, blue: 0.3)
-    ]
+    //    let gradientColors = [
+    //        Color(red: 0.7, green: 1.0, blue: 0.2),
+    //        Color(red: 0.0, green: 0.6, blue: 0.3)
+    //    ]
     
     //    Mint to Teal
     //    let gradientColors = [
@@ -110,7 +110,7 @@ struct WelcomeView: View {
     //    ]
     
     var body: some View {
-//        NavigationStack {
+        NavigationStack {
             ZStack {
                 // Dynamic background with color gradient
                 LinearGradient(colors: gradientColors,
@@ -286,14 +286,14 @@ struct WelcomeView: View {
                     .padding(.bottom, 15)
                 }
             }
-//            .navigationBarHidden(true)
+            .navigationBarHidden(true)
             .sheet(isPresented: $showHelpSheet) {
                 HelpViewRhythm()
             }
-//            .navigationDestination(isPresented: $navigateToContentView) {
-//                ContentView()
-//            }
-//        }
+            .navigationDestination(isPresented: $navigateToContentView) {
+                StartView()
+            }
+        }
     }
 }
 

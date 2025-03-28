@@ -13,6 +13,10 @@ struct RunningView: View {
     @StateObject private var spotifyManager = SpotifyManager.shared
     @StateObject private var playlistService = RunDJService()
     
+    // Add this parameter to accept BPM
+    var targetBPM: Int
+    var useCustomBPM: Bool
+    
     @State private var showSpotifyError = false
     @State private var errorMessage = ""
     @State private var showingHelp = false
@@ -37,15 +41,24 @@ struct RunningView: View {
             Text("Playing: \(spotifyManager.currentlyPlaying ?? "None")")
                 .padding()
             
-            Text("Steps Per Minute: \(pedometerManager.stepsPerMinute)")
-                .padding()
+            // Show different text based on whether custom BPM is used
+            if useCustomBPM {
+                Text("Custom BPM: \(targetBPM)")
+                    .padding()
+            } else {
+                Text("Steps Per Minute: \(pedometerManager.stepsPerMinute)")
+                    .padding()
+            }
             
             Button(action: {
                 switch spotifyManager.connectionState {
                 case .disconnected:
                     spotifyManager.initiateSession()
                 case .connected:
-                    playlistService.getPresetPlaylist(stepsPerMinute: pedometerManager.stepsPerMinute) { uri in
+                    // Use either custom BPM or pedometer BPM based on selection
+                    let bpmToUse = useCustomBPM ? Double(targetBPM) : pedometerManager.stepsPerMinute
+                    
+                    playlistService.getPresetPlaylist(stepsPerMinute: bpmToUse) { uri in
                         if let uri = uri {
                             print(uri)
                             spotifyManager.play(uri: uri)
@@ -65,6 +78,7 @@ struct RunningView: View {
                     .cornerRadius(10)
             }
             
+            // Rest of the code remains the same
             Button(action: {
                 spotifyManager.playPause()
             }) {
@@ -161,9 +175,8 @@ struct RunningView: View {
             return "Connect to Spotify"
         }
     }
-    
 }
 
 #Preview {
-    RunningView()
+    RunningView(targetBPM: 160, useCustomBPM: false)
 }
