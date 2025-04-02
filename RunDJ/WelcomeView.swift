@@ -13,101 +13,8 @@ struct WelcomeView: View {
     @State private var waveOffset: CGFloat = 0
     @State private var navigateToContentView = false
     
-    //    Original red
-    let gradientColors = [
-        Color(red: 0.98, green: 0.3, blue: 0.3),
-        Color(red: 0.9, green: 0.2, blue: 0.5)
-    ]
-    
-    //    Blue to Purple
-    //    let gradientColors = [
-    //        Color(red: 0.2, green: 0.4, blue: 0.8),
-    //        Color(red: 0.5, green: 0.2, blue: 0.9)
-    //    ]
-    
-    //    Teal to Emerald
-    //    let gradientColors = [
-    //        Color(red: 0.0, green: 0.7, blue: 0.7),
-    //        Color(red: 0.0, green: 0.8, blue: 0.4)
-    //    ]
-    
-    //    Sunset (Orange to Pink)
-    //    let gradientColors = [
-    //        Color(red: 1.0, green: 0.6, blue: 0.0),
-    //        Color(red: 0.9, green: 0.2, blue: 0.4)
-    //    ]
-    
-    //    Forest (Light Green to Dark Green)
-    //    let gradientColors = [
-    //        Color(red: 0.4, green: 0.8, blue: 0.4),
-    //        Color(red: 0.1, green: 0.5, blue: 0.3)
-    //    ]
-    
-    //    Dark Mode (Dark Blue to Dark Purple)
-    //    let gradientColors = [
-    //        Color(red: 0.1, green: 0.2, blue: 0.3),
-    //        Color(red: 0.2, green: 0.1, blue: 0.3)
-    //    ]
-    
-    //     Midnight to Dawn (Deep Blue to Light Blue)
-    //    let gradientColors = [
-    //        Color(red: 0.05, green: 0.05, blue: 0.2),
-    //        Color(red: 0.4, green: 0.7, blue: 0.9)
-    //    ]
-    
-    //    Golden Hour (Yellow to Orange)
-    //    let gradientColors = [
-    //        Color(red: 1.0, green: 0.9, blue: 0.4),
-    //        Color(red: 1.0, green: 0.5, blue: 0.0)
-    //    ]
-    
-    //    Berry (Pink to Purple)
-    //    let gradientColors = [
-    //        Color(red: 0.9, green: 0.4, blue: 0.7),
-    //        Color(red: 0.6, green: 0.2, blue: 0.8)
-    //    ]
-    
-    //    Ocean (Light Blue to Deep Blue)
-    //    let gradientColors = [
-    //        Color(red: 0.4, green: 0.7, blue: 1.0),
-    //        Color(red: 0.0, green: 0.3, blue: 0.6)
-    //    ]
-    
-    //    Mint Chocolate (Mint Green to Dark Brown)
-    //    let gradientColors = [
-    //        Color(red: 0.6, green: 0.9, blue: 0.7),
-    //        Color(red: 0.25, green: 0.15, blue: 0.1)
-    //    ]
-    
-    //    Lime to Emerald
-    //    let gradientColors = [
-    //        Color(red: 0.7, green: 1.0, blue: 0.2),
-    //        Color(red: 0.0, green: 0.6, blue: 0.3)
-    //    ]
-    
-    //    Mint to Teal
-    //    let gradientColors = [
-    //        Color(red: 0.6, green: 1.0, blue: 0.8),
-    //        Color(red: 0.0, green: 0.5, blue: 0.5)
-    //    ]
-    
-    //    Avocado (Yellowish Green to Dark Green)
-    //    let gradientColors = [
-    //        Color(red: 0.6, green: 0.7, blue: 0.3),
-    //        Color(red: 0.2, green: 0.4, blue: 0.1)
-    //    ]
-    
-    //    Jungle (Medium Green to Deep Green)
-    //    let gradientColors = [
-    //        Color(red: 0.3, green: 0.7, blue: 0.4),
-    //        Color(red: 0.05, green: 0.3, blue: 0.1)
-    //    ]
-    
-    //    Spring (Light Yellow-Green to Bright Green)
-    //    let gradientColors = [
-    //        Color(red: 0.8, green: 0.9, blue: 0.5),
-    //        Color(red: 0.3, green: 0.8, blue: 0.4)
-    //    ]
+    private var gradientColors = Style().gradientColors
+    private var foregroundColor = Style().foregroundColor
     
     var body: some View {
         NavigationStack {
@@ -127,7 +34,7 @@ struct WelcomeView: View {
                         // Horizontal sound waves
                         ForEach(0..<3) { i in
                             SoundWave(amplitude: 20 + CGFloat(i * 5), frequency: 0.02, phase: waveOffset)
-                                .stroke(Color.white.opacity(0.15), lineWidth: 2)
+                                .stroke(foregroundColor.opacity(0.15), lineWidth: 2)
                                 .frame(width: width, height: 80)
                                 .offset(y: height / 4 + CGFloat(i * 40))
                         }
@@ -136,7 +43,7 @@ struct WelcomeView: View {
                         HStack(spacing: 4) {
                             ForEach(0..<8) { i in
                                 RoundedRectangle(cornerRadius: 2)
-                                    .fill(Color.white.opacity(0.2))
+                                    .fill(foregroundColor.opacity(0.2))
                                     .frame(width: 3, height: CGFloat.random(in: 10...50))
                             }
                         }
@@ -146,7 +53,7 @@ struct WelcomeView: View {
                         HStack(spacing: 4) {
                             ForEach(0..<8) { i in
                                 RoundedRectangle(cornerRadius: 2)
-                                    .fill(Color.white.opacity(0.2))
+                                    .fill(foregroundColor.opacity(0.2))
                                     .frame(width: 3, height: CGFloat.random(in: 10...50))
                             }
                         }
@@ -164,7 +71,7 @@ struct WelcomeView: View {
                     HStack {
                         Text("Run DJ")
                             .font(.system(size: 26, weight: .heavy))
-                            .foregroundColor(.white)
+                            .foregroundColor(foregroundColor)
                             .padding(.leading, 20)
                         
                         Spacer()
@@ -174,7 +81,7 @@ struct WelcomeView: View {
                         }) {
                             Image(systemName: "questionmark.circle")
                                 .font(.system(size: 22))
-                                .foregroundColor(.white)
+                                .foregroundColor(foregroundColor)
                                 .padding(.trailing, 20)
                         }
                     }
@@ -187,11 +94,11 @@ struct WelcomeView: View {
                         // Animated icon combining running and music
                         ZStack {
                             Circle()
-                                .fill(Color.white.opacity(0.15))
+                                .fill(foregroundColor.opacity(0.15))
                                 .frame(width: 130, height: 130)
                             
                             Circle()
-                                .stroke(Color.white, lineWidth: pulsate ? 1 : 3)
+                                .stroke(foregroundColor, lineWidth: pulsate ? 1 : 3)
                                 .frame(width: pulsate ? 160 : 140, height: pulsate ? 160 : 140)
                                 .onAppear {
                                     withAnimation(Animation.easeInOut(duration: 1.2).repeatForever(autoreverses: true)) {
@@ -202,11 +109,11 @@ struct WelcomeView: View {
                             HStack(spacing: -5) {
                                 Image(systemName: "figure.run")
                                     .font(.system(size: 44))
-                                    .foregroundColor(.white)
+                                    .foregroundColor(foregroundColor)
                                 
                                 Image(systemName: "music.note")
                                     .font(.system(size: 36))
-                                    .foregroundColor(.white)
+                                    .foregroundColor(foregroundColor)
                                     .offset(y: -10)
                             }
                         }
@@ -214,12 +121,12 @@ struct WelcomeView: View {
                         VStack(spacing: 12) {
                             Text("FIND YOUR RHYTHM")
                                 .font(.system(size: 30, weight: .bold))
-                                .foregroundColor(.white)
+                                .foregroundColor(foregroundColor)
                                 .shadow(color: .black.opacity(0.2), radius: 2, x: 1, y: 1)
                             
                             Text("Running meets music. Perfectly synced.")
                                 .font(.system(size: 18))
-                                .foregroundColor(.white.opacity(0.9))
+                                .foregroundColor(foregroundColor.opacity(0.9))
                                 .multilineTextAlignment(.center)
                                 .padding(.horizontal, 30)
                         }
@@ -249,7 +156,7 @@ struct WelcomeView: View {
                                 .frame(width: 230, height: 55)
                                 .background(
                                     RoundedRectangle(cornerRadius: 28)
-                                        .fill(Color.white)
+                                        .fill(foregroundColor)
                                 )
                             }
                             
@@ -263,11 +170,11 @@ struct WelcomeView: View {
                                     Text("EXPLORE PLAYLISTS")
                                         .font(.system(size: 16, weight: .semibold))
                                 }
-                                .foregroundColor(.white)
+                                .foregroundColor(foregroundColor)
                                 .frame(width: 230, height: 55)
                                 .background(
                                     RoundedRectangle(cornerRadius: 28)
-                                        .stroke(Color.white, lineWidth: 2)
+                                        .stroke(foregroundColor, lineWidth: 2)
                                 )
                             }
                         }
@@ -281,7 +188,7 @@ struct WelcomeView: View {
                         Text("PERFECT BEATS FOR PERFECT RUNS")
                             .font(.system(size: 10, weight: .medium))
                             .tracking(1)
-                            .foregroundColor(.white.opacity(0.7))
+                            .foregroundColor(foregroundColor.opacity(0.7))
                     }
                     .padding(.bottom, 15)
                 }
@@ -330,20 +237,21 @@ struct StatItem: View {
     let icon: String
     let value: String
     let label: String
+    let foregroundColor = Style().foregroundColor
     
     var body: some View {
         VStack(spacing: 5) {
             Image(systemName: icon)
                 .font(.system(size: 16))
-                .foregroundColor(.white)
+                .foregroundColor(foregroundColor)
             
             Text(value)
                 .font(.system(size: 18, weight: .bold))
-                .foregroundColor(.white)
+                .foregroundColor(foregroundColor)
             
             Text(label)
                 .font(.system(size: 12, weight: .medium))
-                .foregroundColor(.white.opacity(0.7))
+                .foregroundColor(foregroundColor.opacity(0.7))
         }
         .frame(width: 60)
     }
@@ -351,6 +259,7 @@ struct StatItem: View {
 
 struct HelpViewRhythm: View {
     @Environment(\.presentationMode) var presentationMode
+    private var foregroundColor = Style().foregroundColor
     
     var body: some View {
         ZStack {
@@ -389,7 +298,7 @@ struct HelpViewRhythm: View {
                 HStack {
                     Text("How can we help?")
                         .font(.system(size: 24, weight: .bold))
-                        .foregroundColor(.white)
+                        .foregroundColor(foregroundColor)
                     
                     Spacer()
                     
@@ -398,7 +307,7 @@ struct HelpViewRhythm: View {
                     }) {
                         Image(systemName: "xmark.circle.fill")
                             .font(.system(size: 24))
-                            .foregroundColor(.white.opacity(0.8))
+                            .foregroundColor(foregroundColor.opacity(0.8))
                     }
                 }
                 .padding(.top, 20)
@@ -439,7 +348,7 @@ struct HelpViewRhythm: View {
                         VStack(spacing: 15) {
                             Text("Still need help?")
                                 .font(.system(size: 18, weight: .bold))
-                                .foregroundColor(.white)
+                                .foregroundColor(foregroundColor)
                             
                             Button(action: {
                                 // Contact support action
@@ -451,7 +360,7 @@ struct HelpViewRhythm: View {
                                     Text("Contact Support")
                                         .font(.system(size: 15, weight: .semibold))
                                 }
-                                .foregroundColor(.white)
+                                .foregroundColor(foregroundColor)
                                 .frame(width: 200, height: 45)
                                 .background(
                                     RoundedRectangle(cornerRadius: 22.5)
@@ -482,12 +391,15 @@ struct HelpSectionRhythm: View {
     let title: String
     let items: [HelpTopic]
     
+    let gradientColors = Style().gradientColors
+    let foregroundColor = Style().foregroundColor
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 15) {
             Text(title.uppercased())
                 .font(.system(size: 14, weight: .heavy))
                 .tracking(1)
-                .foregroundColor(Color(red: 0.98, green: 0.3, blue: 0.3))
+                .foregroundColor(gradientColors[0])
                 .padding(.bottom, 5)
             
             ForEach(items) { item in
@@ -497,8 +409,8 @@ struct HelpSectionRhythm: View {
                             .fill(
                                 LinearGradient(
                                     colors: [
-                                        Color(red: 0.98, green: 0.3, blue: 0.3).opacity(0.2),
-                                        Color(red: 0.9, green: 0.2, blue: 0.5).opacity(0.2)
+                                        gradientColors[0].opacity(0.2),
+                                        gradientColors[1].opacity(0.2)
                                     ],
                                     startPoint: .topLeading,
                                     endPoint: .bottomTrailing
@@ -508,17 +420,17 @@ struct HelpSectionRhythm: View {
                         
                         Image(systemName: item.icon)
                             .font(.system(size: 16))
-                            .foregroundColor(.white)
+                            .foregroundColor(foregroundColor)
                     }
                     
                     VStack(alignment: .leading, spacing: 4) {
                         Text(item.title)
                             .font(.system(size: 15, weight: .semibold))
-                            .foregroundColor(.white)
+                            .foregroundColor(foregroundColor)
                         
                         Text(item.description)
                             .font(.system(size: 14))
-                            .foregroundColor(.white.opacity(0.7))
+                            .foregroundColor(foregroundColor.opacity(0.7))
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 }
@@ -535,8 +447,6 @@ struct HelpTopic: Identifiable {
     let description: String
 }
 
-struct WelcomeViewRhythm_Previews: PreviewProvider {
-    static var previews: some View {
-        WelcomeView()
-    }
+#Preview {
+    WelcomeView()
 }
