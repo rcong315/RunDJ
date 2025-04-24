@@ -11,7 +11,7 @@ struct WelcomeView: View {
     @State private var showHelpSheet = false
     @State private var pulsate = false
     @State private var waveOffset: CGFloat = 0
-    @State private var navigateToContentView = false
+    @State private var navigateToStartView = false
     
     private var gradientColors = Style().gradientColors
     private var foregroundColor = Style().foregroundColor
@@ -142,7 +142,7 @@ struct WelcomeView: View {
                         // Action buttons
                         VStack(spacing: 15) {
                             Button(action: {
-                                navigateToContentView = true
+                                navigateToStartView = true
                             }) {
                                 HStack {
                                     Image(systemName: "play.fill")
@@ -193,11 +193,12 @@ struct WelcomeView: View {
                     .padding(.bottom, 15)
                 }
             }
+            .ignoresSafeArea()
             .navigationBarHidden(true)
             .sheet(isPresented: $showHelpSheet) {
                 HelpViewRhythm()
             }
-            .navigationDestination(isPresented: $navigateToContentView) {
+            .navigationDestination(isPresented: $navigateToStartView) {
                 StartView()
             }
         }
@@ -272,7 +273,6 @@ struct HelpViewRhythm: View {
                 startPoint: .top,
                 endPoint: .bottom
             )
-            .ignoresSafeArea()
             
             // Music wave pattern
             GeometryReader { geo in
