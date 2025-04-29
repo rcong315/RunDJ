@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import UIKit
 
 struct ContentView: View {
     @StateObject private var pedometerManager = PedometerManager()
@@ -16,6 +17,7 @@ struct ContentView: View {
     @State private var showSpotifyError = false
     @State private var errorMessage = ""
     @State private var showingHelp = false
+    @State private var showCopiedNotification = false
     
     var body: some View {
         VStack(spacing: 20) {
@@ -83,8 +85,50 @@ struct ContentView: View {
                     .cornerRadius(10)
             }
             
+            VStack() {
+                Text("Access Token")
+                    .font(.system(size: 30))
+                Text(spotifyManager.getAccessToken()?.replacingOccurrences(of: "-", with: "\u{2011}") ?? "")
+                    .font(.system(size: 10))
+                    .contextMenu {
+                        Button(action: {
+                            UIPasteboard.general.string = String(pedometerManager.stepsPerMinute)
+                        }) {
+                            Label("Copy", systemImage: "doc.on.doc")
+                        }
+                    }
+                    .onTapGesture {
+                        UIPasteboard.general.string = String(pedometerManager.stepsPerMinute)
+                        let generator = UINotificationFeedbackGenerator()
+                        generator.notificationOccurred(.success)
+                        showCopiedNotification = true
+                    }
+                
+                Text("Tap to copy")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            .overlay(
+                Group {
+                    if showCopiedNotification {
+                        VStack {
+                            Text("Copied to clipboard")
+                                .padding()
+                                .background(Color.blue.opacity(0.7))
+                                .foregroundColor(.white)
+                                .cornerRadius(10)
+                                .shadow(radius: 3)
+                        }
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                        .onAppear {
+                            withAnimation(.easeOut(duration: 0.5).delay(1.5)) {
+                                showCopiedNotification = false
+                            }
+                        }
+                    }
+                }
+            )
         }
-        .padding()
         .onChange(of: spotifyManager.connectionState) { _, newState in
             switch newState {
             case .error(let message):
