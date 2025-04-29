@@ -8,6 +8,8 @@
 import SwiftUI
 import SwiftData
 
+// TODO: os.log
+
 @main
 struct RunDJApp: App {
     
@@ -21,7 +23,7 @@ struct RunDJApp: App {
         WindowGroup {
             ContentView()
                 .onOpenURL { url in
-                    print("onOpenURL received: \(url)")
+                    print("onOpenURL received")
                     SpotifyManager.shared.handleURL(url)
                 }
         }
@@ -34,27 +36,8 @@ struct RunDJApp: App {
         }
         
         func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
-            print("Application did finish launching")
+            print("Application finished launching")
             return true
-        }
-        
-        func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey : Any] = [:]) -> Bool {
-            print("Received URL: \(url)")
-            let handled = SpotifyManager.shared.sessionManager.application(app, open: url, options: options)
-//            SpotifyManager.shared.handleURL(url)
-            print("URL handled by Spotify")
-            return true
-        }
-        
-        func application(_ application: UIApplication, continue userActivity: NSUserActivity, restorationHandler: @escaping ([UIUserActivityRestoring]?) -> Void) -> Bool {
-            print("Continuing user activity: \(userActivity)")
-            if let url = userActivity.webpageURL {
-                print("Received universal link URL: \(url)")
-                let handled = SpotifyManager.shared.sessionManager.application(application, open: url)
-                print("Universal link handled by Spotify: \(handled)")
-                return handled
-            }
-            return false
         }
     }
 }

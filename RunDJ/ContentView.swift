@@ -11,18 +11,18 @@ import SwiftData
 struct ContentView: View {
     @StateObject private var pedometerManager = PedometerManager()
     @StateObject private var spotifyManager = SpotifyManager.shared
-    @StateObject private var playlistService = RunDJService()
+    @StateObject private var rundjService = RunDJService()
     
     @State private var showSpotifyError = false
     @State private var errorMessage = ""
-    @State private var showingGuide = false
+    @State private var showingHelp = false
     
     var body: some View {
         VStack(spacing: 20) {
             HStack {
                 Spacer()
                 Button(action: {
-                    showingGuide = true
+                    showingHelp = true
                 }) {
                     Image(systemName: "questionmark.circle")
                         .font(.title2)
@@ -45,22 +45,20 @@ struct ContentView: View {
                 case .disconnected:
                     spotifyManager.initiateSession()
                 case .connected:
-                    playlistService.getPresetPlaylist(stepsPerMinute: pedometerManager.stepsPerMinute) { uri in
-                        if let uri = uri {
-                            print(uri)
-                            spotifyManager.play(uri: uri)
+                    rundjService.getSongsByBPM(accessToken: spotifyManager.getAccessToken()!, stepsPerMinute: pedometerManager.stepsPerMinute) { songs in
+                        if songs.isEmpty {
+                            print("Error getting songs")
                         } else {
-                            print("Failed to get playlist URI")
+                            spotifyManager.queue(songs: songs)
                         }
                     }
-                    
                 case .error:
                     spotifyManager.initiateSession()
                 }
             }) {
                 Text(buttonText)
                     .padding()
-                    .background(Color.green)
+                    .background(buttonColor)
                     .foregroundColor(.white)
                     .cornerRadius(10)
             }
@@ -85,39 +83,6 @@ struct ContentView: View {
                     .cornerRadius(10)
             }
             
-#if DEBUG
-            // Debug-only controls
-            Divider()
-                .padding(.vertical)
-            
-            Button(action: {
-                // Show confirmation dialog
-                errorMessage = "This will clear all Spotify authentication data. You'll need to log in again."
-                showSpotifyError = true
-                
-                // Use this approach if you want to directly clear without confirmation
-                spotifyManager.clearSpotifyKeychain()
-            }) {
-                Text("Clear Spotify Keychain (Debug)")
-                    .padding()
-                    .background(Color.red.opacity(0.8))
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
-                    .font(.callout)
-            }
-            
-            Button(action: {
-                spotifyManager.printSpotifyKeychain()
-            }) {
-                Text("Print Spotify Keychain (Debug)")
-                    .padding()
-                    .background(Color.blue.opacity(0.8))
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
-                    .font(.callout)
-            }
-#endif
-            
         }
         .padding()
         .onChange(of: spotifyManager.connectionState) { _, newState in
@@ -130,14 +95,13 @@ struct ContentView: View {
             }
         }
         .alert(isPresented: $showSpotifyError) {
-            // It's a regular error message
             return Alert(
                 title: Text("Spotify Connection Error"),
                 message: Text(errorMessage),
                 dismissButton: .default(Text("OK"))
             )
         }
-        .sheet(isPresented: $showingGuide) {
+        .sheet(isPresented: $showingHelp) {
             GuideView()
         }
     }
@@ -162,6 +126,14 @@ struct ContentView: View {
         }
     }
     
+    private var buttonColor: Color {
+        switch spotifyManager.connectionState {
+        case .connected:
+            return .blue
+        case .disconnected, .error:
+            return .green
+        }
+    }
 }
 
 #Preview {

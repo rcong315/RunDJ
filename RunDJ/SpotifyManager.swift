@@ -23,6 +23,8 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
     @Published var currentlyPlaying: String? = "None"
     @Published var connectionState: ConnectionState = .disconnected
     
+    var songQueue = [String]()
+    
     enum ConnectionState: Equatable {
         case connected
         case disconnected
@@ -98,7 +100,7 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
         deleteFromKeychain(key: key)
         
         guard let dataToStore = data.data(using: .utf8) else {
-            print("🔑 Keychain ERROR: Failed to convert \(key) to Data")
+            print("Keychain ERROR: Failed to convert \(key) to Data")
             return
         }
         
@@ -112,9 +114,9 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
         
         let status = SecItemAdd(query as CFDictionary, nil)
         if status == errSecSuccess {
-            print("🔑 Keychain SUCCESS: Saved \(key) to Keychain")
+            print("Keychain SUCCESS: Saved \(key) to Keychain")
         } else {
-            print("🔑 Keychain ERROR: Failed saving \(key) to Keychain: \(status) - \(describeKeychainError(status))")
+            print("Keychain ERROR: Failed saving \(key) to Keychain: \(status) - \(describeKeychainError(status))")
         }
     }
     
@@ -131,13 +133,13 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
         let status = SecItemCopyMatching(query as CFDictionary, &result)
         
         if status == errSecSuccess, let data = result as? Data, let string = String(data: data, encoding: .utf8) {
-            print("🔑 Keychain SUCCESS: Loaded \(key) (length: \(string.count))")
+            print("Keychain SUCCESS: Loaded \(key) (length: \(string.count))")
             return string
         } else {
             if status == errSecItemNotFound {
-                print("🔑 Keychain INFO: Item \(key) not found in Keychain")
+                print("Keychain INFO: Item \(key) not found in Keychain")
             } else {
-                print("🔑 Keychain ERROR: Failed loading \(key) from Keychain: \(status) - \(describeKeychainError(status))")
+                print("Keychain ERROR: Failed loading \(key) from Keychain: \(status) - \(describeKeychainError(status))")
             }
             return nil
         }
@@ -153,7 +155,7 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
         let status = SecItemDelete(query as CFDictionary)
         
         if status != errSecSuccess && status != errSecItemNotFound{
-            print("🔑 Keychain ERROR: Failed deleting \(key) from Keychain: \(status) - \(describeKeychainError(status))")
+            print("Keychain ERROR: Failed deleting \(key) from Keychain: \(status) - \(describeKeychainError(status))")
         }
     }
     
@@ -165,11 +167,11 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
     private func loadDateFromKeychain(key: String) -> Date? {
         guard let timestampString = loadFromKeychain(key: key),
               let timestamp = Double(timestampString) else {
-            print("🔑 Keychain ERROR: Failed to parse date for \(key)")
+            print("Keychain ERROR: Failed to parse date for \(key)")
             return nil
         }
         let date = Date(timeIntervalSince1970: timestamp)
-        print("🔑 Keychain INFO: Loaded date \(date) for key \(key)")
+        print("Keychain INFO: Loaded date \(date) for key \(key)")
         return date
     }
     
@@ -200,42 +202,6 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
         default:
             return "Unknown error (\(status))"
         }
-    }
-    
-    func clearSpotifyKeychain() {
-        print("🧹 Clearing all Spotify authentication data from keychain")
-        
-        // Delete all stored token data
-        deleteFromKeychain(key: refreshTokenKey)
-        deleteFromKeychain(key: accessTokenKey)
-        deleteFromKeychain(key: expirationDateKey)
-        
-        // Reset the stored properties
-        refreshToken = nil
-        accessToken = nil
-        tokenExpirationDate = nil
-        
-        // Reset app remote connection parameters
-        appRemote.connectionParameters.accessToken = nil
-        
-        print("🧹 Spotify keychain data cleared successfully")
-    }
-    
-    func printSpotifyKeychain() {
-        print("🔍 Current Spotify authentication data in keychain:")
-        
-        let accessToken = accessToken
-        let tokenExpirationDate = tokenExpirationDate
-        let refreshToken = refreshToken
-        
-        print("access token: \(accessToken ?? "")")
-        print("refresh token: \(refreshToken ?? "")")
-        
-        let pstFormatter = DateFormatter()
-        pstFormatter.timeZone = TimeZone(identifier: "America/Los_Angeles")
-        pstFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
-        let pstDateString = pstFormatter.string(from: tokenExpirationDate ?? Date())
-        print("expires PST: \(pstDateString)")
     }
     
     // MARK: - Configuration
@@ -276,17 +242,34 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
         
         let scopes: SPTScope = [
             .appRemoteControl,
-            .userLibraryRead,
-            .playlistReadPrivate,
             .streaming,
+            
+            .userReadPlaybackState,
+            .userModifyPlaybackState,
+            .userReadCurrentlyPlaying,
+            .userReadRecentlyPlayed,
+            
             .userReadEmail,
-            .playlistModifyPublic,
+            .userReadPrivate,
+
+            .userTopRead,
+            .userLibraryRead,
+//            .userLibraryModify,
+            .userFollowRead,
+//            .userFollowModify,
+            
+            .playlistReadPrivate,
+            .playlistReadCollaborative,
+//            .playlistModifyPublic,
             .playlistModifyPrivate,
-            .userLibraryModify,
-            .userTopRead
         ]
         
         sessionManager.initiateSession(with: scopes, options: .default, campaign: "Run DJ")
+    }
+    
+    func renewSession() {
+        print("Renewing Spotify session...")
+        sessionManager.renewSession()
     }
     
     func handleURL(_ url: URL) {
@@ -297,11 +280,15 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
     
     // MARK: - Playback Controls
     
+    func getAccessToken() -> String? {
+        return accessToken
+    }
+    
     func play(uri: String) {
         print("Playing: \(uri)")
-        appRemote.playerAPI?.play("spotify:playlist:\(uri)", callback: { result, error in
+        appRemote.playerAPI?.play(uri, callback: { result, error in
             if let error = error {
-                print("Error playing playlist: \(error)")
+                print("Error playing: \(error)")
             }
         })
         currentlyPlaying = "\(uri)"
@@ -331,9 +318,26 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
     }
     
     func skipToNext() {
+        queueNextSong()
         appRemote.playerAPI?.skip(toNext: { result, error in
             if let error = error {
                 print("Error skipping to next track: \(error)")
+            }
+        })
+    }
+    
+    func queue(songs: [String]) {
+        songQueue = songQueue + songs
+        songQueue.shuffle()
+        queueNextSong()
+        skipToNext()
+    }
+    
+    func queueNextSong() {
+        let song = songQueue.removeLast()
+        appRemote.playerAPI?.enqueueTrackUri("spotify:track:\(song)", callback: { result, error in
+            if let error = error {
+                print("Error queuing track: \(error)")
             }
         })
     }
@@ -352,7 +356,6 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
         print("Access Token: \(session.accessToken)")
         print("Expiration Date: \(session.expirationDate)")
         
-        // Save tokens to keychain
         refreshToken = session.refreshToken
         accessToken = session.accessToken
         tokenExpirationDate = session.expirationDate
@@ -368,7 +371,6 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
         print("Access Token: \(session.accessToken)")
         print("Expiration Date: \(session.expirationDate)")
         
-        // Save the renewed tokens
         accessToken = session.accessToken
         tokenExpirationDate = session.expirationDate
         
