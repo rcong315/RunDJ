@@ -11,6 +11,7 @@ import SpotifyiOS
 class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRemotePlayerStateDelegate, SPTSessionManagerDelegate {
     
     static let shared = SpotifyManager()
+    
     private let clientID = "6f69b8394f8d46fc87b274b54a3d9f1b"
     private let redirectURI = "run-dj://auth"
     private let serverURL = "https://rundjserver.onrender.com"
@@ -214,7 +215,7 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
            let tokenRefreshURL = URL(string: "\(serverURL)/api/spotify/auth/refresh") {
             config.tokenSwapURL = tokenSwapURL
             config.tokenRefreshURL = tokenRefreshURL
-            config.playURI = ""
+            config.playURI = nil
         }
         
         return config
@@ -294,6 +295,7 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
         currentlyPlaying = "\(uri)"
     }
     
+    //TODO: sepearate play and pause
     func playPause() {
         appRemote.playerAPI?.getPlayerState() { [weak self] result, error in
             guard let self = self, let state = result as? SPTAppRemotePlayerState else {
@@ -388,8 +390,6 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
             self.connectionState = .error("Session failed: \(error.localizedDescription)")
         }
     }
-    
-    
     
     // MARK: - SPTAppRemoteDelegate
     

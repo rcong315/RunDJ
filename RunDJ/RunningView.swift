@@ -1,5 +1,5 @@
 //
-//  ContentView.swift
+//  RunningView.swift
 //  RunDJ
 //
 //  Created by Richard Cong on 2/8/25.
@@ -9,8 +9,8 @@ import SwiftUI
 import SwiftData
 import UIKit
 
-struct ContentView: View {
-    @StateObject private var pedometerManager = PedometerManager()
+struct RunningView: View {
+    @StateObject private var pedometerManager = PedometerManager.shared
     @StateObject private var spotifyManager = SpotifyManager.shared
     @StateObject private var rundjService = RunDJService()
     
@@ -18,6 +18,9 @@ struct ContentView: View {
     @State private var errorMessage = ""
     @State private var showingHelp = false
     @State private var showCopiedNotification = false
+    
+    var bpm: Double
+    var songs: [String]
     
     var body: some View {
         VStack(spacing: 20) {
@@ -33,37 +36,8 @@ struct ContentView: View {
                 .padding()
             }
             
-            Text("Status: \(connectionStateText)")
-                .padding()
-            
-            Text("Playing: \(spotifyManager.currentlyPlaying ?? "None")")
-                .padding()
-            
-            Text("Steps Per Minute: \(pedometerManager.stepsPerMinute)")
-                .padding()
-            
-            Button(action: {
-                switch spotifyManager.connectionState {
-                case .disconnected:
-                    spotifyManager.initiateSession()
-                case .connected:
-                    rundjService.getSongsByBPM(accessToken: spotifyManager.getAccessToken()!, stepsPerMinute: pedometerManager.stepsPerMinute) { songs in
-                        if songs.isEmpty {
-                            print("Error getting songs")
-                        } else {
-                            spotifyManager.queue(songs: songs)
-                        }
-                    }
-                case .error:
-                    spotifyManager.initiateSession()
-                }
-            }) {
-                Text(buttonText)
-                    .padding()
-                    .background(buttonColor)
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
-            }
+            Text("BPM: \(bpm)")
+                .font(.title)
             
             Button(action: {
                 spotifyManager.playPause()
@@ -146,40 +120,11 @@ struct ContentView: View {
             )
         }
         .sheet(isPresented: $showingHelp) {
-            GuideView()
-        }
-    }
-    
-    private var connectionStateText: String {
-        switch spotifyManager.connectionState {
-        case .connected:
-            return "Connected"
-        case .disconnected:
-            return "Disconnected"
-        case .error(let message):
-            return "Error: \(message)"
-        }
-    }
-    
-    private var buttonText: String {
-        switch spotifyManager.connectionState {
-        case .connected:
-            return "Play Music"
-        case .disconnected, .error:
-            return "Connect to Spotify"
-        }
-    }
-    
-    private var buttonColor: Color {
-        switch spotifyManager.connectionState {
-        case .connected:
-            return .blue
-        case .disconnected, .error:
-            return .green
+            HelpView()
         }
     }
 }
 
 #Preview {
-    ContentView()
+    RunningView(bpm: 160, songs: [])
 }

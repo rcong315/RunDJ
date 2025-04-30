@@ -8,6 +8,8 @@
 import Foundation
 
 class RunDJService: ObservableObject {
+    static let shared = RunDJService()
+    
     private let baseURL = "https://rundjserver.onrender.com"
     private var accessToken: String?
     
@@ -61,10 +63,11 @@ class RunDJService: ObservableObject {
     }
     
     // TODO: sqlite for offline mode
-    func getSongsByBPM(accessToken: String, stepsPerMinute: Double, completion: @escaping ([String]) -> Void) {
-        var components = URLComponents(string: "\(baseURL)/api/songs/bpm/" + String(stepsPerMinute))
+    func getSongsByBPM(accessToken: String, bpm: Double, sources: [String], completion: @escaping ([String]) -> Void) {
+        var components = URLComponents(string: "\(baseURL)/api/songs/bpm/" + String(bpm))
         components?.queryItems = [
-            URLQueryItem(name: "access_token", value: accessToken)
+            URLQueryItem(name: "access_token", value: accessToken),
+            URLQueryItem(name: "sources", value: sources.joined(separator: ","))
         ]
         
         guard let url = components?.url else {
@@ -114,39 +117,39 @@ class RunDJService: ObservableObject {
         task.resume()
     }
     
-//    func createPlaylist(accessToken: String, stepsPerMinute: Double, completion: @escaping () -> String) {
-//        var components = URLComponents(string: "\(baseURL)/api/playlist/bpm/" + String(stepsPerMinute))
-//        components?.queryItems = [
-//            URLQueryItem(name: "access_token", value: accessToken)
-//        ]
-//        
-//        guard let url = components?.url else {
-//            print("Invalid URL")
-//            return
-//        }
-//        
-//        var request = URLRequest(url: url)
-//        request.httpMethod = "POST"
-//        
-//        let session = URLSession.shared
-//        let task = session.dataTask(with: request) { data, response, error -> Void in
-//            if let error = error {
-//                print("Error: \(error.localizedDescription)")
-//                return
-//            }
-//            
-//            guard let data = data else {
-//                print("No data received")
-//                return
-//            }
-//            
-//            if let httpResponse = response as? HTTPURLResponse {
-//                print("HTTP Status Code: \(httpResponse.statusCode)")
-//            }
-//            
-//            let uri = String(data: data, encoding: .utf8) ?? ""
-//            print("Received URI: \(uri)")
-//        }
-//        task.resume()
-//    }
+    func createPlaylist(accessToken: String, stepsPerMinute: Double, completion: @escaping () -> String) {
+        var components = URLComponents(string: "\(baseURL)/api/playlist/bpm/" + String(stepsPerMinute))
+        components?.queryItems = [
+            URLQueryItem(name: "access_token", value: accessToken)
+        ]
+        
+        guard let url = components?.url else {
+            print("Invalid URL")
+            return
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        
+        let session = URLSession.shared
+        let task = session.dataTask(with: request) { data, response, error -> Void in
+            if let error = error {
+                print("Error: \(error.localizedDescription)")
+                return
+            }
+            
+            guard let data = data else {
+                print("No data received")
+                return
+            }
+            
+            if let httpResponse = response as? HTTPURLResponse {
+                print("HTTP Status Code: \(httpResponse.statusCode)")
+            }
+            
+            let uri = String(data: data, encoding: .utf8) ?? ""
+            print("Received URI: \(uri)")
+        }
+        task.resume()
+    }
 }

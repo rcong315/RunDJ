@@ -9,6 +9,8 @@ import CoreMotion
 
 class PedometerManager: ObservableObject {
     
+    static let shared = PedometerManager()
+    
     private var pedometer = CMPedometer()
     @Published var stepsPerMinute: Double = 0.0
     
