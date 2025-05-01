@@ -12,14 +12,12 @@ struct BPMView: View {
     @StateObject private var spotifyManager = SpotifyManager.shared
     @StateObject private var runDJService = RunDJService.shared
     
-    @State private var bpmValue: Int = 150
-    @State private var bpmText: String = "150"
+    @State private var bpmValue = 150
+    @State private var bpmText = "150"
     
     @State private var showingHelp = false
     
-    @State private var songs: [String] = []
-    @State private var isLoading: Bool = false
-    @State private var showError: Bool = false
+    @State private var showError = false
     
     var sources: [String]
     
@@ -82,41 +80,13 @@ struct BPMView: View {
             }
             .padding()
             
-            Button(action: {
-                isLoading = true
-                runDJService.getSongsByBPM(
-                    accessToken: spotifyManager.getAccessToken()!,
-                    bpm: Double(bpmValue),
-                    sources: sources
-                ) { fetchedSongs in
-                    isLoading = false
-                    if !fetchedSongs.isEmpty {
-                        songs = fetchedSongs
-                        // The NavigationLink below will handle this
-                    } else {
-                        showError = true
-                    }
-                }
-            }) {
-                Text("Fetch Songs")
+            NavigationLink(destination: RunningView(bpm: Double(bpmValue), sources: sources)) {
+                Text("Start")
                     .padding()
                     .frame(minWidth: 200)
-                    .background(Color.gray)
+                    .background(Color.blue)
                     .foregroundColor(.white)
                     .cornerRadius(10)
-            }
-            .disabled(isLoading)
-            
-            // Only show this navigation link when we have songs
-            if !songs.isEmpty {
-                NavigationLink(destination: RunningView(bpm: Double(bpmValue), songs: songs)) {
-                    Text("Start Running with Songs")
-                        .padding()
-                        .frame(minWidth: 200)
-                        .background(Color.blue)
-                        .foregroundColor(.white)
-                        .cornerRadius(10)
-                }
             }
             
             HStack {
@@ -149,7 +119,7 @@ struct BPMView: View {
                 .padding()
                 .multilineTextAlignment(.center)
             
-            NavigationLink(destination: RunningView(bpm: pedometerManager.stepsPerMinute, songs: [])) {
+            NavigationLink(destination: RunningView(bpm: pedometerManager.stepsPerMinute, sources: sources)) {
                 Text("Start")
                     .padding()
                     .frame(minWidth: 200)

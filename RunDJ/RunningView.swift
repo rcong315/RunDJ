@@ -19,8 +19,11 @@ struct RunningView: View {
     @State private var showingHelp = false
     @State private var showCopiedNotification = false
     
+    @State private var token = ""
+    @State private var songs = []
+    
     var bpm: Double
-    var songs: [String]
+    var sources: [String]
     
     var body: some View {
         VStack(spacing: 20) {
@@ -38,6 +41,16 @@ struct RunningView: View {
             
             Text("BPM: \(bpm)")
                 .font(.title)
+            
+            Button(action: {
+                
+            }) {
+                Text("Play Music")
+                    .padding()
+                    .background(Color.orange)
+                    .foregroundColor(.white)
+                    .cornerRadius(10)
+            }
             
             Button(action: {
                 spotifyManager.playPause()
@@ -82,6 +95,7 @@ struct RunningView: View {
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
+            .padding()
             .overlay(
                 Group {
                     if showCopiedNotification {
@@ -102,6 +116,14 @@ struct RunningView: View {
                     }
                 }
             )
+        }
+        .onAppear {
+            token = spotifyManager.getAccessToken() ?? ""
+            rundjService.getSongsByBPM(accessToken: token, bpm: bpm, sources: sources) { fetchedSongs in
+                if !songs.isEmpty {
+                    spotifyManager.queue(songs: fetchedSongs)
+                }
+            }
         }
         .onChange(of: spotifyManager.connectionState) { _, newState in
             switch newState {
@@ -126,5 +148,5 @@ struct RunningView: View {
 }
 
 #Preview {
-    RunningView(bpm: 160, songs: [])
+    RunningView(bpm: 160, sources: [])
 }

@@ -215,7 +215,7 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
            let tokenRefreshURL = URL(string: "\(serverURL)/api/spotify/auth/refresh") {
             config.tokenSwapURL = tokenSwapURL
             config.tokenRefreshURL = tokenRefreshURL
-            config.playURI = nil
+            config.playURI = ""
         }
         
         return config
@@ -295,28 +295,34 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
         currentlyPlaying = "\(uri)"
     }
     
-    //TODO: sepearate play and pause
     func playPause() {
         appRemote.playerAPI?.getPlayerState() { [weak self] result, error in
             guard let self = self, let state = result as? SPTAppRemotePlayerState else {
                 print("Error getting player state: \(error ?? NSError())")
                 return
             }
-            
             if state.isPaused {
-                self.appRemote.playerAPI?.resume({ result, error in
-                    if let error = error {
-                        print("Error resuming playback: \(error)")
-                    }
-                })
+                resume()
             } else {
-                self.appRemote.playerAPI?.pause({ result, error in
-                    if let error = error {
-                        print("Error pausing playback: \(error)")
-                    }
-                })
+                pause()
             }
         }
+    }
+    
+    func resume() {
+        appRemote.playerAPI?.resume({ result, error in
+            if let error = error {
+                print("Error resuming playback: \(error)")
+            }
+        })
+    }
+    
+    func pause() {
+        appRemote.playerAPI?.pause({ result, error in
+            if let error = error {
+                print("Error pausing playback: \(error)")
+            }
+        })
     }
     
     func skipToNext() {
@@ -411,6 +417,7 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
                 print("Successfully subscribed to player state")
             }
         })
+//        pause()
     }
     
     func appRemote(_ appRemote: SPTAppRemote, didFailConnectionAttemptWithError error: Error?) {
