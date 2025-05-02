@@ -62,7 +62,7 @@ class RunDJService: ObservableObject {
         task.resume()
     }
     
-    // TODO: sqlite for offline mode
+    // TODO: SwiftData for offline mode 
     func getSongsByBPM(accessToken: String, bpm: Double, sources: [String], completion: @escaping ([String]) -> Void) {
         var components = URLComponents(string: "\(baseURL)/api/songs/bpm/" + String(bpm))
         components?.queryItems = [
