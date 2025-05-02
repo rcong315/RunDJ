@@ -64,4 +64,4 @@ fastlane/test_output
 
 frameworks/
 *.txt
-
+.DS_Store

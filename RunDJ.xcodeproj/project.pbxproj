@@ -7,8 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		8FC6CEE92D62D00100F58371 /* SpotifyiOS.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8FC6CEE52D62CFB200F58371 /* SpotifyiOS.xcframework */; };
-		8FC6CEEA2D62D00100F58371 /* SpotifyiOS.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8FC6CEE52D62CFB200F58371 /* SpotifyiOS.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		8F9873F42DC4ACEA0024A4AD /* SpotifyiOS.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8F9873F32DC4ACEA0024A4AD /* SpotifyiOS.xcframework */; };
+		8F9873F52DC4ACEA0024A4AD /* SpotifyiOS.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8F9873F32DC4ACEA0024A4AD /* SpotifyiOS.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -35,7 +35,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				8FC6CEEA2D62D00100F58371 /* SpotifyiOS.xcframework in Embed Frameworks */,
+				8F9873F52DC4ACEA0024A4AD /* SpotifyiOS.xcframework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -43,7 +43,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		8FC6CEE52D62CFB200F58371 /* SpotifyiOS.xcframework */ = {isa = PBXFileReference; expectedSignature = "AppleDeveloperProgram:2FNC3A47ZF:Spotify"; lastKnownFileType = wrapper.xcframework; name = SpotifyiOS.xcframework; path = "frameworks/ios-sdk/SpotifyiOS.xcframework"; sourceTree = "<group>"; };
+		8F9873F32DC4ACEA0024A4AD /* SpotifyiOS.xcframework */ = {isa = PBXFileReference; expectedSignature = "AppleDeveloperProgram:2FNC3A47ZF:Spotify"; lastKnownFileType = wrapper.xcframework; name = SpotifyiOS.xcframework; path = "frameworks/ios-sdk/SpotifyiOS.xcframework"; sourceTree = "<group>"; };
 		8FD3D1D52D58939A00367F7C /* RunDJ.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RunDJ.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8FD3D1E72D58939B00367F7C /* RunDJTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RunDJTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		8FD3D1F12D58939B00367F7C /* RunDJUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RunDJUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -85,7 +85,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				8FC6CEE92D62D00100F58371 /* SpotifyiOS.xcframework in Frameworks */,
+				8F9873F42DC4ACEA0024A4AD /* SpotifyiOS.xcframework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -109,7 +109,7 @@
 		8FC6CEE42D62CFB200F58371 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				8FC6CEE52D62CFB200F58371 /* SpotifyiOS.xcframework */,
+				8F9873F32DC4ACEA0024A4AD /* SpotifyiOS.xcframework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -239,6 +239,9 @@
 			);
 			mainGroup = 8FD3D1CC2D58939A00367F7C;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				8F9873F22DC4AC580024A4AD /* XCLocalSwiftPackageReference "frameworks/ios-sdk" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 8FD3D1D62D58939A00367F7C /* Products */;
 			projectDirPath = "";
@@ -604,6 +607,13 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		8F9873F22DC4AC580024A4AD /* XCLocalSwiftPackageReference "frameworks/ios-sdk" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = "frameworks/ios-sdk";
+		};
+/* End XCLocalSwiftPackageReference section */
 	};
 	rootObject = 8FD3D1CD2D58939A00367F7C /* Project object */;
 }
