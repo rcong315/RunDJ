@@ -21,10 +21,13 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
     private let accessTokenKey = "spotify_access_token"
     private let expirationDateKey = "spotify_expiration_date"
     
-    @Published var currentlyPlaying: String? = "None"
+    @Published var currentlyPlaying: String? = ""
+    @Published var currentBPM: Double? = 0.0
     @Published var connectionState: ConnectionState = .disconnected
+    @Published var isPlaying: Bool = false
     
     var songQueue = [String]()
+    var bpm = 0.0
     
     enum ConnectionState: Equatable {
         case connected
@@ -295,20 +298,6 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
         currentlyPlaying = "\(uri)"
     }
     
-    func playPause() {
-        appRemote.playerAPI?.getPlayerState() { [weak self] result, error in
-            guard let self = self, let state = result as? SPTAppRemotePlayerState else {
-                print("Error getting player state: \(error ?? NSError())")
-                return
-            }
-            if state.isPaused {
-                resume()
-            } else {
-                pause()
-            }
-        }
-    }
-    
     func resume() {
         appRemote.playerAPI?.resume({ result, error in
             if let error = error {
@@ -334,11 +323,19 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
         })
     }
     
+    func rewind() {
+        appRemote.playerAPI?.seek(toPosition: 0, callback: { result, error in
+            if let error = error {
+                print("Error rewinding track: \(error)")
+            }
+        })
+    }
+    
     func queue(songs: [String]) {
         songQueue = songQueue + songs
+        // TODO: Move shuffle from front to backend
         songQueue.shuffle()
         queueNextSong()
-        skipToNext()
     }
     
     func queueNextSong() {
@@ -420,19 +417,16 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
 //        pause()
     }
     
+    func appRemoteDidDisconnect(_ appRemote: SPTAppRemote) {
+        print("Disconnected from Spotify")
+        DispatchQueue.main.async {
+            self.connectionState = .disconnected
+            self.appRemote.connect()
+        }
+    }
+    
     func appRemote(_ appRemote: SPTAppRemote, didFailConnectionAttemptWithError error: Error?) {
         print("Connection attempt failed with error: \(String(describing: error))")
-        
-        // Check if it's an authentication error
-        if let error = error as NSError?,
-           error.domain == "com.spotify.app-remote.wamp-client",
-           error.code == -1001 {
-            // Token might be invalid, try to reinitiate session
-            print("Authentication failed, reinitiating session...")
-            DispatchQueue.main.async {
-                self.initiateSession()
-            }
-        }
         
         DispatchQueue.main.async {
             self.connectionState = .error("Connection failed: \(error?.localizedDescription ?? "Unknown error")")
@@ -448,6 +442,8 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
     func playerStateDidChange(_ playerState: SPTAppRemotePlayerState) {
         DispatchQueue.main.async {
             self.currentlyPlaying = playerState.track.name
+            self.isPlaying = playerState.isPaused == false
+            // TODO: set current BPM
         }
     }
 }
