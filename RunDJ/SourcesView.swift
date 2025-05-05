@@ -1,5 +1,5 @@
 //
-//  StartView.swift
+//  SourcesView.swift
 //  RunDJ
 //
 //  Created on 4/29/25.
@@ -7,13 +7,9 @@
 
 import SwiftUI
 
-struct StartView: View {
-    @StateObject private var spotifyManager = SpotifyManager.shared
+struct SourcesView: View {
     
-    @State private var showSpotifyError = false
-    @State private var errorMessage = ""
     @State private var showingHelp = false
-    @State private var navigateToContent = false
     
     @State private var sources = [
         SourceItem(name: "Top tracks", key: "top_tracks", isSelected: true),
@@ -30,40 +26,27 @@ struct StartView: View {
     
     var body: some View {
         NavigationView {
-            VStack() {
-                HStack {
-                    Spacer()
-                    Button(action: {
-                        showingHelp = true
-                    }) {
-                        Image(systemName: "questionmark.circle")
-                            .font(.title2)
-                            .foregroundColor(.green)
-                    }
-                    .padding()
-                }
+            VStack(spacing: 0) {
                 
-                Text("Connect RunDJ to your Spotify Account")
-                    .font(.headline)
-                Button(action: {
-                    if spotifyManager.connectionState != .connected {
-                        spotifyManager.initiateSession()
-                    }
-                }) {
-                    Text("Connect Spotify")
-                        .padding()
-                        .background(buttonColor)
-                        .foregroundColor(.white)
-                        .cornerRadius(10)
-                }
-                Text(connectionStateText)
+                //                HStack() {
+                //                    Spacer()
+                //                    Spacer()
+                //                    Spacer()
+                //                    Spacer()
+                //                    Text("Select Music Sources")
+                //                        .font(.title2)
+                //                        .frame(maxWidth: .infinity)
+                //                    Spacer()
+                //                    Button(action: {
+                //                        showingHelp = true
+                //                    }) {
+                //                        Image(systemName: "questionmark.circle")
+                //                            .font(.title2)
+                //                            .foregroundColor(.blue)
+                //                    }
+                //                }
+                //                .padding()
                 
-                Rectangle()
-                    .frame(height: 1)
-                    .foregroundColor(.gray)
-                
-                Text("Select Music Sources")
-                    .font(.title)
                 List {
                     ForEach(0..<sources.count, id: \.self) { index in
                         HStack {
@@ -82,55 +65,37 @@ struct StartView: View {
                     }
                 }
                 
+                Spacer()
+                
                 NavigationLink(destination: BPMView(sources: sources.filter { $0.isSelected }.map { $0.key })) {
                     Text("Confirm Selection")
                         .padding()
-                        .frame(maxWidth: .infinity)
                         .background(Color.green)
                         .foregroundColor(.white)
                         .cornerRadius(10)
                 }
-                //TODO: Please connect to spotify first
+                
+                Spacer()
             }
-        }
-        .onChange(of: spotifyManager.connectionState) { _, newState in
-            switch newState {
-            case .error(let message):
-                errorMessage = message
-                showSpotifyError = true
-            default:
-                break
+            .toolbar {
+                ToolbarItem(placement: .principal) {
+                    Text("Setting Spotify Sources")
+                        .font(.title2)
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(action: {
+                        showingHelp = true
+                    }) {
+                        Image(systemName: "questionmark.circle")
+                            .font(.title2)
+                            .foregroundColor(.blue)
+                    }
+                    .padding()
+                }
             }
-        }
-        .alert(isPresented: $showSpotifyError) {
-            return Alert(
-                title: Text("Spotify Connection Error"),
-                message: Text(errorMessage),
-                dismissButton: .default(Text("OK"))
-            )
         }
         .sheet(isPresented: $showingHelp) {
             HelpView()
-        }
-    }
-    
-    private var connectionStateText: String {
-        switch spotifyManager.connectionState {
-        case .connected:
-            return "Connected "
-        case .error(let message):
-            return "Error: \(message)"
-        default:
-            return "Not Connected"
-        }
-    }
-    
-    private var buttonColor: Color {
-        switch spotifyManager.connectionState {
-        case .connected:
-            return .gray
-        case .disconnected, .error:
-            return .green
         }
     }
 }
@@ -143,5 +108,5 @@ struct SourceItem {
 }
 
 #Preview {
-    StartView()
+    SourcesView()
 }

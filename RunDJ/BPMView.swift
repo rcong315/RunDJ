@@ -23,18 +23,8 @@ struct BPMView: View {
     
     var body: some View {
         VStack(spacing: 20) {
-            HStack {
-                Spacer()
-                Button(action: {
-                    showingHelp = true
-                }) {
-                    Image(systemName: "questionmark.circle")
-                        .font(.title2)
-                        .foregroundColor(.green)
-                }
-                .padding()
-            }
             
+            Spacer()
             Text("Set Your Target BPM")
                 .font(.title)
                 .padding(.top)
@@ -48,7 +38,7 @@ struct BPMView: View {
                 }) {
                     Image(systemName: "minus.circle")
                         .font(.title)
-                        .foregroundColor(.blue)
+                        .foregroundColor(.green)
                 }
                 
                 TextField("BPM", text: $bpmText)
@@ -75,7 +65,7 @@ struct BPMView: View {
                 }) {
                     Image(systemName: "plus.circle")
                         .font(.title)
-                        .foregroundColor(.blue)
+                        .foregroundColor(.green)
                 }
             }
             .padding()
@@ -83,8 +73,8 @@ struct BPMView: View {
             NavigationLink(destination: RunningView(bpm: Double(bpmValue), sources: sources)) {
                 Text("Start")
                     .padding()
-                    .frame(minWidth: 200)
-                    .background(Color.blue)
+                    .frame(minWidth: 150)
+                    .background(Color.green)
                     .foregroundColor(.white)
                     .cornerRadius(10)
             }
@@ -122,8 +112,8 @@ struct BPMView: View {
             NavigationLink(destination: RunningView(bpm: pedometerManager.stepsPerMinute, sources: sources)) {
                 Text("Start")
                     .padding()
-                    .frame(minWidth: 200)
-                    .background(Color.blue)
+                    .frame(minWidth: 150)
+                    .background(Color.green)
                     .foregroundColor(.white)
                     .cornerRadius(10)
             }
@@ -141,9 +131,21 @@ struct BPMView: View {
         .sheet(isPresented: $showingHelp) {
             HelpView()
         }
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button(action: {
+                    showingHelp = true
+                }) {
+                    Image(systemName: "questionmark.circle")
+                        .font(.title2)
+                        .foregroundColor(.blue)
+                }
+                .padding()
+            }
+        }
     }
 }
-
+    
 #Preview {
     NavigationStack {
         BPMView(sources: [])

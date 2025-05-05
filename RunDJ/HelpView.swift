@@ -10,6 +10,14 @@ import SwiftUI
 struct HelpView: View {
     @Environment(\.dismiss) private var dismiss
     
+//    enum View {
+//        case sources
+//        case bpm
+//        case running
+//    }
+//    
+//    var view: View
+    
     var body: some View {
         NavigationView {
             ScrollView {

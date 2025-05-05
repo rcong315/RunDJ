@@ -20,6 +20,10 @@ class RunDJService: ObservableObject {
         let user: String
     }
     
+    struct PlaylistResponse: Decodable {
+        let id: String
+    }
+    
     //TODO: Check error code for both endpoints
     func getPresetPlaylist(accessToken: String, stepsPerMinute: Double, completion: @escaping (String?) -> Void) {
         var components = URLComponents(string: "\(baseURL)/api/songs/preset")
@@ -62,7 +66,7 @@ class RunDJService: ObservableObject {
         task.resume()
     }
     
-    // TODO: SwiftData for offline mode 
+    // TODO: SwiftData for offline mode
     func getSongsByBPM(accessToken: String, bpm: Double, sources: [String], completion: @escaping ([String]) -> Void) {
         var components = URLComponents(string: "\(baseURL)/api/songs/bpm/" + String(bpm))
         components?.queryItems = [
@@ -117,10 +121,11 @@ class RunDJService: ObservableObject {
         task.resume()
     }
     
-    func createPlaylist(accessToken: String, stepsPerMinute: Double, completion: @escaping () -> String) {
+    func createPlaylist(accessToken: String, stepsPerMinute: Double, sources: [String], completion: @escaping (String) -> Void) {
         var components = URLComponents(string: "\(baseURL)/api/playlist/bpm/" + String(stepsPerMinute))
         components?.queryItems = [
-            URLQueryItem(name: "access_token", value: accessToken)
+            URLQueryItem(name: "access_token", value: accessToken),
+            URLQueryItem(name: "sources", value: sources.joined(separator: ","))
         ]
         
         guard let url = components?.url else {
@@ -149,6 +154,16 @@ class RunDJService: ObservableObject {
             
             let uri = String(data: data, encoding: .utf8) ?? ""
             print("Received URI: \(uri)")
+            
+            let decoder = JSONDecoder()
+            do {
+                let responseData = try decoder.decode(PlaylistResponse.self, from: data)
+                print("Successfully decoded playlist \(responseData.id)")
+                completion(responseData.id)
+            } catch {
+                print("Error decoding JSON: \(error)")
+                completion("")
+            }
         }
         task.resume()
     }
