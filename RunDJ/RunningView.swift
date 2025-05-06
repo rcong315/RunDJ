@@ -19,7 +19,6 @@ struct RunningView: View {
     @State private var showingHelp = false
     @State private var showCopiedNotification = false
     
-    @State private var token = ""
     @State private var songs = []
     
     var bpm: Double
@@ -174,14 +173,14 @@ struct RunningView: View {
                 //                    }
                 //                )
             }
-//            .onAppear {
-//                token = spotifyManager.getAccessToken() ?? ""
-//                rundjService.getSongsByBPM(accessToken: token, bpm: bpm, sources: sources) { fetchedSongs in
-//                    if !songs.isEmpty {
-//                        spotifyManager.queue(songs: fetchedSongs)
-//                    }
-//                }
-//            }
+            //            .onAppear {
+            //                token = spotifyManager.getAccessToken() ?? ""
+            //                rundjService.getSongsByBPM(accessToken: token, bpm: bpm, sources: sources) { fetchedSongs in
+            //                    if !songs.isEmpty {
+            //                        spotifyManager.queue(songs: fetchedSongs)
+            //                    }
+            //                }
+            //            }
             .onChange(of: spotifyManager.connectionState) { _, newState in
                 switch newState {
                 case .error(let message):
@@ -222,18 +221,23 @@ struct RunningView: View {
     
     func initiateSession() {
         // TODO: register user
-        spotifyManager.initiateSession()
-        rundjService.getSongsByBPM(accessToken: token, bpm: bpm, sources: sources, completion: { fetchedSongs in
-            print("Getting songs with BPM \(bpm) from \(sources)")
-            if fetchedSongs.isEmpty {
-                print("Failed to get songs")
-            } else {
-                spotifyManager.queue(songs: fetchedSongs)
-            }
-        })
-        rundjService.createPlaylist(accessToken: token, stepsPerMinute: bpm, sources: sources, completion: { playlistId in
-            print(playlistId)
-        })
+        spotifyManager.initiateSession {
+            rundjService.getSongsByBPM(accessToken: token, bpm: bpm, sources: sources, completion: { fetchedSongs in
+                print("Getting songs with BPM \(bpm) from \(sources)")
+                if fetchedSongs.isEmpty {
+                    print("Failed to get songs")
+                } else {
+                    spotifyManager.queue(songs: fetchedSongs)
+                }
+            })
+            rundjService.createPlaylist(accessToken: token, bpm: bpm, sources: sources, completion: { playlistId in
+                print(playlistId)
+            })
+        }
+    }
+    
+    private var token: String {
+        return spotifyManager.getAccessToken() ?? ""
     }
     
     private var connectionStateText: String {

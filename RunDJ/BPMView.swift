@@ -25,6 +25,45 @@ struct BPMView: View {
         VStack(spacing: 20) {
             
             Spacer()
+            Text("Match Music to Your Steps")
+                .font(.title)
+            
+            Text("Start running and give RunDJ a few seconds to measure your steps per minute.")
+                .multilineTextAlignment(.center)
+                .padding(.horizontal)
+                .foregroundColor(.secondary)
+            
+            Text("\(pedometerManager.stepsPerMinute)\nSteps Per Minute")
+                .font(.headline)
+                .multilineTextAlignment(.center)
+                .padding()
+                .multilineTextAlignment(.center)
+            
+            NavigationLink(destination: RunningView(bpm: pedometerManager.stepsPerMinute, sources: sources)) {
+                Text("Start")
+                    .padding()
+                    .frame(minWidth: 150)
+                    .background(Color.green)
+                    .foregroundColor(.white)
+                    .cornerRadius(10)
+            }
+            
+            HStack {
+                Rectangle()
+                    .frame(height: 1)
+                    .foregroundColor(.gray)
+                
+                Text("OR")
+                    .font(.title)
+                    .foregroundColor(.gray)
+                    .padding(.horizontal)
+                
+                Rectangle()
+                    .frame(height: 1)
+                    .foregroundColor(.gray)
+            }
+            .padding()
+            
             Text("Set Your Target BPM")
                 .font(.title)
                 .padding(.top)
@@ -78,46 +117,6 @@ struct BPMView: View {
                     .foregroundColor(.white)
                     .cornerRadius(10)
             }
-            
-            HStack {
-                Rectangle()
-                    .frame(height: 1)
-                    .foregroundColor(.gray)
-                
-                Text("OR")
-                    .font(.title)
-                    .foregroundColor(.gray)
-                    .padding(.horizontal)
-                
-                Rectangle()
-                    .frame(height: 1)
-                    .foregroundColor(.gray)
-            }
-            .padding()
-            
-            Text("Match Music to Your Steps")
-                .font(.title)
-            
-            Text("Start running and give RunDJ a few seconds to measure your steps per minute.")
-                .multilineTextAlignment(.center)
-                .padding(.horizontal)
-                .foregroundColor(.secondary)
-            
-            Text("\(pedometerManager.stepsPerMinute)\nSteps Per Minute")
-                .font(.headline)
-                .multilineTextAlignment(.center)
-                .padding()
-                .multilineTextAlignment(.center)
-            
-            NavigationLink(destination: RunningView(bpm: pedometerManager.stepsPerMinute, sources: sources)) {
-                Text("Start")
-                    .padding()
-                    .frame(minWidth: 150)
-                    .background(Color.green)
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
-            }
-            
             Spacer()
         }
         .padding()

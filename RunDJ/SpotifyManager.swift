@@ -21,6 +21,8 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
     private let accessTokenKey = "spotify_access_token"
     private let expirationDateKey = "spotify_expiration_date"
     
+    private var authCompletionHandler: (() -> Void)?
+    
     @Published var currentlyPlaying: String? = ""
     @Published var currentBPM: Double? = 0.0
     @Published var connectionState: ConnectionState = .disconnected
@@ -237,34 +239,36 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
     
     // MARK: - Authentication Flow
     
-    func initiateSession() {
+    func initiateSession(completion: (() -> Void)? = nil) {
         print("Initiating Spotify session...")
         
         if appRemote.isConnected {
             disconnect()
         }
         
+        self.authCompletionHandler = completion
+        
         let scopes: SPTScope = [
             .appRemoteControl,
             .streaming,
             
-            .userReadPlaybackState,
+                .userReadPlaybackState,
             .userModifyPlaybackState,
             .userReadCurrentlyPlaying,
             .userReadRecentlyPlayed,
             
-            .userReadEmail,
+                .userReadEmail,
             .userReadPrivate,
-
-            .userTopRead,
-            .userLibraryRead,
-//            .userLibraryModify,
-            .userFollowRead,
-//            .userFollowModify,
             
-            .playlistReadPrivate,
+                .userTopRead,
+            .userLibraryRead,
+            //            .userLibraryModify,
+            .userFollowRead,
+            //            .userFollowModify,
+            
+                .playlistReadPrivate,
             .playlistReadCollaborative,
-//            .playlistModifyPublic,
+            //            .playlistModifyPublic,
             .playlistModifyPrivate,
         ]
         
@@ -368,6 +372,13 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
         appRemote.connectionParameters.accessToken = session.accessToken
         DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
             self.appRemote.connect()
+            
+            if let completionHandler = self.authCompletionHandler {
+                DispatchQueue.main.async {
+                    completionHandler()
+                }
+                self.authCompletionHandler = nil
+            }
         }
     }
     
@@ -414,7 +425,7 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
                 print("Successfully subscribed to player state")
             }
         })
-//        pause()
+        //        pause()
     }
     
     func appRemoteDidDisconnect(_ appRemote: SPTAppRemote) {

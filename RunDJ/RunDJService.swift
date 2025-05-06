@@ -28,6 +28,7 @@ class RunDJService: ObservableObject {
     func getPresetPlaylist(accessToken: String, stepsPerMinute: Double, completion: @escaping (String?) -> Void) {
         var components = URLComponents(string: "\(baseURL)/api/songs/preset")
         components?.queryItems = [
+            URLQueryItem(name: "access_token", value: accessToken),
             URLQueryItem(name: "bpm", value: String(stepsPerMinute))
         ]
         
@@ -68,6 +69,7 @@ class RunDJService: ObservableObject {
     
     // TODO: SwiftData for offline mode
     func getSongsByBPM(accessToken: String, bpm: Double, sources: [String], completion: @escaping ([String]) -> Void) {
+        print("Getting songs by BPM \(bpm)")
         var components = URLComponents(string: "\(baseURL)/api/songs/bpm/" + String(bpm))
         components?.queryItems = [
             URLQueryItem(name: "access_token", value: accessToken),
@@ -121,8 +123,9 @@ class RunDJService: ObservableObject {
         task.resume()
     }
     
-    func createPlaylist(accessToken: String, stepsPerMinute: Double, sources: [String], completion: @escaping (String) -> Void) {
-        var components = URLComponents(string: "\(baseURL)/api/playlist/bpm/" + String(stepsPerMinute))
+    func createPlaylist(accessToken: String, bpm: Double, sources: [String], completion: @escaping (String) -> Void) {
+        print("Creating playlist for BPM \(bpm)")
+        var components = URLComponents(string: "\(baseURL)/api/playlist/bpm/" + String(bpm))
         components?.queryItems = [
             URLQueryItem(name: "access_token", value: accessToken),
             URLQueryItem(name: "sources", value: sources.joined(separator: ","))
