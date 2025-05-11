@@ -1,29 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
-    <dict>
-        <key>NSMotionUsageDescription</key>
-        <string>This app uses your motion data to get you cadence in steps per minute</string>
-        <key>CFBundleIconName</key>
-        <string>AppIcon</string>
-        <key>CFBundleURLTypes</key>
-        <array>
-            <dict>
-                <key>CFBundleTypeRole</key>
-                <string>Editor</string>
-                <key>CFBundleURLName</key>
-                <string>com.rcong.RunDJ</string>
-                <key>CFBundleURLSchemes</key>
-                <array>
-                    <string>run-dj</string>
-                </array>
-                
-            </dict>
-        </array>
-        <key>LSApplicationQueriesSchemes</key>
-        <array>
-            <string>spotify</string>
-            <string>spotify-action</string>
-        </array>
-    </dict>
+<dict>
+	<key>NSMotionUsageDescription</key>
+	<string>This app uses your motion data to get your cadence in steps per minute</string>
+    <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+    <string>This app uses your location data to measure running stats like distance and pace</string>
+	<key>CFBundleIconName</key>
+	<string>AppIcon</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>com.rcong.RunDJ</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>run-dj</string>
+			</array>
+		</dict>
+	</array>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>spotify</string>
+		<string>spotify-action</string>
+	</array>
+</dict>
 </plist>

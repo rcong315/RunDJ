@@ -100,7 +100,7 @@ struct RunningView: View {
                     VStack {
                         Text("Distance")
                             .padding()
-                        Text("12mi")
+                        Text(" mi")
                     }
                     .frame(maxWidth: .infinity)
                     
@@ -123,12 +123,12 @@ struct RunningView: View {
                     VStack {
                         Text("Time")
                             .padding()
-                        Text("12:34")
+                        Text(":")
                     }
                     .frame(maxWidth: .infinity)
                 }
                 
-                //                VStack() {
+//                VStack() {
                 //                    Text("Access Token")
                 //                        .font(.system(size: 30))
                 //                    Text(spotifyManager.getAccessToken()?.replacingOccurrences(of: "-", with: "\u{2011}") ?? "")
