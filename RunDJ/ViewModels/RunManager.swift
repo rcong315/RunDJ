@@ -1,5 +1,5 @@
 //
-//  LocationManager.swift
+//  RunManager.swift
 //  RunDJ
 //
 //  Created by Richard Cong on 5/11/25.
@@ -8,13 +8,13 @@
 import CoreLocation
 // Assuming RunStatsManager class is in your project
 
-class WorkoutTracker: NSObject, CLLocationManagerDelegate {
+class RunManager: NSObject, CLLocationManagerDelegate {
     
     let locationManager = CLLocationManager()
-    let runStatsManager = RunningManager() // Your stats engine
+    let runStatsManager = RunningStatsManager()
 
     private var previousLocation: CLLocation?
-    private var currentCumulativeDistance: Double = 0.0 // Total distance in meters, tracked here
+    private var currentCumulativeDistance: Double = 0.0 // meters
     private var isTrackingActivity: Bool = false
 
     override init() {
@@ -31,7 +31,7 @@ class WorkoutTracker: NSObject, CLLocationManagerDelegate {
     }
 
     // MARK: - Workout Control
-    func requestPermissionsAndStartWorkout() {
+    func requestPermissionsAndStart() {
         switch locationManager.authorizationStatus {
         case .notDetermined:
             locationManager.requestWhenInUseAuthorization() // Or requestAlwaysAuthorization for background
@@ -40,19 +40,19 @@ class WorkoutTracker: NSObject, CLLocationManagerDelegate {
             // Inform the user they need to enable permissions in Settings
             break
         case .authorizedWhenInUse, .authorizedAlways:
-            startActualWorkout()
+            start()
         @unknown default:
             fatalError("Unhandled authorization status.")
         }
     }
     
-    private func startActualWorkout() {
+    private func start() {
         guard CLLocationManager.locationServicesEnabled() else {
             print("Location services are not enabled on this device.")
             return
         }
 
-        print("Starting workout tracking...")
+        print("Starting location tracking...")
         isTrackingActivity = true
         previousLocation = nil
         currentCumulativeDistance = 0.0
@@ -61,9 +61,9 @@ class WorkoutTracker: NSObject, CLLocationManagerDelegate {
         locationManager.startUpdatingLocation()
     }
 
-    func stopWorkout() {
+    func stop() {
         if isTrackingActivity {
-            print("Stopping workout tracking...")
+            print("Stopping location tracking...")
             isTrackingActivity = false
             locationManager.stopUpdatingLocation()
             runStatsManager.stopRun() // Finalizes stats in the manager
@@ -126,7 +126,7 @@ class WorkoutTracker: NSObject, CLLocationManagerDelegate {
             } else {
                 // Permissions revoked or reduced.
                 print("Permissions changed, stopping workout.")
-                stopWorkout()
+                stop()
                 // Inform user
             }
         } else { // If no workout was active, but we were waiting for permission

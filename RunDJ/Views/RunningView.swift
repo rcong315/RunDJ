@@ -13,7 +13,9 @@ struct RunningView: View {
     @StateObject private var pedometerManager = PedometerManager.shared
     @StateObject private var spotifyManager = SpotifyManager.shared
     @StateObject private var rundjService = RunDJService()
-    
+    @StateObject private var runManager = RunManager()
+    @StateObject private var runningStatsManager = RunningStatsManager()
+
     @State private var showSpotifyError = false
     @State private var errorMessage = ""
     @State private var showingHelp = false
@@ -45,6 +47,14 @@ struct RunningView: View {
                         .cornerRadius(10)
                 }
                 Text("Status: \(connectionStateText)")
+
+                Button("Start Run") {
+                    runManager.requestPermissionsAndStart()
+                }
+
+                Button("Stop Run") {
+                    runManager.stop()
+                }
                 
                 Spacer()
                 Rectangle()
@@ -100,7 +110,7 @@ struct RunningView: View {
                     VStack {
                         Text("Distance")
                             .padding()
-                        Text(" mi")
+                        Text(runningStatsManager.formatDistance(runningStatsManager.totalDistance))
                     }
                     .frame(maxWidth: .infinity)
                     
@@ -110,9 +120,9 @@ struct RunningView: View {
                         .foregroundColor(.gray)
                     
                     VStack {
-                        Text("Steps Per Minute")
+                        Text("Pace")
                             .padding()
-                        Text("\(pedometerManager.stepsPerMinute)")
+                        Text(runningStatsManager.formatPace(runningStatsManager.currentPace))
                     }
                     .frame(maxWidth: .infinity)
                     
@@ -123,12 +133,12 @@ struct RunningView: View {
                     VStack {
                         Text("Time")
                             .padding()
-                        Text(":")
+                        Text(runningStatsManager.formatTimeInterval(runningStatsManager.totalElapsedTime))
                     }
                     .frame(maxWidth: .infinity)
                 }
                 
-//                VStack() {
+//              VStack() {
                 //                    Text("Access Token")
                 //                        .font(.system(size: 30))
                 //                    Text(spotifyManager.getAccessToken()?.replacingOccurrences(of: "-", with: "\u{2011}") ?? "")

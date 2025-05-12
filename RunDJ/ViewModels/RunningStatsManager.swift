@@ -1,5 +1,5 @@
 //
-//  RunningManager.swift
+//  RunningStatsManager.swift
 //  RunDJ
 //
 //  Created by Richard Cong on 5/4/25.
@@ -17,7 +17,7 @@ private struct PaceDataPoint: Equatable {
     }
 }
 
-class RunningManager {
+class RunningStatsManager {
 
     // MARK: - Public Properties (for display)
 
