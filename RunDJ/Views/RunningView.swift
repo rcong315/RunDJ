@@ -70,31 +70,53 @@ struct RunningView: View {
                     .font(.title3)
                     .padding()
                 
-                HStack(spacing: 40) {
-                    
-                    Button(action: {
-                        spotifyManager.rewind()
-                    }) {
-                        Image(systemName: "backward.fill")
-                            .font(.title)
-                            .foregroundColor(.green)
+                VStack(spacing: 20) {
+                    HStack(spacing: 40) {
+                        
+                        Button(action: {
+                            spotifyManager.rewind()
+                        }) {
+                            Image(systemName: "backward.fill")
+                                .font(.title)
+                                .foregroundColor(.green)
+                        }
+                        
+                        Button(action: {
+                            spotifyManager.isPlaying ? spotifyManager.pause() : spotifyManager.resume()
+                        }) {
+                            Image(systemName: spotifyManager.isPlaying ? "pause.fill" : "play.fill")
+                                .font(.system(size: 44))
+                                .foregroundColor(.green)
+                        }
+                        
+                        // --- Next Button ---
+                        Button(action: {
+                            spotifyManager.skipToNext()
+                        }) {
+                            Image(systemName: "forward.fill") // SF Symbol for forward/next
+                                .font(.title)
+                                .foregroundColor(.green)
+                        }
                     }
+                    .padding(.bottom, 10)
                     
-                    Button(action: {
-                        spotifyManager.isPlaying ? spotifyManager.pause() : spotifyManager.resume()
-                    }) {
-                        Image(systemName: spotifyManager.isPlaying ? "pause.fill" : "play.fill")
-                            .font(.system(size: 44))
-                            .foregroundColor(.green)
-                    }
-                    
-                    // --- Next Button ---
-                    Button(action: {
-                        spotifyManager.skipToNext()
-                    }) {
-                        Image(systemName: "forward.fill") // SF Symbol for forward/next
-                            .font(.title)
-                            .foregroundColor(.green)
+                    // --- Like/Dislike Buttons ---
+                    HStack(spacing: 60) {
+                        Button(action: {
+                            // User will implement like functionality
+                        }) {
+                            Image(systemName: "hand.thumbsup.fill")
+                                .font(.title)
+                                .foregroundColor(.green)
+                        }
+                        
+                        Button(action: {
+                            // User will implement dislike functionality
+                        }) {
+                            Image(systemName: "hand.thumbsdown.fill")
+                                .font(.title)
+                                .foregroundColor(.red)
+                        }
                     }
                 }
                 .padding()

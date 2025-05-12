@@ -8,7 +8,7 @@
 import CoreLocation
 // Assuming RunStatsManager class is in your project
 
-class RunManager: NSObject, CLLocationManagerDelegate {
+class RunManager: NSObject, CLLocationManagerDelegate, ObservableObject {
     
     let locationManager = CLLocationManager()
     let runStatsManager = RunningStatsManager()

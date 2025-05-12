@@ -17,7 +17,7 @@ private struct PaceDataPoint: Equatable {
     }
 }
 
-class RunningStatsManager {
+class RunningStatsManager: ObservableObject {
 
     // MARK: - Public Properties (for display)
 
