@@ -20,6 +20,7 @@ struct RunningView: View {
     @State private var errorMessage = ""
     @State private var showingHelp = false
     @State private var showCopiedNotification = false
+    @State private var isRunning = false
     
     @State private var songs = []
     
@@ -117,43 +118,55 @@ struct RunningView: View {
                     .foregroundColor(.gray)
                     .padding(.horizontal, 20)
                 
-                Button("Start Run") {
-                    runManager.requestPermissionsAndStart()
-                }
-
-                Button("Stop Run") {
-                    runManager.stop()
-                }
-                HStack {
-                    VStack {
-                        Text("Distance")
-                            .padding()
-                        Text(runningStatsManager.formatDistance(runningStatsManager.totalDistance))
+                if !isRunning {
+                    Button("Start Run") {
+                        runManager.requestPermissionsAndStart()
+                        isRunning = true
                     }
-                    .frame(maxWidth: .infinity)
-                    
-                    
-                    Rectangle()
-                        .frame(width: 1)
-                        .foregroundColor(.gray)
-                    
-                    VStack {
-                        Text("Pace")
-                            .padding()
-                        Text(runningStatsManager.formatPace(runningStatsManager.currentPace))
+                    .padding()
+                    .background(Color.blue)
+                    .foregroundColor(.white)
+                    .cornerRadius(10)
+                } else {
+                    Button("Stop Run") {
+                        runManager.stop()
+                        isRunning = false
                     }
-                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.red)
+                    .foregroundColor(.white)
+                    .cornerRadius(10)
                     
-                    Rectangle()
-                        .frame(width: 1)
-                        .foregroundColor(.gray)
-                    
-                    VStack {
-                        Text("Time")
-                            .padding()
-                        Text(runningStatsManager.formatTimeInterval(runningStatsManager.totalElapsedTime))
+                    HStack {
+                        VStack {
+                            Text("Distance")
+                                .padding()
+                            Text(runningStatsManager.formatDistance(runningStatsManager.totalDistance))
+                        }
+                        .frame(maxWidth: .infinity)
+                        
+                        Rectangle()
+                            .frame(width: 1)
+                            .foregroundColor(.gray)
+                        
+                        VStack {
+                            Text("Pace")
+                                .padding()
+                            Text(runningStatsManager.formatPace(runningStatsManager.currentPace))
+                        }
+                        .frame(maxWidth: .infinity)
+                        
+                        Rectangle()
+                            .frame(width: 1)
+                            .foregroundColor(.gray)
+                        
+                        VStack {
+                            Text("Time")
+                                .padding()
+                            Text(runningStatsManager.formatTimeInterval(runningStatsManager.totalElapsedTime))
+                        }
+                        .frame(maxWidth: .infinity)
                     }
-                    .frame(maxWidth: .infinity)
                 }
                 
 //              VStack() {
