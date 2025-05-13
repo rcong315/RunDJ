@@ -34,7 +34,7 @@ class RunManager: NSObject, CLLocationManagerDelegate, ObservableObject {
     func requestPermissionsAndStart() {
         switch locationManager.authorizationStatus {
         case .notDetermined:
-            locationManager.requestWhenInUseAuthorization() // Or requestAlwaysAuthorization for background
+            locationManager.requestAlwaysAuthorization()
         case .restricted, .denied:
             print("Location access was restricted or denied.")
             // Inform the user they need to enable permissions in Settings

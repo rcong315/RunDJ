@@ -14,7 +14,7 @@ class RunDJService: ObservableObject {
     private var accessToken: String?
     
     struct BpmSongResponse: Decodable {
-        let tracks: [String]
+        let tracks: [String: Double]
         let count: Int
         let min, max: Double
         let user: String
@@ -24,7 +24,7 @@ class RunDJService: ObservableObject {
         let id: String
     }
     
-    //TODO: Check error code for both endpoints
+    //TODO: Check error code for all endpoints
     func getPresetPlaylist(accessToken: String, stepsPerMinute: Double, completion: @escaping (String?) -> Void) {
         var components = URLComponents(string: "\(baseURL)/api/songs/preset")
         components?.queryItems = [
@@ -68,7 +68,7 @@ class RunDJService: ObservableObject {
     }
     
     // TODO: SwiftData for offline mode
-    func getSongsByBPM(accessToken: String, bpm: Double, sources: [String], completion: @escaping ([String]) -> Void) {
+    func getSongsByBPM(accessToken: String, bpm: Double, sources: [String], completion: @escaping ([String: Double]) -> Void) {
         print("Getting songs by BPM \(bpm)")
         var components = URLComponents(string: "\(baseURL)/api/songs/bpm/" + String(bpm))
         components?.queryItems = [
@@ -78,7 +78,7 @@ class RunDJService: ObservableObject {
         
         guard let url = components?.url else {
             print("Invalid URL")
-            completion([])
+            completion([:])
             return
         }
         
@@ -89,13 +89,13 @@ class RunDJService: ObservableObject {
         let task = session.dataTask(with: request) { data, response, error -> Void in
             if let error = error {
                 print("Error: \(error.localizedDescription)")
-                completion([])
+                completion([:])
                 return
             }
             
             guard let data = data else {
                 print("No data received")
-                completion([])
+                completion([:])
                 return
             }
             
@@ -117,7 +117,7 @@ class RunDJService: ObservableObject {
                 completion(songs)
             } catch {
                 print("Error decoding JSON: \(error)")
-                completion([])
+                completion([:])
             }
         }
         task.resume()
@@ -166,6 +166,41 @@ class RunDJService: ObservableObject {
             } catch {
                 print("Error decoding JSON: \(error)")
                 completion("")
+            }
+        }
+        task.resume()
+    }
+    
+    func sendFeedback(accessToken: String, songId: String, feedback: String) {
+        print("Sending feedback for song \(songId)")
+        var components = URLComponents(string: "\(baseURL)/api/song/\(songId)/feedback")
+        components?.queryItems = [
+            URLQueryItem(name: "access_token", value: accessToken),
+            URLQueryItem(name: "feedback", value: feedback)
+        ]
+        
+        guard let url = components?.url else {
+            print("Invalid URL")
+            return
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        
+        let session = URLSession.shared
+        let task = session.dataTask(with: request) { data, response, error -> Void in
+            if let error = error {
+                print("Error: \(error.localizedDescription)")
+                return
+            }
+            
+            guard data != nil else {
+                print("No data received")
+                return
+            }
+            
+            if let httpResponse = response as? HTTPURLResponse {
+                print("HTTP Status Code: \(httpResponse.statusCode)")
             }
         }
         task.resume()

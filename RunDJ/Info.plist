@@ -2,12 +2,22 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+    <key>CFBundleIconName</key>
+    <string>AppIcon</string>
+    
 	<key>NSMotionUsageDescription</key>
 	<string>This app uses your motion data to get your cadence in steps per minute</string>
     <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
     <string>This app uses your location data to measure running stats like distance and pace</string>
-	<key>CFBundleIconName</key>
-	<string>AppIcon</string>
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>Your app needs your location to track your runs while you are using the app.</string>
+    <key>NSLocationAlwaysUsageDescription</key>
+    <string>Your app needs your location even when in the background to accurately track your entire run.</string>
+    <key>UIBackgroundModes</key>
+    <array>
+        <string>location</string>
+    </array>
+	
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
@@ -21,6 +31,7 @@
 			</array>
 		</dict>
 	</array>
+    
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>spotify</string>

@@ -47,28 +47,19 @@ struct RunningView: View {
                         .cornerRadius(10)
                 }
                 Text("Status: \(connectionStateText)")
-
-                Button("Start Run") {
-                    runManager.requestPermissionsAndStart()
-                }
-
-                Button("Stop Run") {
-                    runManager.stop()
-                }
                 
-                Spacer()
                 Rectangle()
                     .frame(height: 1)
                     .foregroundColor(.gray)
                     .padding(.horizontal, 20)
-                Spacer()
                 
                 Text("Set BPM: \(bpm)")
                     .font(.title3)
                 
-                Text("Playing: \(spotifyManager.currentlyPlaying ?? "") \n BPM: \(spotifyManager.currentBPM ?? 0.0)")
+                Text("Playing: \(spotifyManager.currentlyPlaying) \n BPM: \(spotifyManager.currentBPM)")
                     .font(.title3)
                     .padding()
+                    .fixedSize(horizontal: false, vertical: true)
                 
                 VStack(spacing: 20) {
                     HStack(spacing: 40) {
@@ -103,7 +94,7 @@ struct RunningView: View {
                     // --- Like/Dislike Buttons ---
                     HStack(spacing: 60) {
                         Button(action: {
-                            // User will implement like functionality
+                            rundjService.sendFeedback(accessToken: token, songId: spotifyManager.currentId, feedback: "LIKE")
                         }) {
                             Image(systemName: "hand.thumbsup.fill")
                                 .font(.title)
@@ -111,7 +102,7 @@ struct RunningView: View {
                         }
                         
                         Button(action: {
-                            // User will implement dislike functionality
+                            rundjService.sendFeedback(accessToken: token, songId: spotifyManager.currentId, feedback: "DISLIKE")
                         }) {
                             Image(systemName: "hand.thumbsdown.fill")
                                 .font(.title)
@@ -121,13 +112,18 @@ struct RunningView: View {
                 }
                 .padding()
                 
-                Spacer()
                 Rectangle()
                     .frame(height: 1)
                     .foregroundColor(.gray)
                     .padding(.horizontal, 20)
-                Spacer()
                 
+                Button("Start Run") {
+                    runManager.requestPermissionsAndStart()
+                }
+
+                Button("Stop Run") {
+                    runManager.stop()
+                }
                 HStack {
                     VStack {
                         Text("Distance")
