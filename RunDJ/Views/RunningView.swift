@@ -21,11 +21,12 @@ struct RunningView: View {
     @State private var showingHelp = false
     @State private var showCopiedNotification = false
     @State private var isRunning = false
+    @State private var showingSettingsModal = false
     
     @State private var songs = []
     
     var bpm: Double
-    var sources: [String]
+//    @State private var sources: [String]
     
     var body: some View {
         NavigationView() {
@@ -241,6 +242,24 @@ struct RunningView: View {
             .sheet(isPresented: $showingHelp) {
                 HelpView()
             }
+            .sheet(isPresented: $showingSettingsModal) {
+                SettingsViewModal(
+                    isPresented: $showingSettingsModal, 
+                    currentSources: sources, 
+                    bpm: bpm,
+                    onSave: { newSources in
+                        self.sources = newSources
+                        // Refresh songs with new sources
+                        if spotifyManager.connectionState == .connected {
+                            rundjService.getSongsByBPM(accessToken: token, bpm: bpm, sources: newSources) { fetchedSongs in
+                                if !fetchedSongs.isEmpty {
+                                    spotifyManager.queue(songs: fetchedSongs)
+                                }
+                            }
+                        }
+                    }
+                )
+            }
         }
         .toolbar {
             ToolbarItem(placement: .principal) {
@@ -248,12 +267,22 @@ struct RunningView: View {
                     .font(.title)
             }
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button(action: {
-                    showingHelp = true
-                }) {
-                    Image(systemName: "questionmark.circle")
-                        .font(.title2)
-                        .foregroundColor(.blue)
+                HStack {
+                    Button(action: {
+                        showingSettingsModal = true
+                    }) {
+                        Image(systemName: "gearshape")
+                            .font(.title2)
+                            .foregroundColor(.blue)
+                    }
+                    
+                    Button(action: {
+                        showingHelp = true
+                    }) {
+                        Image(systemName: "questionmark.circle")
+                            .font(.title2)
+                            .foregroundColor(.blue)
+                    }
                 }
                 .padding()
             }

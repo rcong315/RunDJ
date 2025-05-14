@@ -18,9 +18,7 @@ struct BPMView: View {
     @State private var showingHelp = false
     
     @State private var showError = false
-    
-    var sources: [String]
-    
+        
     var body: some View {
         VStack(spacing: 20) {
             
@@ -39,7 +37,7 @@ struct BPMView: View {
                 .padding()
                 .multilineTextAlignment(.center)
             
-            NavigationLink(destination: RunningView(bpm: pedometerManager.stepsPerMinute, sources: sources)) {
+            NavigationLink(destination: RunningView(bpm: pedometerManager.stepsPerMinute)) {
                 Text("Start")
                     .padding()
                     .frame(minWidth: 150)
@@ -109,7 +107,7 @@ struct BPMView: View {
             }
             .padding()
             
-            NavigationLink(destination: RunningView(bpm: Double(bpmValue), sources: sources)) {
+            NavigationLink(destination: RunningView(bpm: Double(bpmValue))) {
                 Text("Start")
                     .padding()
                     .frame(minWidth: 150)
@@ -147,6 +145,6 @@ struct BPMView: View {
     
 #Preview {
     NavigationStack {
-        BPMView(sources: [])
+        BPMView()
     }
 }
