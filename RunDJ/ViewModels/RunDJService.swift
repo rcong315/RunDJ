@@ -1,208 +1,85 @@
 //
-//  PlaylistService.swift
+//  RunDJService.swift
 //  RunDJ
 //
-//  Created by Richard Cong on 2/23/25.
+//  Created on 5/15/25.
 //
 
 import Foundation
+import Combine
 
+/// Service that manages interactions with the RunDJ API
 class RunDJService: ObservableObject {
     static let shared = RunDJService()
     
-    private let baseURL = "https://rundjserver.onrender.com"
-    private var accessToken: String?
+    private let networkService: NetworkService
     
-    struct BpmSongResponse: Decodable {
-        let tracks: [String: Double]
-        let count: Int
-        let min, max: Double
-        let user: String
+    // Cached songs for offline usage
+    @Published var cachedSongs: [Double: [String: Double]] = [:]
+    
+    // MARK: - Initialization
+    
+    init(networkService: NetworkService = DefaultNetworkService()) {
+        self.networkService = networkService
+        print("RunDJService initialized")
     }
     
-    struct PlaylistResponse: Decodable {
-        let id: String
-    }
+    // MARK: - Public Methods
     
-    //TODO: Check error code for all endpoints
+    /// Get a preset playlist based on steps per minute
+    /// - Parameters:
+    ///   - accessToken: Spotify access token
+    ///   - stepsPerMinute: User's steps per minute
+    ///   - completion: Completion handler with playlist URI
     func getPresetPlaylist(accessToken: String, stepsPerMinute: Double, completion: @escaping (String?) -> Void) {
-        var components = URLComponents(string: "\(baseURL)/api/songs/preset")
-        components?.queryItems = [
-            URLQueryItem(name: "access_token", value: accessToken),
-            URLQueryItem(name: "bpm", value: String(stepsPerMinute))
-        ]
-        
-        guard let url = components?.url else {
-            print("Invalid URL")
-            completion(nil)
-            return
-        }
-        
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
-        request.addValue("access_token", forHTTPHeaderField: accessToken)
-        
-        let session = URLSession.shared
-        let task = session.dataTask(with: request) { data, response, error -> Void in
-            if let error = error {
-                print("Error: \(error.localizedDescription)")
-                completion(nil)
-                return
-            }
-            
-            guard let data = data else {
-                print("No data received")
-                completion(nil)
-                return
-            }
-            
-            if let httpResponse = response as? HTTPURLResponse {
-                print("HTTP Status Code: \(httpResponse.statusCode)")
-            }
-            
-            let uri = String(data: data, encoding: .utf8) ?? ""
-            print("Received URI: \(uri)")
-            completion(uri)
-        }
-        task.resume()
+        networkService.getPresetPlaylist(accessToken: accessToken, stepsPerMinute: stepsPerMinute, completion: completion)
     }
     
-    // TODO: SwiftData for offline mode
+    /// Get songs matching a specific BPM
+    /// - Parameters:
+    ///   - accessToken: Spotify access token
+    ///   - bpm: Target beats per minute
+    ///   - sources: Spotify sources to search
+    ///   - completion: Completion handler with song ID to BPM mapping
     func getSongsByBPM(accessToken: String, bpm: Double, sources: [String], completion: @escaping ([String: Double]) -> Void) {
-        print("Getting songs by BPM \(bpm)")
-        var components = URLComponents(string: "\(baseURL)/api/songs/bpm/" + String(bpm))
-        components?.queryItems = [
-            URLQueryItem(name: "access_token", value: accessToken),
-            URLQueryItem(name: "sources", value: sources.joined(separator: ","))
-        ]
-        
-        guard let url = components?.url else {
-            print("Invalid URL")
-            completion([:])
+        // Check if we have cached songs for this BPM
+        if let cachedSongsForBPM = cachedSongs[bpm], !cachedSongsForBPM.isEmpty {
+            print("Using \(cachedSongsForBPM.count) cached songs for BPM \(bpm)")
+            completion(cachedSongsForBPM)
             return
         }
         
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
-        
-        let session = URLSession.shared
-        let task = session.dataTask(with: request) { data, response, error -> Void in
-            if let error = error {
-                print("Error: \(error.localizedDescription)")
-                completion([:])
-                return
+        // Fetch new songs
+        networkService.getSongsByBPM(accessToken: accessToken, bpm: bpm, sources: sources) { [weak self] songs in
+            // Cache the results if we got songs
+            if !songs.isEmpty {
+                self?.cachedSongs[bpm] = songs
             }
-            
-            guard let data = data else {
-                print("No data received")
-                completion([:])
-                return
-            }
-            
-            if let jsonString = String(data: data, encoding: .utf8) {
-                print("Raw JSON Response received:\n\(jsonString)")
-            } else {
-                print("Could not convert received data to UTF8 string. Data size: \(data.count) bytes.")
-            }
-            
-            if let httpResponse = response as? HTTPURLResponse {
-                print("HTTP Status Code: \(httpResponse.statusCode)")
-            }
-            
-            let decoder = JSONDecoder()
-            do {
-                let responseData = try decoder.decode(BpmSongResponse.self, from: data)
-                let songs = responseData.tracks
-                print("Successfully decoded \(responseData.count) songs.")
-                completion(songs)
-            } catch {
-                print("Error decoding JSON: \(error)")
-                completion([:])
-            }
+            completion(songs)
         }
-        task.resume()
     }
     
-    func createPlaylist(accessToken: String, bpm: Double, sources: [String], completion: @escaping (String) -> Void) {
-        print("Creating playlist for BPM \(bpm)")
-        var components = URLComponents(string: "\(baseURL)/api/playlist/bpm/" + String(bpm))
-        components?.queryItems = [
-            URLQueryItem(name: "access_token", value: accessToken),
-            URLQueryItem(name: "sources", value: sources.joined(separator: ","))
-        ]
-        
-        guard let url = components?.url else {
-            print("Invalid URL")
-            return
-        }
-        
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        
-        let session = URLSession.shared
-        let task = session.dataTask(with: request) { data, response, error -> Void in
-            if let error = error {
-                print("Error: \(error.localizedDescription)")
-                return
-            }
-            
-            guard let data = data else {
-                print("No data received")
-                return
-            }
-            
-            if let httpResponse = response as? HTTPURLResponse {
-                print("HTTP Status Code: \(httpResponse.statusCode)")
-            }
-            
-            let uri = String(data: data, encoding: .utf8) ?? ""
-            print("Received URI: \(uri)")
-            
-            let decoder = JSONDecoder()
-            do {
-                let responseData = try decoder.decode(PlaylistResponse.self, from: data)
-                print("Successfully decoded playlist \(responseData.id)")
-                completion(responseData.id)
-            } catch {
-                print("Error decoding JSON: \(error)")
-                completion("")
-            }
-        }
-        task.resume()
+    /// Create a playlist with songs matching the given BPM
+    /// - Parameters:
+    ///   - accessToken: Spotify access token
+    ///   - bpm: Target beats per minute
+    ///   - sources: Spotify sources to search
+    ///   - completion: Completion handler with playlist ID
+    func createPlaylist(accessToken: String, bpm: Double, sources: [String], completion: @escaping (String?) -> Void) {
+        networkService.createPlaylist(accessToken: accessToken, bpm: bpm, sources: sources, completion: completion)
     }
     
+    /// Send feedback about a song
+    /// - Parameters:
+    ///   - accessToken: Spotify access token
+    ///   - songId: ID of the song to provide feedback for
+    ///   - feedback: Feedback type ("LIKE" or "DISLIKE")
     func sendFeedback(accessToken: String, songId: String, feedback: String) {
-        print("Sending feedback for song \(songId)")
-        var components = URLComponents(string: "\(baseURL)/api/song/\(songId)/feedback")
-        components?.queryItems = [
-            URLQueryItem(name: "access_token", value: accessToken),
-            URLQueryItem(name: "feedback", value: feedback)
-        ]
-        
-        guard let url = components?.url else {
-            print("Invalid URL")
-            return
-        }
-        
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        
-        let session = URLSession.shared
-        let task = session.dataTask(with: request) { data, response, error -> Void in
-            if let error = error {
-                print("Error: \(error.localizedDescription)")
-                return
-            }
-            
-            guard data != nil else {
-                print("No data received")
-                return
-            }
-            
-            if let httpResponse = response as? HTTPURLResponse {
-                print("HTTP Status Code: \(httpResponse.statusCode)")
-            }
-        }
-        task.resume()
+        networkService.sendFeedback(accessToken: accessToken, songId: songId, feedback: feedback)
+    }
+    
+    /// Clear the song cache
+    func clearCache() {
+        cachedSongs.removeAll()
     }
 }

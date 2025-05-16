@@ -1,5 +1,5 @@
 //
-//  SpotifyManager2.swift
+//  SpotifyManager.swift
 //  RunDJ
 //
 //  Created by Richard Cong on 2/16/25.
@@ -8,6 +8,7 @@
 import UIKit
 import SpotifyiOS
 
+/// Manages Spotify interactions including authentication, playback, and song queuing
 class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRemotePlayerStateDelegate, SPTSessionManagerDelegate {
     
     static let shared = SpotifyManager()
@@ -29,9 +30,8 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
     @Published var connectionState: ConnectionState = .disconnected
     @Published var isPlaying: Bool = false
     
-    var songMap = [String: Double]()
-    var songQueue = [String]()
-    var bpm = 0.0
+    private var songMap = [String: Double]()
+    private var songQueue = [String]()
     
     enum ConnectionState: Equatable {
         case connected
@@ -290,11 +290,15 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
     
     // MARK: - Playback Controls
     
-    func getAccessToken() -> String? {
+    /// Retrieve the current Spotify access token
+/// - Returns: The current access token or nil if not authenticated
+func getAccessToken() -> String? {
         return accessToken
     }
     
-    func play(uri: String) {
+    /// Play a track with the given URI
+/// - Parameter uri: Spotify URI for the track to play
+func play(uri: String) {
         print("Playing: \(uri)")
         appRemote.playerAPI?.play(uri, callback: { result, error in
             if let error = error {
@@ -304,7 +308,8 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
         currentlyPlaying = "\(uri)"
     }
     
-    func resume() {
+    /// Resume playback of the current track
+func resume() {
         appRemote.playerAPI?.resume({ result, error in
             if let error = error {
                 print("Error resuming playback: \(error)")
@@ -312,7 +317,8 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
         })
     }
     
-    func pause() {
+    /// Pause the currently playing track
+func pause() {
         appRemote.playerAPI?.pause({ result, error in
             if let error = error {
                 print("Error pausing playback: \(error)")
@@ -337,7 +343,9 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
         })
     }
     
-    func queue(songs: [String: Double]) {
+    /// Queue a list of songs for playback
+/// - Parameter songs: Dictionary mapping song IDs to their BPM values
+func queue(songs: [String: Double]) {
         songMap = songs
         songQueue = Array(songs.keys).shuffled()
         queueNextSong()
@@ -472,7 +480,6 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
             print("ID: \(self.currentId)")
             print("BPM: \(self.songMap[self.currentId])")
             self.currentBPM = self.songMap[self.currentId] ?? 0.0
-            // TODO: set current BPM
         }
     }
 }

@@ -2,27 +2,49 @@
 //  PedometerManager.swift
 //  RunDJ
 //
-//  Created by Richard Cong on 2/8/25.
+//  Created on 5/15/25.
 //
 
 import CoreMotion
+import Combine
 
+/// Manages pedometer data tracking including steps per minute
 class PedometerManager: ObservableObject {
     
     static let shared = PedometerManager()
     
-    private var pedometer = CMPedometer()
-    @Published var stepsPerMinute: Double = 0.0
+    private let pedometer: CMPedometer
     
-    init() {
+    /// The current steps per minute (cadence)
+    @Published private(set) var stepsPerMinute: Double = 0.0
+    
+    /// Indicates if pedometer updates are active
+    @Published private(set) var isActive: Bool = false
+    
+    /// Indicates if step counting is available on this device
+    let isStepCountingAvailable: Bool
+    
+    // MARK: - Initialization
+    
+    init(pedometer: CMPedometer = CMPedometer()) {
+        self.pedometer = pedometer
+        self.isStepCountingAvailable = CMPedometer.isStepCountingAvailable()
+        
         startPedometerUpdates()
     }
 
-    private func startPedometerUpdates() {
-        guard CMPedometer.isStepCountingAvailable() else { print("Pedometer not available"); return }
+    // MARK: - Pedometer Control
+    
+    /// Start tracking pedometer updates
+    func startPedometerUpdates() {
+        guard isStepCountingAvailable else {
+            print("Pedometer not available on this device")
+            return
+        }
         
-        pedometer.startUpdates(from: Date()) { data, error in
-            guard let data = data, error == nil else {
+        isActive = true
+        pedometer.startUpdates(from: Date()) { [weak self] data, error in
+            guard let self = self, let data = data, error == nil else {
                 print("Error starting pedometer: \(error?.localizedDescription ?? "Unknown error")")
                 return
             }
@@ -32,5 +54,11 @@ class PedometerManager: ObservableObject {
                 print("Steps per minute: \(self.stepsPerMinute)")
             }
         }
+    }
+    
+    /// Stop pedometer updates
+    func stopPedometerUpdates() {
+        isActive = false
+        pedometer.stopUpdates()
     }
 }

@@ -1,5 +1,5 @@
 //
-//  SettingsViewModal.swift
+//  SettingsView.swift
 //  RunDJ
 //
 //  Created on 5/13/25.
@@ -7,10 +7,9 @@
 
 import SwiftUI
 
-struct SettingsViewModal: View {
+struct SettingsView: View {
+    @EnvironmentObject var settingsManager: SettingsManager
     @Binding var isPresented: Bool
-    var currentSources: [String]
-    var bpm: Double
     var onSave: ([String]) -> Void
     
     @State private var showingHelp = false
@@ -78,8 +77,9 @@ struct SettingsViewModal: View {
                 .cornerRadius(10)
                 
                 Button("Save") {
-                    // Pass the selected sources back to RunningView
                     let selectedSources = sources.filter { $0.isSelected }.map { $0.key }
+                    settingsManager.musicSources = selectedSources
+                    settingsManager.saveSettings()
                     onSave(selectedSources)
                     isPresented = false
                 }
@@ -93,22 +93,20 @@ struct SettingsViewModal: View {
             .padding()
         }
         .onAppear {
-            // Initialize the sources based on the current selection
             for i in 0..<sources.count {
-                sources[i].isSelected = currentSources.contains(sources[i].key)
+                sources[i].isSelected = settingsManager.musicSources.contains(sources[i].key)
             }
+            checkForChanges()
         }
         .sheet(isPresented: $showingHelp) {
             HelpView()
         }
     }
     
-    // Check if the current selection differs from the initial selection
     private func checkForChanges() {
         let selectedKeys = sources.filter { $0.isSelected }.map { $0.key }
         
-        // Check if the selected keys are different from the current sources
-        if Set(selectedKeys) != Set(currentSources) {
+        if Set(selectedKeys) != Set(settingsManager.musicSources) {
             hasChanges = true
         } else {
             hasChanges = false
@@ -124,10 +122,9 @@ struct SourceItem {
 
 // Preview
 #Preview {
-    SettingsViewModal(
-        isPresented: .constant(true), 
-        currentSources: ["top_tracks", "saved_tracks"], 
-        bpm: 160,
-        onSave: { _ in }
+    SettingsView(
+        isPresented: .constant(true),
+        onSave: { _ in print("Preview save triggered") }
     )
+    .environmentObject(SettingsManager.shared) // Add for preview
 }

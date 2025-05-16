@@ -2,25 +2,28 @@
 //  BPMView.swift
 //  RunDJ
 //
-//  Created on 4/29/25.
+//  Created on 5/15/25.
 //
 
 import SwiftUI
 
+/// View for showing BPM options and starting a run
 struct BPMView: View {
+    // MARK: - Dependencies
+    
     @StateObject private var pedometerManager = PedometerManager.shared
     @StateObject private var spotifyManager = SpotifyManager.shared
     @StateObject private var runDJService = RunDJService.shared
     
+    // MARK: - State
+    
     @State private var bpmValue = 150
     @State private var bpmText = "150"
-    
     @State private var showingHelp = false
-    
-    @State private var showError = false
-        
+            
     var body: some View {
-        VStack(spacing: 20) {
+        NavigationStack {
+            VStack(spacing: 20) {
             
             Spacer()
             Text("Match Music to Your Steps")
@@ -37,7 +40,7 @@ struct BPMView: View {
                 .padding()
                 .multilineTextAlignment(.center)
             
-            NavigationLink(destination: RunningView(bpm: pedometerManager.stepsPerMinute)) {
+            NavigationLink(destination: RunningView(bpm: pedometerManager.stepsPerMinute).environmentObject(SettingsManager.shared)) {
                 Text("Start")
                     .padding()
                     .frame(minWidth: 150)
@@ -68,6 +71,7 @@ struct BPMView: View {
             
             HStack {
                 Button(action: {
+                    print("Minus button pressed")
                     if bpmValue > 100 {
                         bpmValue -= 1
                         bpmText = "\(bpmValue)"
@@ -76,6 +80,8 @@ struct BPMView: View {
                     Image(systemName: "minus.circle")
                         .font(.title)
                         .foregroundColor(.green)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
                 }
                 
                 TextField("BPM", text: $bpmText)
@@ -85,16 +91,17 @@ struct BPMView: View {
                     .padding(8)
                     .background(Color(.systemGray6))
                     .cornerRadius(8)
-                    .onSubmit {
-                        if let newValue = Int(bpmText) {
+                    .onChange(of: bpmText) { oldValue, newValue in
+                        if let newValue = Int(newValue) {
                             bpmValue = max(100, min(200, newValue))
-                            bpmText = "\(bpmValue)"  // Update text to match constrained value
-                        } else {
-                            bpmText = "\(bpmValue)"  // Reset to previous valid value
+                            if newValue != bpmValue {
+                                bpmText = "\(bpmValue)"  // Update text to match constrained value
+                            }
                         }
                     }
                 
                 Button(action: {
+                    print("Plus button pressed")
                     if bpmValue < 200 {
                         bpmValue += 1
                         bpmText = "\(bpmValue)"
@@ -103,11 +110,13 @@ struct BPMView: View {
                     Image(systemName: "plus.circle")
                         .font(.title)
                         .foregroundColor(.green)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
                 }
             }
             .padding()
             
-            NavigationLink(destination: RunningView(bpm: Double(bpmValue))) {
+            NavigationLink(destination: RunningView(bpm: Double(bpmValue)).environmentObject(SettingsManager.shared)) {
                 Text("Start")
                     .padding()
                     .frame(minWidth: 150)
@@ -116,28 +125,22 @@ struct BPMView: View {
                     .cornerRadius(10)
             }
             Spacer()
-        }
-        .padding()
-        .alert(isPresented: $showError) {
-            Alert(
-                title: Text("Error"),
-                message: Text("Could not find songs matching your criteria"),
-                dismissButton: .default(Text("OK"))
-            )
-        }
-        .sheet(isPresented: $showingHelp) {
-            HelpView()
-        }
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button(action: {
-                    showingHelp = true
-                }) {
-                    Image(systemName: "questionmark.circle")
-                        .font(.title2)
-                        .foregroundColor(.blue)
+            }
+            .padding()
+            .sheet(isPresented: $showingHelp) {
+                HelpView()
+            }
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(action: {
+                        showingHelp = true
+                    }) {
+                        Image(systemName: "questionmark.circle")
+                            .font(.title2)
+                            .foregroundColor(.blue)
+                    }
+                    .padding()
                 }
-                .padding()
             }
         }
     }

@@ -6,35 +6,56 @@
 //
 
 import CoreLocation
-// Assuming RunStatsManager class is in your project
+import Combine
 
+/// Manages running sessions and location tracking
 class RunManager: NSObject, CLLocationManagerDelegate, ObservableObject {
     
-    let locationManager = CLLocationManager()
-    let runStatsManager = RunningStatsManager()
+    private let locationManager: CLLocationManager
+    private let runStatsManager: RunningStatsManager
+    
+    // Published properties for UI updates
+    @Published private(set) var isRunning = false
+    @Published private(set) var isTrackingActivity = false
+    @Published private(set) var authorizationStatus: CLAuthorizationStatus = .notDetermined
 
     private var previousLocation: CLLocation?
     private var currentCumulativeDistance: Double = 0.0 // meters
-    private var isTrackingActivity: Bool = false
-
-    override init() {
+    private var cancellables = Set<AnyCancellable>()
+    
+    // MARK: - Initialization
+    
+    init(locationManager: CLLocationManager = CLLocationManager(),
+         runStatsManager: RunningStatsManager = RunningStatsManager.shared) {
+        self.locationManager = locationManager
+        self.runStatsManager = runStatsManager
         super.init()
         setupLocationManager()
     }
 
-    func setupLocationManager() {
+    // MARK: - Location Manager Setup
+    
+    private func setupLocationManager() {
         locationManager.delegate = self
-        locationManager.desiredAccuracy = kCLLocationAccuracyBestForNavigation // High accuracy for running
-        locationManager.distanceFilter = 5.0 // Update after 5 meters of movement. Adjust as needed.
-        locationManager.allowsBackgroundLocationUpdates = true // For background tracking
-        locationManager.pausesLocationUpdatesAutomatically = false // Keep updates active
+        locationManager.desiredAccuracy = kCLLocationAccuracyBestForNavigation
+        locationManager.distanceFilter = 5.0
+        locationManager.allowsBackgroundLocationUpdates = true
+        locationManager.pausesLocationUpdatesAutomatically = false
+        
+        // Set initial authorization status
+        authorizationStatus = locationManager.authorizationStatus
     }
 
-    // MARK: - Workout Control
+    // MARK: - Run Control
+    
+    /// Request location permissions and start the run
     func requestPermissionsAndStart() {
-        switch locationManager.authorizationStatus {
+        // Check current status stored in our property (which is updated via the delegate)
+        switch authorizationStatus {
         case .notDetermined:
+            print("Requesting location authorization...")
             locationManager.requestAlwaysAuthorization()
+            // Start will be called from locationManagerDidChangeAuthorization if permission granted
         case .restricted, .denied:
             print("Location access was restricted or denied.")
             // Inform the user they need to enable permissions in Settings
@@ -42,10 +63,11 @@ class RunManager: NSObject, CLLocationManagerDelegate, ObservableObject {
         case .authorizedWhenInUse, .authorizedAlways:
             start()
         @unknown default:
-            fatalError("Unhandled authorization status.")
+            print("Unknown location authorization status.")
         }
     }
     
+    /// Start location tracking and running session
     private func start() {
         guard CLLocationManager.locationServicesEnabled() else {
             print("Location services are not enabled on this device.")
@@ -53,20 +75,23 @@ class RunManager: NSObject, CLLocationManagerDelegate, ObservableObject {
         }
 
         print("Starting location tracking...")
+        isRunning = true
         isTrackingActivity = true
         previousLocation = nil
         currentCumulativeDistance = 0.0
         
-        runStatsManager.startRun() // Critical: Resets and starts the stats manager
+        runStatsManager.startRun()
         locationManager.startUpdatingLocation()
     }
 
+    /// Stop the current running session
     func stop() {
-        if isTrackingActivity {
+        if isRunning {
             print("Stopping location tracking...")
+            isRunning = false
             isTrackingActivity = false
             locationManager.stopUpdatingLocation()
-            runStatsManager.stopRun() // Finalizes stats in the manager
+            runStatsManager.stopRun()
             displayFinalStats()
         }
     }
@@ -110,72 +135,65 @@ class RunManager: NSObject, CLLocationManagerDelegate, ObservableObject {
 
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
         print("Location manager failed: \(error.localizedDescription)")
-        // You might want to stop the workout or inform the user
-        if isTrackingActivity {
-            // Potentially stop or pause based on the error type
+        // Consider pausing or notifying user based on error severity
+    }
+    
+    func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+        let newStatus = manager.authorizationStatus
+        print("Location authorization status changed to: \(newStatus)")
+        
+        // Update our tracked status
+        self.authorizationStatus = newStatus
+        
+        // If we're waiting for permission and it's now granted, start the run
+        if !isRunning && (newStatus == .authorizedWhenInUse || newStatus == .authorizedAlways) {
+            start()
+        }
+        // If we're running and permission is revoked, stop the run
+        else if isRunning && (newStatus != .authorizedWhenInUse && newStatus != .authorizedAlways) {
+            print("Permissions changed, stopping run.")
+            stop()
+            // Inform user that permissions were revoked
         }
     }
     
-    // Handle authorization changes (e.g., user changes permissions in settings)
-    func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
-        print("Location authorization status changed to: \(manager.authorizationStatus)")
-        if isTrackingActivity { // If a workout was active
-            if manager.authorizationStatus == .authorizedWhenInUse || manager.authorizationStatus == .authorizedAlways {
-                // Permissions still good, or restored. Ensure location updates are running if they were stopped.
-                // locationManager.startUpdatingLocation() // Could restart if it was implicitly stopped.
-            } else {
-                // Permissions revoked or reduced.
-                print("Permissions changed, stopping workout.")
-                stop()
-                // Inform user
-            }
-        } else { // If no workout was active, but we were waiting for permission
-            if manager.authorizationStatus == .authorizedWhenInUse || manager.authorizationStatus == .authorizedAlways {
-                // If `isTrackingActivity` was set true in `requestPermissionsAndStartWorkout` pending authorization,
-                // you might call `startActualWorkout()` here.
-                // For this example, assume `startActualWorkout` is only called if permission already exists or is granted then.
-            }
-        }
-    }
-
-    // MARK: - UI Update and Final Stats
-    func updateUIDisplay() {
-        // In a real app, update labels on the main thread
-        DispatchQueue.main.async {
+    // MARK: - UI Updates
+    
+    /// Update the UI with current running stats
+    private func updateUIDisplay() {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            
             let time = self.runStatsManager.formatTimeInterval(self.runStatsManager.totalElapsedTime)
-            let distanceMi = self.runStatsManager.formatDistance(self.runStatsManager.totalDistance, useMetric: false) // Miles
-            let distanceKm = self.runStatsManager.formatDistance(self.runStatsManager.totalDistance, useMetric: true)  // Kilometers
+            let distance = self.runStatsManager.formatDistance(self.runStatsManager.totalDistance)
+            let pace = self.runStatsManager.formatPace(self.runStatsManager.currentPace, perKm: true)
             
-            let avgPaceKm = self.runStatsManager.formatPace(self.runStatsManager.currentPace, perKm: true)
-            
-            var rollingPaceInfo = "Last Mile Pace: Calculating..."
+            var rollingPaceInfo = "--:--"
             if let rollingMilePace = self.runStatsManager.rollingMilePace {
-                rollingPaceInfo = "Last Mile Pace: \(self.runStatsManager.formatPace(rollingMilePace, perKm: false))"
+                rollingPaceInfo = self.runStatsManager.formatPace(rollingMilePace)
             }
 
             print("--- LIVE RUN DATA ---")
             print("Time: \(time)")
-            print("Distance: \(distanceMi) (\(distanceKm))")
-            print("Avg Pace: \(avgPaceKm)")
-            print(rollingPaceInfo)
+            print("Distance: \(distance)")
+            print("Pace: \(pace)")
+            print("Last Mile: \(rollingPaceInfo)")
             print("---------------------")
-            
-            // Example:
-            // self.timeLabel.text = time
-            // self.distanceLabel.text = distanceMi
-            // self.avgPaceLabel.text = avgPaceKm
-            // self.rollingPaceLabel.text = rollingPaceInfo
         }
     }
 
-    func displayFinalStats() {
-        DispatchQueue.main.async {
+    /// Display final statistics after run completion
+    private func displayFinalStats() {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            
             print("--- FINAL RUN STATS ---")
             print("Total Time: \(self.runStatsManager.formatTimeInterval(self.runStatsManager.totalElapsedTime))")
-            print("Total Distance: \(self.runStatsManager.formatDistance(self.runStatsManager.totalDistance, useMetric: false))")
-            print("Overall Avg Pace (per km): \(self.runStatsManager.formatPace(self.runStatsManager.currentPace, perKm: true))")
+            print("Total Distance: \(self.runStatsManager.formatDistance(self.runStatsManager.totalDistance))")
+            print("Avg Pace: \(self.runStatsManager.formatPace(self.runStatsManager.currentPace, perKm: true))")
+            
             if let finalRollingPace = self.runStatsManager.rollingMilePace {
-                 print("Final Last Mile Pace: \(self.runStatsManager.formatPace(finalRollingPace, perKm: false))")
+                print("Last Mile Pace: \(self.runStatsManager.formatPace(finalRollingPace))")
             }
             print("-----------------------")
         }

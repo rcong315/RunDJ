@@ -2,42 +2,48 @@
 //  RunDJApp.swift
 //  RunDJ
 //
-//  Created by Richard Cong on 2/8/25.
+//  Created on 5/15/25.
 //
 
 import SwiftUI
 import SwiftData
+import os.log
 
-// TODO: os.log
-
+/// Main application entry point
 @main
 struct RunDJApp: App {
     
     @UIApplicationDelegateAdaptor private var appDelegate: AppDelegate
     
+    private let logger = Logger(subsystem: "com.rundj.RunDJ", category: "App")
+    
     init() {
-        print("RunDJApp initialized")
+        logger.info("RunDJApp initialized")
     }
     
     var body: some Scene {
         WindowGroup {
             BPMView()
+                .environmentObject(SettingsManager.shared)
                 .onOpenURL { url in
-                    print("onOpenURL received")
+                    logger.info("Received URL: \(url)")
                     SpotifyManager.shared.handleURL(url)
                 }
         }
     }
+
+/// Application delegate for handling app lifecycle events
+class AppDelegate: NSObject, UIApplicationDelegate {
+    private let logger = Logger(subsystem: "com.rundj.RunDJ", category: "AppDelegate")
     
-    class AppDelegate: NSObject, UIApplicationDelegate {
-        override init() {
-            super.init()
-            print("AppDelegate initialized")
-        }
-        
-        func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
-            print("Application finished launching")
-            return true
-        }
+    override init() {
+        super.init()
+        logger.info("AppDelegate initialized")
     }
+    
+    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
+        logger.info("Application finished launching")
+        return true
+    }
+}
 }
