@@ -14,7 +14,7 @@ struct RunningView: View {
     @StateObject private var spotifyManager = SpotifyManager.shared
     @StateObject private var rundjService = RunDJService.shared
     @StateObject private var runManager = RunManager()
-    @StateObject private var runningStatsManager = RunningStatsManager()
+    @StateObject private var runningStatsManager = RunningStatsManager.shared
     @EnvironmentObject var settingsManager: SettingsManager
     
     @State private var showSpotifyError = false
