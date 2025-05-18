@@ -195,6 +195,13 @@ struct RunningView: View {
                 errorMessage = message
                 showSpotifyError = true
             case .connected:
+                rundjService.register(accessToken: token, completion: { success in
+                    if success {
+                        print("Successfully registered user")
+                    } else {
+                        print("Failed to register user")
+                    }
+                })
                 refreshSongsBasedOnSettings()
                 rundjService.createPlaylist(accessToken: token, bpm: bpm, sources: settingsManager.musicSources, completion: { playlistIdOptional in
                     if let playlistId = playlistIdOptional {

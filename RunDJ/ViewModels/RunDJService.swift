@@ -26,6 +26,10 @@ class RunDJService: ObservableObject {
     
     // MARK: - Public Methods
     
+    func register(accessToken: String, completion: @escaping (Bool) -> Void) {
+        networkService.register(accessToken: accessToken, completion: completion)
+    }
+    
     /// Get a preset playlist based on steps per minute
     /// - Parameters:
     ///   - accessToken: Spotify access token

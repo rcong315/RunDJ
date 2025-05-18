@@ -9,6 +9,7 @@ import Foundation
 
 /// Protocol defining the network operations required by the app
 protocol NetworkService {
+    func register(accessToken: String, completion: @escaping (Bool) -> Void)
     func getSongsByBPM(accessToken: String, bpm: Double, sources: [String], completion: @escaping ([String: Double]) -> Void)
     func getPresetPlaylist(accessToken: String, stepsPerMinute: Double, completion: @escaping (String?) -> Void)
     func createPlaylist(accessToken: String, bpm: Double, sources: [String], completion: @escaping (String?) -> Void)
@@ -35,6 +36,36 @@ class DefaultNetworkService: NetworkService {
         self.baseURL = baseURL
     }
     
+    func register(accessToken: String, completion: @escaping (Bool) -> Void) {
+        var components = URLComponents(string: "\(baseURL)/api/user/register")
+        components?.queryItems = [
+            URLQueryItem(name: "access_token", value: accessToken),
+        ]
+        
+        guard let url = components?.url else {
+            print("Invalid URL")
+            completion(false)
+            return
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        
+        let session = URLSession.shared
+        let task = session.dataTask(with: request) { data, response, error -> Void in
+            if let error = error {
+                print("Error: \(error.localizedDescription)")
+                completion(false)
+                return
+            }
+            
+            if let httpResponse = response as? HTTPURLResponse {
+                print("HTTP Status Code: \(httpResponse.statusCode)")
+            }
+        }
+        task.resume()
+    }
+    
     func getPresetPlaylist(accessToken: String, stepsPerMinute: Double, completion: @escaping (String?) -> Void) {
         var components = URLComponents(string: "\(baseURL)/api/songs/preset")
         components?.queryItems = [
@@ -50,7 +81,6 @@ class DefaultNetworkService: NetworkService {
         
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
-        request.addValue("access_token", forHTTPHeaderField: accessToken)
         
         let session = URLSession.shared
         let task = session.dataTask(with: request) { data, response, error -> Void in
