@@ -292,14 +292,14 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
     // MARK: - Playback Controls
     
     /// Retrieve the current Spotify access token
-/// - Returns: The current access token or nil if not authenticated
-func getAccessToken() -> String? {
+    /// - Returns: The current access token or nil if not authenticated
+    func getAccessToken() -> String? {
         return accessToken
     }
     
     /// Play a track with the given URI
-/// - Parameter uri: Spotify URI for the track to play
-func play(uri: String) {
+    /// - Parameter uri: Spotify URI for the track to play
+    func play(uri: String) {
         print("Playing: \(uri)")
         appRemote.playerAPI?.play(uri, callback: { result, error in
             if let error = error {
@@ -310,7 +310,7 @@ func play(uri: String) {
     }
     
     /// Resume playback of the current track
-func resume() {
+    func resume() {
         appRemote.playerAPI?.resume({ result, error in
             if let error = error {
                 print("Error resuming playback: \(error)")
@@ -319,7 +319,7 @@ func resume() {
     }
     
     /// Pause the currently playing track
-func pause() {
+    func pause() {
         appRemote.playerAPI?.pause({ result, error in
             if let error = error {
                 print("Error pausing playback: \(error)")
@@ -345,8 +345,8 @@ func pause() {
     }
     
     /// Queue a list of songs for playback
-/// - Parameter songs: Dictionary mapping song IDs to their BPM values
-func queue(songs: [String: Double]) {
+    /// - Parameter songs: Dictionary mapping song IDs to their BPM values
+    func queue(songs: [String: Double]) {
         songMap = songs
         songQueue = Array(songs.keys).shuffled()
         queueNextSong()

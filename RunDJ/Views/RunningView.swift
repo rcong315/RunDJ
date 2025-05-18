@@ -33,9 +33,9 @@ struct RunningView: View {
                 Button(action: {
                     switch spotifyManager.connectionState {
                     case .disconnected:
-                        initiateSession()
+                        spotifyManager.initiateSession()
                     case .error:
-                        initiateSession()
+                        spotifyManager.initiateSession()
                     default:
                         break
                     }
@@ -194,14 +194,26 @@ struct RunningView: View {
             case .error(let message):
                 errorMessage = message
                 showSpotifyError = true
+            case .connected:
+                refreshSongsBasedOnSettings()
+                rundjService.createPlaylist(accessToken: token, bpm: bpm, sources: settingsManager.musicSources, completion: { playlistIdOptional in
+                    if let playlistId = playlistIdOptional {
+                        print("Playlist created with ID: \(playlistId) using sources: \(settingsManager.musicSources)")
+                    } else {
+                        print("Failed to create playlist. Sources: \(settingsManager.musicSources)")
+                    }
+                })
             default:
                 break
             }
         }
         .onChange(of: spotifyManager.currentId) { _, _ in
-            // Reset the feedback buttons when a new song plays
             isThumbsUpSelected = false
             isThumbsDownSelected = false
+        }
+        .onChange(of: settingsManager.musicSources) { _, newSources in
+            print("Music sources changed in SettingsManager, new sources: \(newSources)")
+            refreshSongsBasedOnSettings()
         }
         .alert(isPresented: $showSpotifyError) {
             return Alert(
@@ -220,10 +232,6 @@ struct RunningView: View {
                     refreshSongsBasedOnSettings()
                 }
             )
-        }
-        .onChange(of: settingsManager.musicSources) { _, newSources in
-            print("Music sources changed in SettingsManager, new sources: \(newSources)")
-            refreshSongsBasedOnSettings()
         }
         .toolbar {
             ToolbarItem(placement: .principal) {
@@ -250,20 +258,6 @@ struct RunningView: View {
                 }
                 .padding()
             }
-        }
-    }
-    
-    func initiateSession() {
-        // TODO: register user
-        spotifyManager.initiateSession {
-            refreshSongsBasedOnSettings()
-            rundjService.createPlaylist(accessToken: token, bpm: bpm, sources: settingsManager.musicSources, completion: { playlistIdOptional in
-                if let playlistId = playlistIdOptional {
-                    print("Playlist created with ID: \(playlistId) using sources: \(settingsManager.musicSources)")
-                } else {
-                    print("Failed to create playlist. Sources: \(settingsManager.musicSources)")
-                }
-            })
         }
     }
     
