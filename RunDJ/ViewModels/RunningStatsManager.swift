@@ -20,6 +20,7 @@ private struct PaceDataPoint: Equatable {
 
 /// Manages the collection and calculation of running statistics
 class RunningStatsManager: ObservableObject {
+    
     static let shared = RunningStatsManager()
 
     // MARK: - Published Properties

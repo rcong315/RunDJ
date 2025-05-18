@@ -13,55 +13,53 @@ struct RunningView: View {
     @StateObject private var pedometerManager = PedometerManager.shared
     @StateObject private var spotifyManager = SpotifyManager.shared
     @StateObject private var rundjService = RunDJService.shared
-    @StateObject private var runManager = RunManager()
+    @StateObject private var runManager = RunManager.shared
     @StateObject private var runningStatsManager = RunningStatsManager.shared
     @EnvironmentObject var settingsManager: SettingsManager
     
     @State private var showSpotifyError = false
     @State private var errorMessage = ""
     @State private var showingHelp = false
-    @State private var showCopiedNotification = false
+    @State private var isThumbsUpSelected = false
+    @State private var isThumbsDownSelected = false
     @State private var isRunning = false
     @State private var showingSettingsModal = false
-    
     
     var bpm: Double
     
     var body: some View {
-        VStack(spacing: 20) {
-            Spacer()
-            Button(action: {
-                switch spotifyManager.connectionState {
-                case .disconnected:
-                    initiateSession()
-                case .error:
-                    initiateSession()
-                default:
-                    break
+        VStack {
+            if connectionStateText != "Connected" {
+                Button(action: {
+                    switch spotifyManager.connectionState {
+                    case .disconnected:
+                        initiateSession()
+                    case .error:
+                        initiateSession()
+                    default:
+                        break
+                    }
+                }) {
+                    Text("Connect to Spotify")
+                        .padding()
+                        .background(.green)
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
                 }
-            }) {
-                Text(buttonText)
-                    .padding()
-                    .background(buttonColor)
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
             }
-            Text("Status: \(connectionStateText)")
+            Text("Spotify Status: \(connectionStateText)")
+                .font(.headline)
             
             Rectangle()
                 .frame(height: 1)
                 .foregroundColor(.gray)
                 .padding(.horizontal, 20)
             
-            Text("Set BPM: \(bpm)")
-                .font(.title3)
+            Text("Playing: \(spotifyManager.currentlyPlaying)")
+            Text("By: \(spotifyManager.currentArtist)")
+            Text("BPM: \(spotifyManager.currentBPM)")
             
-            Text("Playing: \(spotifyManager.currentlyPlaying) \n BPM: \(spotifyManager.currentBPM)")
-                .font(.title3)
-                .padding()
-                .fixedSize(horizontal: false, vertical: true)
-            
-            VStack(spacing: 20) {
+            VStack(spacing: 0) {
                 HStack(spacing: 40) {
                     
                     Button(action: {
@@ -80,34 +78,56 @@ struct RunningView: View {
                             .foregroundColor(.green)
                     }
                     
-                    // --- Next Button ---
                     Button(action: {
                         spotifyManager.skipToNext()
                     }) {
-                        Image(systemName: "forward.fill") // SF Symbol for forward/next
+                        Image(systemName: "forward.fill")
                             .font(.title)
                             .foregroundColor(.green)
                     }
                 }
-                .padding(.bottom, 10)
+                .padding(.bottom, 30)
                 
-                // --- Like/Dislike Buttons ---
-                HStack(spacing: 60) {
+                HStack(spacing: 30) {
                     Button(action: {
-                        rundjService.sendFeedback(accessToken: token, songId: spotifyManager.currentId, feedback: "LIKE")
+                        // Send like feedback and make button unclickable
+                        isThumbsUpSelected = true
+                        isThumbsDownSelected = false // Reset the other button if it was selected
+                        rundjService.sendFeedback(accessToken: token, songId: spotifyManager.currentId, feedback: "LIKE") { success in
+                            if !success {
+                                // Reset on error
+                                isThumbsUpSelected = false
+                                errorMessage = "Failed to send like feedback"
+                                showSpotifyError = true
+                            }
+                        }
                     }) {
-                        Image(systemName: "hand.thumbsup.fill")
+                        Image(systemName: isThumbsUpSelected ? "hand.thumbsup.fill" : "hand.thumbsup")
                             .font(.title)
-                            .foregroundColor(.green)
+                            .foregroundColor(.blue)
+                            .padding(10)
                     }
+                    .disabled(isThumbsUpSelected)
                     
                     Button(action: {
-                        rundjService.sendFeedback(accessToken: token, songId: spotifyManager.currentId, feedback: "DISLIKE")
+                        // Send dislike feedback and make button unclickable
+                        isThumbsDownSelected = true
+                        isThumbsUpSelected = false // Reset the other button if it was selected
+                        rundjService.sendFeedback(accessToken: token, songId: spotifyManager.currentId, feedback: "DISLIKE") { success in
+                            if !success {
+                                // Reset on error
+                                isThumbsDownSelected = false
+                                errorMessage = "Failed to send dislike feedback"
+                                showSpotifyError = true
+                            }
+                        }
                     }) {
-                        Image(systemName: "hand.thumbsdown.fill")
+                        Image(systemName: isThumbsDownSelected ? "hand.thumbsdown.fill" : "hand.thumbsdown")
                             .font(.title)
-                            .foregroundColor(.red)
+                            .foregroundColor(.blue)
+                            .padding(10)
                     }
+                    .disabled(isThumbsDownSelected)
                 }
             }
             .padding()
@@ -135,39 +155,39 @@ struct RunningView: View {
                 .background(Color.red)
                 .foregroundColor(.white)
                 .cornerRadius(10)
-                
-                HStack {
-                    VStack {
-                        Text("Distance")
-                            .padding()
-                        Text(runningStatsManager.formatDistance(runningStatsManager.totalDistance))
-                    }
-                    .frame(maxWidth: .infinity)
-                    
-                    Rectangle()
-                        .frame(width: 1)
-                        .foregroundColor(.gray)
-                    
-                    VStack {
-                        Text("Pace")
-                            .padding()
-                        Text(runningStatsManager.formatPace(runningStatsManager.currentPace))
-                    }
-                    .frame(maxWidth: .infinity)
-                    
-                    Rectangle()
-                        .frame(width: 1)
-                        .foregroundColor(.gray)
-                    
-                    VStack {
-                        Text("Time")
-                            .padding()
-                        Text(runningStatsManager.formatTimeInterval(runningStatsManager.totalElapsedTime))
-                    }
-                    .frame(maxWidth: .infinity)
-                }
             }
             
+            HStack {
+                VStack {
+                    Text("Distance")
+                        .padding()
+                    Text(runningStatsManager.formatDistance(runningStatsManager.totalDistance))
+                }
+                .frame(maxWidth: .infinity)
+                
+                Rectangle()
+                    .frame(width: 1)
+                    .foregroundColor(.gray)
+                
+                VStack {
+                    Text("Pace")
+                        .padding()
+                    Text(runningStatsManager.formatPace(runningStatsManager.currentPace))
+                }
+                .frame(maxWidth: .infinity)
+                
+                Rectangle()
+                    .frame(width: 1)
+                    .foregroundColor(.gray)
+                
+                VStack {
+                    Text("Time")
+                        .padding()
+                    Text(runningStatsManager.formatTimeInterval(runningStatsManager.totalElapsedTime))
+                }
+                .frame(maxWidth: .infinity)
+            }
+            .frame(maxHeight: 100)
         }
         .onChange(of: spotifyManager.connectionState) { _, newState in
             switch newState {
@@ -177,6 +197,11 @@ struct RunningView: View {
             default:
                 break
             }
+        }
+        .onChange(of: spotifyManager.currentId) { _, _ in
+            // Reset the feedback buttons when a new song plays
+            isThumbsUpSelected = false
+            isThumbsDownSelected = false
         }
         .alert(isPresented: $showSpotifyError) {
             return Alert(
@@ -197,13 +222,12 @@ struct RunningView: View {
             )
         }
         .onChange(of: settingsManager.musicSources) { _, newSources in
-            // React to changes in musicSources from SettingsManager, e.g., after modal closes.
             print("Music sources changed in SettingsManager, new sources: \(newSources)")
             refreshSongsBasedOnSettings()
         }
         .toolbar {
             ToolbarItem(placement: .principal) {
-                Text("RunDJ")
+                Text("\(Int(round(bpm))) BPM")
                     .font(.title)
             }
             ToolbarItem(placement: .navigationBarTrailing) {
@@ -271,24 +295,6 @@ struct RunningView: View {
             return "Disconnected"
         case .error(let message):
             return "Error: \(message)"
-        }
-    }
-    
-    private var buttonText: String {
-        switch spotifyManager.connectionState {
-        case .connected:
-            return "Connected"
-        case .disconnected, .error:
-            return "Connect to Spotify"
-        }
-    }
-    
-    private var buttonColor: Color {
-        switch spotifyManager.connectionState {
-        case .connected:
-            return .gray
-        case .disconnected, .error:
-            return .green
         }
     }
 }

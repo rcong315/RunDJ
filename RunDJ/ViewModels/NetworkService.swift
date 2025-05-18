@@ -12,7 +12,7 @@ protocol NetworkService {
     func getSongsByBPM(accessToken: String, bpm: Double, sources: [String], completion: @escaping ([String: Double]) -> Void)
     func getPresetPlaylist(accessToken: String, stepsPerMinute: Double, completion: @escaping (String?) -> Void)
     func createPlaylist(accessToken: String, bpm: Double, sources: [String], completion: @escaping (String?) -> Void)
-    func sendFeedback(accessToken: String, songId: String, feedback: String)
+    func sendFeedback(accessToken: String, songId: String, feedback: String, completion: @escaping (Bool) -> Void)
 }
 
 /// Default implementation of the NetworkService protocol
@@ -180,7 +180,7 @@ class DefaultNetworkService: NetworkService {
         task.resume()
     }
     
-    func sendFeedback(accessToken: String, songId: String, feedback: String) {
+    func sendFeedback(accessToken: String, songId: String, feedback: String, completion: @escaping (Bool) -> Void) {
         print("Sending feedback for song \(songId)")
         var components = URLComponents(string: "\(baseURL)/api/song/\(songId)/feedback")
         components?.queryItems = [
@@ -190,6 +190,7 @@ class DefaultNetworkService: NetworkService {
         
         guard let url = components?.url else {
             print("Invalid URL")
+            completion(false)
             return
         }
         
@@ -200,16 +201,31 @@ class DefaultNetworkService: NetworkService {
         let task = session.dataTask(with: request) { data, response, error -> Void in
             if let error = error {
                 print("Error: \(error.localizedDescription)")
+                DispatchQueue.main.async {
+                    completion(false)
+                }
                 return
             }
             
             guard data != nil else {
                 print("No data received")
+                DispatchQueue.main.async {
+                    completion(false)
+                }
                 return
             }
             
             if let httpResponse = response as? HTTPURLResponse {
                 print("HTTP Status Code: \(httpResponse.statusCode)")
+                // Check if status code indicates success (200-299)
+                let isSuccess = httpResponse.statusCode >= 200 && httpResponse.statusCode < 300
+                DispatchQueue.main.async {
+                    completion(isSuccess)
+                }
+            } else {
+                DispatchQueue.main.async {
+                    completion(false)
+                }
             }
         }
         task.resume()

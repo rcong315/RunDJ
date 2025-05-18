@@ -8,6 +8,7 @@
 import SwiftUI
 
 class SettingsManager: ObservableObject {
+    
     static let shared = SettingsManager()
 
     @Published var musicSources: [String] = ["top_tracks", "saved_tracks", "playlists", "top_artists_top_tracks", "top_artists_albums", "followed_artists_top_tracks", "followed_artists_albums"]

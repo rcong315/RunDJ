@@ -74,8 +74,9 @@ class RunDJService: ObservableObject {
     ///   - accessToken: Spotify access token
     ///   - songId: ID of the song to provide feedback for
     ///   - feedback: Feedback type ("LIKE" or "DISLIKE")
-    func sendFeedback(accessToken: String, songId: String, feedback: String) {
-        networkService.sendFeedback(accessToken: accessToken, songId: songId, feedback: feedback)
+    ///   - completion: Completion handler with success status
+    func sendFeedback(accessToken: String, songId: String, feedback: String, completion: @escaping (Bool) -> Void = { _ in }) {
+        networkService.sendFeedback(accessToken: accessToken, songId: songId, feedback: feedback, completion: completion)
     }
     
     /// Clear the song cache

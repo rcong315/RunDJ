@@ -11,6 +11,8 @@ import Combine
 /// Manages running sessions and location tracking
 class RunManager: NSObject, CLLocationManagerDelegate, ObservableObject {
     
+    static let shared = RunManager()
+    
     private let locationManager: CLLocationManager
     private let runStatsManager: RunningStatsManager
     

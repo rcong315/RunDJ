@@ -26,6 +26,7 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
     
     @Published var currentlyPlaying: String = ""
     @Published var currentId: String = ""
+    @Published var currentArtist: String = ""
     @Published var currentBPM: Double = 0.0
     @Published var connectionState: ConnectionState = .disconnected
     @Published var isPlaying: Bool = false
@@ -465,6 +466,7 @@ func queue(songs: [String: Double]) {
     func playerStateDidChange(_ playerState: SPTAppRemotePlayerState) {
         DispatchQueue.main.async {
             self.currentlyPlaying = playerState.track.name
+            self.currentArtist = playerState.track.artist.name
             self.isPlaying = playerState.isPaused == false
             
             let uri = playerState.track.uri
@@ -476,9 +478,6 @@ func queue(songs: [String: Double]) {
                 return
             }
             
-            print("MAP: \(self.songMap)")
-            print("ID: \(self.currentId)")
-            print("BPM: \(self.songMap[self.currentId])")
             self.currentBPM = self.songMap[self.currentId] ?? 0.0
         }
     }
