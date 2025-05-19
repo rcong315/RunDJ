@@ -71,17 +71,23 @@ struct BPMView: View {
                 
                 HStack {
                     Button(action: {
-                        print("Minus button pressed")
-                        if bpmValue > 100 {
-                            bpmValue -= 1
-                            bpmText = "\(bpmValue)"
-                        }
+                        print("-5 button pressed")
+                        bpmValue = max(100, bpmValue - 5)
+                        bpmText = "\(bpmValue)"
                     }) {
-                        Image(systemName: "minus.circle")
-                            .font(.title)
+                        Text("-5")
+                            .padding(.horizontal, 10)
                             .foregroundColor(.green)
-                            .frame(width: 44, height: 44)
-                            .contentShape(Rectangle())
+                    }
+                    
+                    Button(action: {
+                        print("-1 button pressed")
+                        bpmValue = max(100, bpmValue - 1)
+                        bpmText = "\(bpmValue)"
+                    }) {
+                        Text("-1")
+                            .padding(.horizontal, 10)
+                            .foregroundColor(.green)
                     }
                     
                     TextField("BPM", text: $bpmText)
@@ -93,17 +99,23 @@ struct BPMView: View {
                         .cornerRadius(8)
                     
                     Button(action: {
-                        print("Plus button pressed")
-                        if bpmValue < 200 {
-                            bpmValue += 1
-                            bpmText = "\(bpmValue)"
-                        }
+                        print("+1 button pressed")
+                        bpmValue = min(200, bpmValue + 1)
+                        bpmText = "\(bpmValue)"
                     }) {
-                        Image(systemName: "plus.circle")
-                            .font(.title)
+                        Text("+1")
+                            .padding(.horizontal, 10)
                             .foregroundColor(.green)
-                            .frame(width: 44, height: 44)
-                            .contentShape(Rectangle())
+                    }
+                    
+                    Button(action: {
+                        print("+5 button pressed")
+                        bpmValue = min(200, bpmValue + 5)
+                        bpmText = "\(bpmValue)"
+                    }) {
+                        Text("+5")
+                            .padding(.horizontal, 10)
+                            .foregroundColor(.green)
                     }
                 }
                 .padding()
@@ -120,7 +132,7 @@ struct BPMView: View {
             }
             .padding()
             .sheet(isPresented: $showingHelp) {
-                HelpView()
+                HelpView(context: .bpmView)
             }
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {

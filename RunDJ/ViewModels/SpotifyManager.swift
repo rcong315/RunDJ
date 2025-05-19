@@ -33,6 +33,7 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
     
     private var songMap = [String: Double]()
     private var songQueue = [String]()
+    private var queueIndex: Int = 0
     
     enum ConnectionState: Equatable {
         case connected
@@ -328,7 +329,6 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
     }
     
     func skipToNext() {
-        queueNextSong()
         appRemote.playerAPI?.skip(toNext: { result, error in
             if let error = error {
                 print("Error skipping to next track: \(error)")
@@ -353,15 +353,21 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
     }
     
     func queueNextSong() {
-        if let id = songQueue.popLast() {
-            appRemote.playerAPI?.enqueueTrackUri("spotify:track:\(id)", callback: { result, error in
-                if let error = error {
-                    print("Error queuing track: \(error)")
-                }
-            })
-        } else {
-            // TODO: get more songs
+        if songQueue.count == 0 {
+            print("Queue empty")
+            return
         }
+        let id = songQueue[queueIndex]
+        if queueIndex < songQueue.count - 1 {
+            queueIndex += 1
+        } else {
+            queueIndex = 0
+        }
+        appRemote.playerAPI?.enqueueTrackUri("spotify:track:\(id)", callback: { result, error in
+            if let error = error {
+                print("Error queuing track: \(error)")
+            }
+        })
     }
     
     func disconnect() {
@@ -480,5 +486,6 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
             
             self.currentBPM = self.songMap[self.currentId] ?? 0.0
         }
+        queueNextSong()
     }
 }

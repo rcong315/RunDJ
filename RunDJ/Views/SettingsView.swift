@@ -99,7 +99,7 @@ struct SettingsView: View {
             checkForChanges()
         }
         .sheet(isPresented: $showingHelp) {
-            HelpView()
+            HelpView(context: .settingsView)
         }
     }
     

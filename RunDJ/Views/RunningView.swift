@@ -110,12 +110,11 @@ struct RunningView: View {
                     .disabled(isThumbsUpSelected)
                     
                     Button(action: {
-                        // Send dislike feedback and make button unclickable
                         isThumbsDownSelected = true
-                        isThumbsUpSelected = false // Reset the other button if it was selected
+                        isThumbsUpSelected = false
+                        spotifyManager.skipToNext()
                         rundjService.sendFeedback(accessToken: token, songId: spotifyManager.currentId, feedback: "DISLIKE") { success in
                             if !success {
-                                // Reset on error
                                 isThumbsDownSelected = false
                                 errorMessage = "Failed to send dislike feedback"
                                 showSpotifyError = true
@@ -179,7 +178,7 @@ struct RunningView: View {
                 Rectangle()
                     .frame(width: 1)
                     .foregroundColor(.gray)
-                
+                 
                 VStack {
                     Text("Time")
                         .padding()
@@ -230,7 +229,7 @@ struct RunningView: View {
             )
         }
         .sheet(isPresented: $showingHelp) {
-            HelpView()
+            HelpView(context: .runningView)
         }
         .sheet(isPresented: $showingSettingsModal) {
             SettingsView(

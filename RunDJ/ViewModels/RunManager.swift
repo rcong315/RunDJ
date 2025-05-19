@@ -33,20 +33,25 @@ class RunManager: NSObject, CLLocationManagerDelegate, ObservableObject {
         self.locationManager = locationManager
         self.runStatsManager = runStatsManager
         super.init()
-        setupLocationManager()
+        
+        // Only configure the location manager (don't start it)
+        configureLocationManager()
+        
+        // Set initial authorization status
+        authorizationStatus = locationManager.authorizationStatus
     }
 
     // MARK: - Location Manager Setup
     
-    private func setupLocationManager() {
+    private func configureLocationManager() {
         locationManager.delegate = self
         locationManager.desiredAccuracy = kCLLocationAccuracyBestForNavigation
         locationManager.distanceFilter = 5.0
-        locationManager.allowsBackgroundLocationUpdates = true
-        locationManager.pausesLocationUpdatesAutomatically = false
         
-        // Set initial authorization status
-        authorizationStatus = locationManager.authorizationStatus
+        // Don't enable background updates until user starts tracking
+        // This is a key change to avoid background location usage
+        locationManager.allowsBackgroundLocationUpdates = false 
+        locationManager.pausesLocationUpdatesAutomatically = false
     }
 
     // MARK: - Run Control
@@ -90,6 +95,9 @@ class RunManager: NSObject, CLLocationManagerDelegate, ObservableObject {
         previousLocation = nil
         currentCumulativeDistance = 0.0
         
+        // Enable background updates only when actively tracking
+        locationManager.allowsBackgroundLocationUpdates = true
+        
         runStatsManager.startRun()
         locationManager.startUpdatingLocation()
         startUpdateTimer()
@@ -104,6 +112,10 @@ class RunManager: NSObject, CLLocationManagerDelegate, ObservableObject {
             userRequestedStart = false // Reset the flag when stopping
             stopUpdateTimer()
             locationManager.stopUpdatingLocation()
+            
+            // Disable background updates when not actively tracking
+            locationManager.allowsBackgroundLocationUpdates = false
+            
             runStatsManager.stopRun()
             displayFinalStats()
         }
