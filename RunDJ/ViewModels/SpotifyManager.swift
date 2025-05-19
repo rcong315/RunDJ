@@ -32,7 +32,7 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
     @Published var isPlaying: Bool = false
     
     private var songMap = [String: Double]()
-    private var songQueue = [String]()
+    private var songList = [String]()
     private var queueIndex: Int = 0
     
     enum ConnectionState: Equatable {
@@ -348,17 +348,18 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
     /// - Parameter songs: Dictionary mapping song IDs to their BPM values
     func queue(songs: [String: Double]) {
         songMap = songs
-        songQueue = Array(songs.keys).shuffled()
+        songList = Array(songs.keys).shuffled()
+        queueIndex = 0
         queueNextSong()
     }
     
     func queueNextSong() {
-        if songQueue.count == 0 {
+        if songList.count == 0 {
             print("Queue empty")
             return
         }
-        let id = songQueue[queueIndex]
-        if queueIndex < songQueue.count - 1 {
+        let id = songList[queueIndex]
+        if queueIndex < songList.count - 1 {
             queueIndex += 1
         } else {
             queueIndex = 0
@@ -478,7 +479,10 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
             let uri = playerState.track.uri
             let components = uri.split(separator: ":")
             if let lastComponent = components.last {
-                self.currentId = String(lastComponent)
+                if (self.currentId) != String(lastComponent) {
+                    self.queueNextSong()
+                    self.currentId = String(lastComponent)
+                }
             } else {
                 self.currentId = ""
                 return
@@ -486,6 +490,5 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
             
             self.currentBPM = self.songMap[self.currentId] ?? 0.0
         }
-        queueNextSong()
     }
 }

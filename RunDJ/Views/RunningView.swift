@@ -57,7 +57,7 @@ struct RunningView: View {
             
             Text("Playing: \(spotifyManager.currentlyPlaying)")
             Text("By: \(spotifyManager.currentArtist)")
-            Text("BPM: \(spotifyManager.currentBPM)")
+            Text("BPM: \(String(format: "%.3f", spotifyManager.currentBPM))")
             
             VStack(spacing: 0) {
                 HStack(spacing: 40) {
@@ -138,6 +138,7 @@ struct RunningView: View {
             
             if !isRunning {
                 Button("Start Run") {
+                    spotifyManager.play(uri: "spotify:track:2HHtWyy5CgaQbC7XSoOb0e")
                     runManager.requestPermissionsAndStart()
                     isRunning = true
                 }
@@ -211,6 +212,12 @@ struct RunningView: View {
                 })
             default:
                 break
+            }
+        }
+        .onAppear() {
+            print("On appear")
+            if (connectionStateText == "Connected") {
+                refreshSongsBasedOnSettings()
             }
         }
         .onChange(of: spotifyManager.currentId) { _, _ in

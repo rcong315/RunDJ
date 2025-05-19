@@ -66,18 +66,15 @@ struct HelpView: View {
     private var bpmHelpContent: some View {
         VStack(alignment: .leading, spacing: 20) {
             HelpSection(title: "What is BPM?", content: """
-                BPM (beats per minute) is the the measure of a song's tempo. 
-                RunDJ uses this measurement to filter songs that will match you running rhythm.
+                BPM (beats per minute) is the the measure of a song's tempo. RunDJ uses this measurement to filter songs that will match you running rhythm.
                 """)
             
             HelpSection(title: "Tailored BPM", content: """
-                RunDJ can choose your BPM for you. Just start running and give it a few seconds to detect your cadence. 
-                Click start in the top section to lock in your BPM as your steps per minute.
+                RunDJ can choose your BPM for you. Just start running and give it a few seconds to detect your cadence. Click start in the top section to lock in your BPM as your steps per minute.
                 """)
             
             HelpSection(title: "Custom BPM", content: """
-                If you know your regular running pace, or you want to set a custom BPM, you can do so as well in the bottom section. 
-                The allowed range is 100-200 BPM.
+                If you know your regular running pace, or you want to set a custom BPM, you can do so as well in the bottom section. The allowed range is 100-200 BPM.
                 """)
         }
     }
@@ -85,10 +82,7 @@ struct HelpView: View {
     private var runningHelpContent: some View {
         VStack(alignment: .leading, spacing: 20) {
             HelpSection(title: "Spotify", content: """
-                RunDJ uses Spotify to play music and control playback. 
-                Click the connect button to give RunDJ access to your Spotify listening data and playback controls.
-                If music is paused for 30 seconds straight, your connection with Spotify will be lost and you will have to reconnect in order to play music. 
-                Unfortunately this is a limitation of the Spotify app and iOS background app management, so nothing can be done about this.
+                RunDJ uses Spotify to play music and control playback. Click the connect button to give RunDJ access to your Spotify listening data and playback controls. If music is paused for 30 seconds straight, your connection with Spotify will be lost and you will have to reconnect in order to play music. Unfortunately this is a limitation of the Spotify app and iOS background app management, so nothing can be done about this.
                 """)
             
             HelpSection(title: "Feedback Controls", content: """
@@ -106,15 +100,17 @@ struct HelpView: View {
                 • Tap the gear icon to access music source settings
                 • Changes to music sources will affect the next batch of songs queued
                 """)
+            
+            HelpSection(title: "Troubleshooting", content: """
+                • Why does the currently playing song's BPM say 0.0?
+                """)
         }
     }
     
     private var settingsHelpContent: some View {
         VStack(alignment: .leading, spacing: 20) {
             HelpSection(title: "Music Sources", content: """
-                Select what music sources you would want RunDJ to look through. 
-                Selecting too few sources might produce too few tracks. 
-                Selecting too many might produce a tracklist less tailored to your tastes.
+                Select what music sources you would want RunDJ to look through. Selecting too few sources might produce too few tracks. Selecting too many might produce a tracklist less tailored to your tastes.
                 """)
 
             HelpSection(title: "Source Options", content: """

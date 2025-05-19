@@ -14,9 +14,6 @@ class RunDJService: ObservableObject {
     
     private let networkService: NetworkService
     
-    // Cached songs for offline usage
-    @Published var cachedSongs: [Double: [String: Double]] = [:]
-    
     // MARK: - Initialization
     
     init(networkService: NetworkService = DefaultNetworkService()) {
@@ -46,19 +43,7 @@ class RunDJService: ObservableObject {
     ///   - sources: Spotify sources to search
     ///   - completion: Completion handler with song ID to BPM mapping
     func getSongsByBPM(accessToken: String, bpm: Double, sources: [String], completion: @escaping ([String: Double]) -> Void) {
-        // Check if we have cached songs for this BPM
-        if let cachedSongsForBPM = cachedSongs[bpm], !cachedSongsForBPM.isEmpty {
-            print("Using \(cachedSongsForBPM.count) cached songs for BPM \(bpm)")
-            completion(cachedSongsForBPM)
-            return
-        }
-        
-        // Fetch new songs
-        networkService.getSongsByBPM(accessToken: accessToken, bpm: bpm, sources: sources) { [weak self] songs in
-            // Cache the results if we got songs
-            if !songs.isEmpty {
-                self?.cachedSongs[bpm] = songs
-            }
+        networkService.getSongsByBPM(accessToken: accessToken, bpm: bpm, sources: sources) { songs in
             completion(songs)
         }
     }
@@ -81,10 +66,5 @@ class RunDJService: ObservableObject {
     ///   - completion: Completion handler with success status
     func sendFeedback(accessToken: String, songId: String, feedback: String, completion: @escaping (Bool) -> Void = { _ in }) {
         networkService.sendFeedback(accessToken: accessToken, songId: songId, feedback: feedback, completion: completion)
-    }
-    
-    /// Clear the song cache
-    func clearCache() {
-        cachedSongs.removeAll()
     }
 }

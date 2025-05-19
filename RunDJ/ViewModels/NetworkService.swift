@@ -231,17 +231,13 @@ class DefaultNetworkService: NetworkService {
         let task = session.dataTask(with: request) { data, response, error -> Void in
             if let error = error {
                 print("Error: \(error.localizedDescription)")
-                DispatchQueue.main.async {
-                    completion(false)
-                }
+                completion(false)
                 return
             }
             
             guard data != nil else {
                 print("No data received")
-                DispatchQueue.main.async {
-                    completion(false)
-                }
+                completion(false)
                 return
             }
             
@@ -249,13 +245,9 @@ class DefaultNetworkService: NetworkService {
                 print("HTTP Status Code: \(httpResponse.statusCode)")
                 // Check if status code indicates success (200-299)
                 let isSuccess = httpResponse.statusCode >= 200 && httpResponse.statusCode < 300
-                DispatchQueue.main.async {
-                    completion(isSuccess)
-                }
+                completion(isSuccess)
             } else {
-                DispatchQueue.main.async {
-                    completion(false)
-                }
+                completion(false)
             }
         }
         task.resume()
