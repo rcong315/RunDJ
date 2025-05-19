@@ -269,7 +269,6 @@ struct RunningView: View {
                             .foregroundColor(.blue)
                     }
                 }
-                .padding()
             }
         }
     }

@@ -143,7 +143,6 @@ struct BPMView: View {
                             .font(.title2)
                             .foregroundColor(.blue)
                     }
-                    .padding()
                 }
                 
                 ToolbarItemGroup(placement: .keyboard) {
