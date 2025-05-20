@@ -88,6 +88,7 @@ struct HelpView: View {
             HelpSection(title: "Feedback Controls", content: """
                 • Tap the thumbs up icon if you like the current song - this will improve your recommendations
                 • Tap the thumbs down icon to skip the song and mark it as disliked, this song will not be played again
+                • If you like the music RunDJ chose for you, you can click the save button to save the music as a playlist to your Spotify account
                 """)
             
             HelpSection(title: "Run Tracking", content: """
@@ -99,10 +100,6 @@ struct HelpView: View {
             HelpSection(title: "Settings", content: """
                 • Tap the gear icon to access music source settings
                 • Changes to music sources will affect the next batch of songs queued
-                """)
-            
-            HelpSection(title: "Troubleshooting", content: """
-                • Why does the currently playing song's BPM say 0.0?
                 """)
         }
     }

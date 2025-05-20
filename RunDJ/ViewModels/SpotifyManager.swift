@@ -21,9 +21,7 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
     private let refreshTokenKey = "spotify_refresh_token"
     private let accessTokenKey = "spotify_access_token"
     private let expirationDateKey = "spotify_expiration_date"
-    
-    private var authCompletionHandler: (() -> Void)?
-    
+        
     @Published var currentlyPlaying: String = ""
     @Published var currentId: String = ""
     @Published var currentArtist: String = ""
@@ -34,6 +32,7 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
     private var songMap = [String: Double]()
     private var songList = [String]()
     private var songIndex: Int = 0
+    private var isSkipping = false
     
     enum ConnectionState: Equatable {
         case connected
@@ -249,9 +248,7 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
         if appRemote.isConnected {
             disconnect()
         }
-        
-        self.authCompletionHandler = completion
-        
+                
         let scopes: SPTScope = [
             .appRemoteControl,
             .streaming,
@@ -300,12 +297,13 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
     
     /// Play a track with the given URI
     /// - Parameter uri: Spotify URI for the track to play
-    func play(uri: String) {
+    func play(uri: String, completion: @escaping () -> Void) {
         print("Playing: \(uri)")
         appRemote.playerAPI?.play(uri, callback: { result, error in
             if let error = error {
                 print("Error playing: \(error.localizedDescription)")
             }
+            self.isSkipping = false
         })
         let components = uri.split(separator: ":")
         if let trackId = components.last {
@@ -336,7 +334,10 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
     
     func skipToNext() {
         print("SkipToNext called. Playing next song from custom list.")
-        playNextSongInList()
+        isSkipping = true
+        playNextSongInList() {
+            self.isSkipping = false
+        }
     }
     
     func rewind() {
@@ -356,7 +357,7 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
         songIndex = 0
         
         if !songList.isEmpty {
-            playNextSongInList()
+            skipToNext()
         } else {
             print("Queue initialized with empty song list.")
         }
@@ -370,7 +371,7 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
         return songList[songIndex]
     }
     
-    func playNextSongInList() {
+    func playNextSongInList(completion: @escaping () -> Void) {
         if songList.isEmpty {
             print("Song list empty, cannot play next song.")
             return
@@ -378,7 +379,9 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
         
         let songIDToPlay = getNextSong()
         print("Playing next song from list: \(songIDToPlay), index: \(songIndex)")
-        self.play(uri: "spotify:track:\(songIDToPlay)")
+        self.play(uri: "spotify:track:\(songIDToPlay)") {
+            completion()
+        }
 
         if !songList.isEmpty {
             songIndex = (songIndex + 1) % songList.count
@@ -404,15 +407,8 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
         tokenExpirationDate = session.expirationDate
         
         appRemote.connectionParameters.accessToken = session.accessToken
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
             self.appRemote.connect()
-            
-            if let completionHandler = self.authCompletionHandler {
-                DispatchQueue.main.async {
-                    completionHandler()
-                }
-                self.authCompletionHandler = nil
-            }
         }
     }
     
@@ -425,7 +421,7 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
         tokenExpirationDate = session.expirationDate
         
         appRemote.connectionParameters.accessToken = session.accessToken
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
             self.appRemote.connect()
         }
     }
@@ -501,9 +497,9 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
             
             print("Current ID: \(self.currentId)")
             print(self.songMap[self.currentId] == nil)
-            if playerState.playbackPosition < 200 && self.songMap[self.currentId] == nil {
+            if !self.isSkipping && playerState.playbackPosition < 200 && self.songMap[self.currentId] == nil {
                 print("Playing next song")
-                self.playNextSongInList()
+                self.skipToNext()
             }
             
             self.currentBPM = self.songMap[self.currentId] ?? 0.0

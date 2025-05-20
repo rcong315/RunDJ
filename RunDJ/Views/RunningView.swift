@@ -40,11 +40,15 @@ struct RunningView: View {
                         break
                     }
                 }) {
-                    Text("Connect to Spotify")
-                        .padding()
-                        .background(.green)
-                        .foregroundColor(.white)
-                        .cornerRadius(10)
+                    VStack {
+                        Text("Please connect your Spotify account in order to play music")
+                            .font(.headline)
+                        Text("Connect")
+                            .padding()
+                            .background(.green)
+                            .foregroundColor(.white)
+                            .cornerRadius(10)
+                    }
                 }
             }
             Text("Spotify Status: \(connectionStateText)")
@@ -90,11 +94,21 @@ struct RunningView: View {
                 
                 HStack(spacing: 30) {
                     Button(action: {
+                        rundjService.createPlaylist(accessToken: token, bpm: bpm, sources: settingsManager.musicSources, completion: { playlistIdOptional in
+                            if let playlistId = playlistIdOptional {
+                                print("Playlist created with ID: \(playlistId) using sources: \(settingsManager.musicSources)")
+                            } else {
+                                print("Failed to create playlist. Sources: \(settingsManager.musicSources)")
+                            }
+                        })
+                    }) {
+                        Text("Save Playlist")
+                    }
+                    Button(action: {
                         isThumbsUpSelected = true
                         isThumbsDownSelected = false
                         rundjService.sendFeedback(accessToken: token, songId: spotifyManager.currentId, feedback: "LIKE") { success in
                             if !success {
-                                // Reset on error
                                 isThumbsUpSelected = false
                                 errorMessage = "Failed to send like feedback"
                                 showSpotifyError = true
@@ -202,13 +216,6 @@ struct RunningView: View {
                     }
                 })
                 refreshSongsBasedOnSettings()
-                rundjService.createPlaylist(accessToken: token, bpm: bpm, sources: settingsManager.musicSources, completion: { playlistIdOptional in
-                    if let playlistId = playlistIdOptional {
-                        print("Playlist created with ID: \(playlistId) using sources: \(settingsManager.musicSources)")
-                    } else {
-                        print("Failed to create playlist. Sources: \(settingsManager.musicSources)")
-                    }
-                })
             default:
                 break
             }
