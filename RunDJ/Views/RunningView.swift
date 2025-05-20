@@ -90,9 +90,8 @@ struct RunningView: View {
                 
                 HStack(spacing: 30) {
                     Button(action: {
-                        // Send like feedback and make button unclickable
                         isThumbsUpSelected = true
-                        isThumbsDownSelected = false // Reset the other button if it was selected
+                        isThumbsDownSelected = false
                         rundjService.sendFeedback(accessToken: token, songId: spotifyManager.currentId, feedback: "LIKE") { success in
                             if !success {
                                 // Reset on error

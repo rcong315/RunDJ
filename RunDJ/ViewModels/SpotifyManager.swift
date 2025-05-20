@@ -33,7 +33,7 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
     
     private var songMap = [String: Double]()
     private var songList = [String]()
-    private var queueIndex: Int = 0
+    private var songIndex: Int = 0
     
     enum ConnectionState: Equatable {
         case connected
@@ -236,7 +236,7 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
     }()
     
     lazy var appRemote: SPTAppRemote = {
-        let remote = SPTAppRemote(configuration: configuration, logLevel: .debug)
+        let remote = SPTAppRemote(configuration: configuration, logLevel: .info)
         remote.delegate = self
         return remote
     }()
@@ -352,7 +352,8 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
     func queue(songs: [String: Double]) {
         songMap = songs
         songList = Array(songs.keys).shuffled()
-        queueIndex = 0
+        print(songList)
+        songIndex = 0
         
         if !songList.isEmpty {
             playNextSongInList()
@@ -361,27 +362,26 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
         }
     }
     
+    func getNextSong() -> String {
+        print("Getting next song from list. Index: \(songIndex)")
+        if songList.isEmpty {
+            return ""
+        }
+        return songList[songIndex]
+    }
+    
     func playNextSongInList() {
         if songList.isEmpty {
             print("Song list empty, cannot play next song.")
             return
         }
-        if queueIndex >= songList.count {
-            print("queueIndex out of bounds, resetting to 0.")
-            queueIndex = 0
-            if songList.isEmpty {
-                return
-            }
-        }
         
-        let songIDToPlay = songList[queueIndex]
-        print("Playing next song from list: \(songIDToPlay), index: \(queueIndex)")
+        let songIDToPlay = getNextSong()
+        print("Playing next song from list: \(songIDToPlay), index: \(songIndex)")
         self.play(uri: "spotify:track:\(songIDToPlay)")
 
         if !songList.isEmpty {
-            queueIndex = (queueIndex + 1) % songList.count
-        } else {
-            queueIndex = 0
+            songIndex = (songIndex + 1) % songList.count
         }
     }
     
@@ -485,35 +485,24 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
     }
     
     func playerStateDidChange(_ playerState: SPTAppRemotePlayerState) {
+        print("Player state changed")
         DispatchQueue.main.async {
             self.currentlyPlaying = playerState.track.name
             self.currentArtist = playerState.track.artist.name
             self.isPlaying = !playerState.isPaused
 
-            var spotifyReportedTrackId = ""
-            let uriComponents = playerState.track.uri.split(separator: ":")
-            if let lastComponent = uriComponents.last {
-                spotifyReportedTrackId = String(lastComponent)
-            }
-
-            if self.songList.isEmpty {
-                if self.currentId != spotifyReportedTrackId {
-                     self.currentId = spotifyReportedTrackId
-                }
-                self.currentBPM = self.songMap[spotifyReportedTrackId] ?? 0.0
-                return
-            }
-
-            let songFinished = self.currentId == spotifyReportedTrackId &&
-                               playerState.isPaused &&
-                               playerState.track.duration > 0 &&
-                               playerState.playbackPosition >= playerState.track.duration - 500
-
-            let unexpectedTrackPlaying = !spotifyReportedTrackId.isEmpty &&
-                                         self.currentId != spotifyReportedTrackId
-
-            if songFinished || unexpectedTrackPlaying {
-                print("PlayerState: Condition met to play next song. SongFinished: \(songFinished), UnexpectedTrack: \(unexpectedTrackPlaying). SpotifyPlaying: \(spotifyReportedTrackId), OurIntended: \(self.currentId)")
+//            let uriComponents = playerState.track.uri.split(separator: ":")
+//            if let lastComponent = uriComponents.last {
+//                print("Updating current ID to: \(lastComponent)")
+//                self.currentId = String(lastComponent)
+//            }
+            
+            self.currentBPM = self.songMap[self.currentId] ?? 0.0
+            
+            print("Current ID: \(self.currentId)")
+            print(self.songMap[self.currentId] == nil)
+            if playerState.playbackPosition < 200 && self.songMap[self.currentId] == nil {
+                print("Playing next song")
                 self.playNextSongInList()
             }
             
