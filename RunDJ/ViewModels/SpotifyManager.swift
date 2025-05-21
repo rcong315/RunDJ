@@ -5,7 +5,6 @@
 //  Created by Richard Cong on 2/16/25.
 //
 
-import UIKit
 import SpotifyiOS
 
 /// Manages Spotify interactions including authentication, playback, and song queuing

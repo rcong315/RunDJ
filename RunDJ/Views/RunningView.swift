@@ -6,8 +6,7 @@
 //
 
 import SwiftUI
-import SwiftData
-import UIKit
+//import SwiftData
 
 struct RunningView: View {
     @StateObject private var pedometerManager = PedometerManager.shared
@@ -151,7 +150,6 @@ struct RunningView: View {
             
             if !isRunning {
                 Button("Start Run") {
-                    spotifyManager.play(uri: "spotify:track:2HHtWyy5CgaQbC7XSoOb0e")
                     runManager.requestPermissionsAndStart()
                     isRunning = true
                 }
