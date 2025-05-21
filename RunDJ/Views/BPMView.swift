@@ -9,14 +9,10 @@ import SwiftUI
 
 /// View for showing BPM options and starting a run
 struct BPMView: View {
-    // MARK: - Dependencies
-    
     @StateObject private var pedometerManager = PedometerManager.shared
     @StateObject private var spotifyManager = SpotifyManager.shared
     @StateObject private var runDJService = RunDJService.shared
-    
-    // MARK: - State
-    
+        
     @State private var bpmValue = 150
     @State private var bpmText = "150"
     @State private var showingHelp = false
@@ -71,7 +67,6 @@ struct BPMView: View {
                 
                 HStack {
                     Button(action: {
-                        print("-5 button pressed")
                         bpmValue = max(100, bpmValue - 5)
                         bpmText = "\(bpmValue)"
                     }) {
@@ -81,7 +76,6 @@ struct BPMView: View {
                     }
                     
                     Button(action: {
-                        print("-1 button pressed")
                         bpmValue = max(100, bpmValue - 1)
                         bpmText = "\(bpmValue)"
                     }) {
@@ -99,7 +93,6 @@ struct BPMView: View {
                         .cornerRadius(8)
                     
                     Button(action: {
-                        print("+1 button pressed")
                         bpmValue = min(200, bpmValue + 1)
                         bpmText = "\(bpmValue)"
                     }) {
@@ -109,7 +102,6 @@ struct BPMView: View {
                     }
                     
                     Button(action: {
-                        print("+5 button pressed")
                         bpmValue = min(200, bpmValue + 5)
                         bpmText = "\(bpmValue)"
                     }) {

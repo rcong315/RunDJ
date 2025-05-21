@@ -6,8 +6,7 @@
 //
 
 import SwiftUI
-import SwiftData
-import UIKit
+//import SwiftData
 
 struct RunningView: View {
     @StateObject private var pedometerManager = PedometerManager.shared
@@ -40,11 +39,15 @@ struct RunningView: View {
                         break
                     }
                 }) {
-                    Text("Connect to Spotify")
-                        .padding()
-                        .background(.green)
-                        .foregroundColor(.white)
-                        .cornerRadius(10)
+                    VStack {
+                        Text("Please connect your Spotify account in order to play music")
+                            .font(.headline)
+                        Text("Connect")
+                            .padding()
+                            .background(.green)
+                            .foregroundColor(.white)
+                            .cornerRadius(10)
+                    }
                 }
             }
             Text("Spotify Status: \(connectionStateText)")
@@ -90,12 +93,21 @@ struct RunningView: View {
                 
                 HStack(spacing: 30) {
                     Button(action: {
-                        // Send like feedback and make button unclickable
+                        rundjService.createPlaylist(accessToken: token, bpm: bpm, sources: settingsManager.musicSources, completion: { playlistIdOptional in
+                            if let playlistId = playlistIdOptional {
+                                print("Playlist created with ID: \(playlistId) using sources: \(settingsManager.musicSources)")
+                            } else {
+                                print("Failed to create playlist. Sources: \(settingsManager.musicSources)")
+                            }
+                        })
+                    }) {
+                        Text("Save Playlist")
+                    }
+                    Button(action: {
                         isThumbsUpSelected = true
-                        isThumbsDownSelected = false // Reset the other button if it was selected
+                        isThumbsDownSelected = false
                         rundjService.sendFeedback(accessToken: token, songId: spotifyManager.currentId, feedback: "LIKE") { success in
                             if !success {
-                                // Reset on error
                                 isThumbsUpSelected = false
                                 errorMessage = "Failed to send like feedback"
                                 showSpotifyError = true
@@ -138,7 +150,6 @@ struct RunningView: View {
             
             if !isRunning {
                 Button("Start Run") {
-                    spotifyManager.play(uri: "spotify:track:2HHtWyy5CgaQbC7XSoOb0e")
                     runManager.requestPermissionsAndStart()
                     isRunning = true
                 }
@@ -203,13 +214,6 @@ struct RunningView: View {
                     }
                 })
                 refreshSongsBasedOnSettings()
-                rundjService.createPlaylist(accessToken: token, bpm: bpm, sources: settingsManager.musicSources, completion: { playlistIdOptional in
-                    if let playlistId = playlistIdOptional {
-                        print("Playlist created with ID: \(playlistId) using sources: \(settingsManager.musicSources)")
-                    } else {
-                        print("Failed to create playlist. Sources: \(settingsManager.musicSources)")
-                    }
-                })
             default:
                 break
             }
