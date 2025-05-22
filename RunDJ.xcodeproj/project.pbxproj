@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		8FE5AAF62DD6EF2800E3B3D0 /* SpotifyiOS.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8FE5AAF52DD6EF2800E3B3D0 /* SpotifyiOS.xcframework */; };
 		8FE5AAF72DD6EF2800E3B3D0 /* SpotifyiOS.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8FE5AAF52DD6EF2800E3B3D0 /* SpotifyiOS.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		0234DA4D27DB41528B4948A1 /* Sentry in Frameworks */ = {isa = PBXBuildFile; productRef = 96739FD883EB4D498DAB5094 /* Sentry */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -86,6 +87,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				8FE5AAF62DD6EF2800E3B3D0 /* SpotifyiOS.xcframework in Frameworks */,
+				0234DA4D27DB41528B4948A1 /* Sentry in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -93,6 +95,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0234DA4D27DB41528B4948A1 /* Sentry in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -100,6 +103,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0234DA4D27DB41528B4948A1 /* Sentry in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -146,6 +150,7 @@
 				8FD3D1D22D58939A00367F7C /* Frameworks */,
 				8FD3D1D32D58939A00367F7C /* Resources */,
 				8FC6CEEB2D62D00100F58371 /* Embed Frameworks */,
+				E640933B597F4CEE853E74C8 /* Upload Debug Symbols to Sentry */,
 			);
 			buildRules = (
 			);
@@ -156,6 +161,7 @@
 			);
 			name = RunDJ;
 			packageProductDependencies = (
+				96739FD883EB4D498DAB5094 /* Sentry */,
 			);
 			productName = RunDJ;
 			productReference = 8FD3D1D52D58939A00367F7C /* RunDJ.app */;
@@ -241,6 +247,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				8F9873F22DC4AC580024A4AD /* XCLocalSwiftPackageReference "frameworks/ios-sdk" */,
+				FEFC19CD959A4BE79529FB80 /* XCRemoteSwiftPackageReference "sentry-cocoa" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 8FD3D1D62D58939A00367F7C /* Products */;
@@ -462,6 +469,8 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_USER_SCRIPT_SANDBOXING = "NO";
 			};
 			name = Debug;
 		};
@@ -492,6 +501,8 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_USER_SCRIPT_SANDBOXING = "NO";
 			};
 			name = Release;
 		};
@@ -614,6 +625,43 @@
 			relativePath = "frameworks/ios-sdk";
 		};
 /* End XCLocalSwiftPackageReference section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		E640933B597F4CEE853E74C8 /* Upload Debug Symbols to Sentry */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			name = "Upload Debug Symbols to Sentry";
+			inputPaths = (
+				"${DWARF_DSYM_FOLDER_PATH}/${DWARF_DSYM_FILE_NAME}/Contents/Resources/DWARF/${TARGET_NAME}",
+			);
+			outputPaths = (
+			);
+			shellPath = /bin/sh;
+			shellScript = "# This script is responsible for uploading debug symbols and source context for Sentry.\nif which sentry-cli >/dev/null; then\nexport SENTRY_ORG=rundj\nexport SENTRY_PROJECT=apple-ios\nERROR=$(sentry-cli debug-files upload --include-sources \"$DWARF_DSYM_FOLDER_PATH\" 2>&1 >/dev/null)\nif [ ! $? -eq 0 ]; then\necho \"warning: sentry-cli - $ERROR\"\nfi\nelse\necho \"warning: sentry-cli not installed, download from https://github.com/getsentry/sentry-cli/releases\"\nfi\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		FEFC19CD959A4BE79529FB80 /* XCRemoteSwiftPackageReference "sentry-cocoa" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/getsentry/sentry-cocoa/";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 8.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		96739FD883EB4D498DAB5094 /* Sentry */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FEFC19CD959A4BE79529FB80 /* XCRemoteSwiftPackageReference "sentry-cocoa" */;
+			productName = Sentry;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 8FD3D1CD2D58939A00367F7C /* Project object */;
 }
