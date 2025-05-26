@@ -16,6 +16,8 @@ struct BPMView: View {
     @State private var bpmValue = 150
     @State private var bpmText = "150"
     @State private var showingHelp = false
+    @State private var showingStepsAlert = false
+    @State private var navigateToRunning = false
     
     var body: some View {
         NavigationStack {
@@ -36,13 +38,23 @@ struct BPMView: View {
                     .padding()
                     .multilineTextAlignment(.center)
                 
-                NavigationLink(destination: RunningView(bpm: pedometerManager.stepsPerMinute).environmentObject(SettingsManager.shared)) {
+                Button(action: {
+                    let steps = pedometerManager.stepsPerMinute
+                    if steps >= 100 && steps <= 200 {
+                        navigateToRunning = true
+                    } else {
+                        showingStepsAlert = true
+                    }
+                }) {
                     Text("Start")
                         .padding()
                         .frame(minWidth: 150)
                         .background(Color.green)
                         .foregroundColor(.white)
                         .cornerRadius(10)
+                }
+                .navigationDestination(isPresented: $navigateToRunning) {
+                    RunningView(bpm: pedometerManager.stepsPerMinute).environmentObject(SettingsManager.shared)
                 }
                 
                 HStack {
@@ -125,6 +137,11 @@ struct BPMView: View {
             .padding()
             .sheet(isPresented: $showingHelp) {
                 HelpView(context: .bpmView)
+            }
+            .alert("Steps Out of Range", isPresented: $showingStepsAlert) {
+                Button("OK") { }
+            } message: {
+                Text("Your steps per minute (\(pedometerManager.stepsPerMinute)) is outside the valid range of 100-200. Please adjust your pace and try again.")
             }
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {

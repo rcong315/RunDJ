@@ -62,12 +62,9 @@ class AppDelegate: NSObject, UIApplicationDelegate {
                 $0.lifecycle = .trace
             }
 
-            // Uncomment the following lines to add more data to your events
-            // options.attachScreenshot = true // This adds a screenshot to the error events
-            // options.attachViewHierarchy = true // This adds the view hierarchy to the error events
+             options.attachScreenshot = true
+             options.attachViewHierarchy = true
         }
-        // Remove the next line after confirming that your Sentry integration is working.
-        SentrySDK.capture(message: "This app uses Sentry! :)")
 
         logger.info("Application finished launching")
         return true
