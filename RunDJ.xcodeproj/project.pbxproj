@@ -10,8 +10,7 @@
 		0234DA4D27DB41528B4948A1 /* Sentry in Frameworks */ = {isa = PBXBuildFile; productRef = 96739FD883EB4D498DAB5094 /* Sentry */; };
 		8F7F1A822DDEE8CC00F55637 /* (null) in Frameworks */ = {isa = PBXBuildFile; };
 		8F7F1A832DDEE8CC00F55637 /* (null) in Frameworks */ = {isa = PBXBuildFile; };
-		8FE5AAF62DD6EF2800E3B3D0 /* SpotifyiOS.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8FE5AAF52DD6EF2800E3B3D0 /* SpotifyiOS.xcframework */; };
-		8FE5AAF72DD6EF2800E3B3D0 /* SpotifyiOS.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8FE5AAF52DD6EF2800E3B3D0 /* SpotifyiOS.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		8FDEF0CA2DE5800200E6B42D /* SpotifyiOS in Frameworks */ = {isa = PBXBuildFile; productRef = 8FDEF0C92DE5800200E6B42D /* SpotifyiOS */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -31,20 +30,6 @@
 		};
 /* End PBXContainerItemProxy section */
 
-/* Begin PBXCopyFilesBuildPhase section */
-		8FC6CEEB2D62D00100F58371 /* Embed Frameworks */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 10;
-			files = (
-				8FE5AAF72DD6EF2800E3B3D0 /* SpotifyiOS.xcframework in Embed Frameworks */,
-			);
-			name = "Embed Frameworks";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXCopyFilesBuildPhase section */
-
 /* Begin PBXFileReference section */
 		8FD3D1D52D58939A00367F7C /* RunDJ.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RunDJ.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8FD3D1E72D58939B00367F7C /* RunDJTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RunDJTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -56,6 +41,8 @@
 		8FC6CEED2D62D06100F58371 /* Exceptions for "RunDJ" folder in "RunDJ" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				config.xcconfig,
+				"frameworks/ios-sdk",
 				Info.plist,
 			);
 			target = 8FD3D1D42D58939A00367F7C /* RunDJ */;
@@ -88,8 +75,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				8FE5AAF62DD6EF2800E3B3D0 /* SpotifyiOS.xcframework in Frameworks */,
 				0234DA4D27DB41528B4948A1 /* Sentry in Frameworks */,
+				8FDEF0CA2DE5800200E6B42D /* SpotifyiOS in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -151,7 +138,6 @@
 				8FD3D1D12D58939A00367F7C /* Sources */,
 				8FD3D1D22D58939A00367F7C /* Frameworks */,
 				8FD3D1D32D58939A00367F7C /* Resources */,
-				8FC6CEEB2D62D00100F58371 /* Embed Frameworks */,
 				E640933B597F4CEE853E74C8 /* Upload Debug Symbols to Sentry */,
 			);
 			buildRules = (
@@ -164,6 +150,7 @@
 			name = RunDJ;
 			packageProductDependencies = (
 				96739FD883EB4D498DAB5094 /* Sentry */,
+				8FDEF0C92DE5800200E6B42D /* SpotifyiOS */,
 			);
 			productName = RunDJ;
 			productReference = 8FD3D1D52D58939A00367F7C /* RunDJ.app */;
@@ -223,7 +210,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1620;
-				LastUpgradeCheck = 1620;
+				LastUpgradeCheck = 1630;
 				TargetAttributes = {
 					8FD3D1D42D58939A00367F7C = {
 						CreatedOnToolsVersion = 16.2;
@@ -248,8 +235,8 @@
 			mainGroup = 8FD3D1CC2D58939A00367F7C;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				8F9873F22DC4AC580024A4AD /* XCLocalSwiftPackageReference "frameworks/ios-sdk" */,
 				FEFC19CD959A4BE79529FB80 /* XCRemoteSwiftPackageReference "sentry-cocoa" */,
+				8FDEF0C82DE57FEE00E6B42D /* XCRemoteSwiftPackageReference "ios-sdk" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 8FD3D1D62D58939A00367F7C /* Products */;
@@ -380,6 +367,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = WH4UTP47U2;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -445,6 +433,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = WH4UTP47U2;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -477,7 +466,6 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_ASSET_PATHS = "\"RunDJ/Preview Content\"";
-				DEVELOPMENT_TEAM = WH4UTP47U2;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -511,7 +499,6 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_ASSET_PATHS = "\"RunDJ/Preview Content\"";
-				DEVELOPMENT_TEAM = WH4UTP47U2;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -540,7 +527,6 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = WH4UTP47U2;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
 				MARKETING_VERSION = 1.0;
@@ -559,7 +545,6 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = WH4UTP47U2;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
 				MARKETING_VERSION = 1.0;
@@ -577,7 +562,6 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = WH4UTP47U2;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.rcong.RunDJUITests;
@@ -594,7 +578,6 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = WH4UTP47U2;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.rcong.RunDJUITests;
@@ -647,14 +630,15 @@
 		};
 /* End XCConfigurationList section */
 
-/* Begin XCLocalSwiftPackageReference section */
-		8F9873F22DC4AC580024A4AD /* XCLocalSwiftPackageReference "frameworks/ios-sdk" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = "frameworks/ios-sdk";
-		};
-/* End XCLocalSwiftPackageReference section */
-
 /* Begin XCRemoteSwiftPackageReference section */
+		8FDEF0C82DE57FEE00E6B42D /* XCRemoteSwiftPackageReference "ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/spotify/ios-sdk";
+			requirement = {
+				branch = master;
+				kind = branch;
+			};
+		};
 		FEFC19CD959A4BE79529FB80 /* XCRemoteSwiftPackageReference "sentry-cocoa" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/getsentry/sentry-cocoa/";
@@ -666,6 +650,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		8FDEF0C92DE5800200E6B42D /* SpotifyiOS */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8FDEF0C82DE57FEE00E6B42D /* XCRemoteSwiftPackageReference "ios-sdk" */;
+			productName = SpotifyiOS;
+		};
 		96739FD883EB4D498DAB5094 /* Sentry */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = FEFC19CD959A4BE79529FB80 /* XCRemoteSwiftPackageReference "sentry-cocoa" */;
