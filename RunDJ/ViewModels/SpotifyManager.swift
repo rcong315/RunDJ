@@ -15,7 +15,7 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
     
     private let clientID = "6f69b8394f8d46fc87b274b54a3d9f1b"
     private let redirectURI = "run-dj://auth"
-    private let serverURL = "https://rundjserver.onrender.com"
+    private let serverURL = Configuration.serverBaseURL
     
     private let keychainServiceName = "com.rundj.spotifyauth"
     private let refreshTokenKey = "spotify_refresh_token"
@@ -230,9 +230,8 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
     lazy var configuration: SPTConfiguration = {
         let config = SPTConfiguration(clientID: clientID, redirectURL: URL(string: redirectURI)!)
         
-        // Set server-side token swap and refresh URLs
-        if let tokenSwapURL = URL(string: "\(serverURL)/api/spotify/auth/token"),
-           let tokenRefreshURL = URL(string: "\(serverURL)/api/spotify/auth/refresh") {
+        if let tokenSwapURL = URL(string: "\(serverURL)/api/v1/spotify/auth/token"),
+           let tokenRefreshURL = URL(string: "\(serverURL)/api/v1/spotify/auth/refresh") {
             config.tokenSwapURL = tokenSwapURL
             config.tokenRefreshURL = tokenRefreshURL
             config.playURI = "2HHtWyy5CgaQbC7XSoOb0e" // Eye of the Tiger

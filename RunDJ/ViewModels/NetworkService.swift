@@ -65,7 +65,7 @@ class DefaultNetworkService: NetworkService {
     }
     
     func register(accessToken: String, completion: @escaping (Bool) -> Void) {
-        var components = URLComponents(string: "\(baseURL)/api/user/register")
+        var components = URLComponents(string: "\(baseURL)/api/v1/user/register")
         components?.queryItems = [
             URLQueryItem(name: "access_token", value: accessToken),
         ]
@@ -170,7 +170,7 @@ class DefaultNetworkService: NetworkService {
     
     func getSongsByBPM(accessToken: String, bpm: Double, sources: [String], completion: @escaping ([String: Double]) -> Void) {
         print("Getting songs by BPM \(bpm)")
-        var components = URLComponents(string: "\(baseURL)/api/songs/bpm/" + String(bpm))
+        var components = URLComponents(string: "\(baseURL)/api/v1/songs/bpm/" + String(bpm))
         components?.queryItems = [
             URLQueryItem(name: "access_token", value: accessToken),
             URLQueryItem(name: "sources", value: sources.joined(separator: ","))
@@ -248,7 +248,7 @@ class DefaultNetworkService: NetworkService {
     
     func createPlaylist(accessToken: String, bpm: Double, sources: [String], completion: @escaping (String?) -> Void) {
         print("Creating playlist for BPM \(bpm)")
-        var components = URLComponents(string: "\(baseURL)/api/playlist/bpm/" + String(bpm))
+        var components = URLComponents(string: "\(baseURL)/api/v1/playlist/bpm/" + String(bpm))
         components?.queryItems = [
             URLQueryItem(name: "access_token", value: accessToken),
             URLQueryItem(name: "sources", value: sources.joined(separator: ","))
@@ -319,7 +319,7 @@ class DefaultNetworkService: NetworkService {
     
     func sendFeedback(accessToken: String, songId: String, feedback: String, completion: @escaping (Bool) -> Void) {
         print("Sending feedback for song \(songId)")
-        var components = URLComponents(string: "\(baseURL)/api/song/\(songId)/feedback")
+        var components = URLComponents(string: "\(baseURL)/api/v1/song/\(songId)/feedback")
         components?.queryItems = [
             URLQueryItem(name: "access_token", value: accessToken),
             URLQueryItem(name: "feedback", value: feedback)

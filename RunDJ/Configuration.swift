@@ -13,11 +13,7 @@ struct Configuration {
     
     /// Base URL for the RunDJ API server
     static var serverBaseURL: String {
-        #if DEBUG
-        return Bundle.main.object(forInfoDictionaryKey: "SERVER_BASE_URL_DEBUG") as? String ?? "http://localhost:8000"
-        #else
-        return Bundle.main.object(forInfoDictionaryKey: "SERVER_BASE_URL_RELEASE") as? String ?? ""
-        #endif
+        return Bundle.main.object(forInfoDictionaryKey: "SERVER_BASE_URL") as? String ?? ""
     }
     
     static var serverAPIKey: String {
