@@ -69,4 +69,4 @@ frameworks/
 # Sensitive configuration files
 .sentryclirc
 Configuration-Private.swift
-*.xcconfig
+**/*.xcconfig
