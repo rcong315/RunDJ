@@ -20,24 +20,14 @@ struct Configuration {
         #endif
     }
     
+    static var serverAPIKey: String {
+        return Bundle.main.object(forInfoDictionaryKey: "SERVER_API_KEY") as? String ?? ""
+    }
+    
     // MARK: - Sentry Configuration
     
     /// Sentry DSN for error reporting
     static var sentryDSN: String? {
         return Bundle.main.object(forInfoDictionaryKey: "SENTRY_DSN") as? String
-    }
-    
-    // MARK: - Validation
-    
-    /// Validates that all required configuration values are present
-    static func validateConfiguration() -> Bool {
-        guard !serverBaseURL.isEmpty else {
-            print("Configuration Error: SERVER_BASE_URL not set")
-            return false
-        }
-        
-        print("Configuration validated successfully")
-        print("Server URL: \(serverBaseURL)")
-        return true
     }
 }

@@ -21,6 +21,7 @@ protocol NetworkService {
 class DefaultNetworkService: NetworkService {
     
     private let baseURL: String
+    private let apiKey: String
     
     struct BpmSongResponse: Decodable {
         let tracks: [String: Double]
@@ -35,11 +36,7 @@ class DefaultNetworkService: NetworkService {
     
     init(baseURL: String? = nil) {
         self.baseURL = baseURL ?? Configuration.serverBaseURL
-        
-        // Validate configuration on initialization
-        if !Configuration.validateConfiguration() {
-            fatalError("Invalid configuration. Please check your build settings.")
-        }
+        self.apiKey = Configuration.serverAPIKey
     }
     
     private func captureNetworkError(_ error: Error, method: String, parameters: [String: Any] = [:]) {
@@ -85,6 +82,7 @@ class DefaultNetworkService: NetworkService {
         
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
+        request.setValue(apiKey, forHTTPHeaderField: "X-API-Key")
         
         let session = URLSession.shared
         let task = session.dataTask(with: request) { data, response, error -> Void in
@@ -131,6 +129,7 @@ class DefaultNetworkService: NetworkService {
         
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
+        request.setValue(apiKey, forHTTPHeaderField: "X-API-Key")
         
         let session = URLSession.shared
         let task = session.dataTask(with: request) { data, response, error -> Void in
@@ -189,6 +188,7 @@ class DefaultNetworkService: NetworkService {
         
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
+        request.setValue(apiKey, forHTTPHeaderField: "X-API-Key")
         
         let session = URLSession.shared
         let task = session.dataTask(with: request) { data, response, error -> Void in
@@ -266,6 +266,7 @@ class DefaultNetworkService: NetworkService {
         
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
+        request.setValue(apiKey, forHTTPHeaderField: "X-API-Key")
         
         let session = URLSession.shared
         let task = session.dataTask(with: request) { data, response, error -> Void in
@@ -336,6 +337,7 @@ class DefaultNetworkService: NetworkService {
         
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
+        request.setValue(apiKey, forHTTPHeaderField: "X-API-Key")
         
         let session = URLSession.shared
         let task = session.dataTask(with: request) { data, response, error -> Void in
