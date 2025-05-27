@@ -304,13 +304,6 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
             }
             self.isSkipping = false
         })
-        let components = uri.split(separator: ":")
-        if let trackId = components.last {
-            let idToSet = String(trackId)
-            DispatchQueue.main.async {
-                self.currentId = idToSet
-            }
-        }
     }
     
     /// Resume playback of the current track
@@ -385,6 +378,14 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
         if !songList.isEmpty {
             songIndex = (songIndex + 1) % songList.count
         }
+    }
+    
+    func turnOffRepeat() {
+        self.appRemote.playerAPI?.setRepeatMode(.off, callback: { result, error in
+            if let error = error {
+                print("Error turning off repeat: \(error)")
+            }
+        })
     }
     
     func disconnect() {
@@ -485,23 +486,23 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
             self.currentlyPlaying = playerState.track.name
             self.currentArtist = playerState.track.artist.name
             self.isPlaying = !playerState.isPaused
-
-//            let uriComponents = playerState.track.uri.split(separator: ":")
-//            if let lastComponent = uriComponents.last {
-//                print("Updating current ID to: \(lastComponent)")
-//                self.currentId = String(lastComponent)
-//            }
-            
-            self.currentBPM = self.songMap[self.currentId] ?? 0.0
-            
-            print("Current ID: \(self.currentId)")
-            print(self.songMap[self.currentId] == nil)
-            if !self.isSkipping && playerState.playbackPosition < 200 && self.songMap[self.currentId] == nil {
-                print("Playing next song")
-                self.skipToNext()
+            let components = playerState.track.uri.split(separator: ":")
+            if let trackId = components.last {
+                let idToSet = String(trackId)
+                self.currentId = idToSet
+                self.currentBPM = self.songMap[self.currentId] ?? 0.0
             }
             
-            self.currentBPM = self.songMap[self.currentId] ?? 0.0
+            self.turnOffRepeat()
+            
+            // Check if we need to play next song
+            // If song duration is available and we're near the end
+            if !self.isSkipping && !playerState.isPaused {
+                if playerState.playbackPosition < 500 && self.songMap[self.currentId] == nil { // Less than 500ms remaining
+                    print("Song ending, playing next song")
+                    self.skipToNext()
+                }
+            }
         }
     }
 }
