@@ -37,5 +37,15 @@
 		<string>spotify</string>
 		<string>spotify-action</string>
 	</array>
+	
+	<!-- Server Configuration -->
+	<key>SERVER_BASE_URL_DEBUG</key>
+	<string>$(SERVER_BASE_URL_DEBUG)</string>
+	<key>SERVER_BASE_URL_RELEASE</key>
+	<string>$(SERVER_BASE_URL_RELEASE)</string>
+	
+	<!-- Sentry Configuration -->
+	<key>SENTRY_DSN</key>
+	<string>$(SENTRY_DSN)</string>
 </dict>
 </plist>

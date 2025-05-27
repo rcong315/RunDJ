@@ -7,6 +7,7 @@
 
 import CoreLocation
 import Combine
+import Sentry
 
 /// Manages running sessions and location tracking
 class RunManager: NSObject, CLLocationManagerDelegate, ObservableObject {
@@ -72,6 +73,10 @@ class RunManager: NSObject, CLLocationManagerDelegate, ObservableObject {
         case .restricted, .denied:
             print("Location access was restricted or denied.")
             // Inform the user they need to enable permissions in Settings
+            SentrySDK.capture(message: "Location access restricted or denied") { scope in
+                scope.setContext(value: ["authorization_status": self.authorizationStatus.rawValue], key: "permissions")
+                scope.setLevel(.warning)
+            }
             break
         case .authorizedWhenInUse, .authorizedAlways:
             start()
@@ -159,6 +164,11 @@ class RunManager: NSObject, CLLocationManagerDelegate, ObservableObject {
         // Basic accuracy filter
         guard newLocation.horizontalAccuracy >= 0 && newLocation.horizontalAccuracy < 65 else { // Accuracy within 65m
             print("Skipping location with poor accuracy: \(newLocation.horizontalAccuracy)m")
+            let breadcrumb = Breadcrumb()
+            breadcrumb.level = .warning
+            breadcrumb.category = "location"
+            breadcrumb.message = "Skipped location with accuracy \(newLocation.horizontalAccuracy)m"
+            SentrySDK.addBreadcrumb(breadcrumb)
             return
         }
         
@@ -191,7 +201,34 @@ class RunManager: NSObject, CLLocationManagerDelegate, ObservableObject {
 
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
         print("Location manager failed: \(error.localizedDescription)")
+        
+        // Capture location errors to Sentry
+        SentrySDK.capture(error: error) { scope in
+            scope.setContext(value: [
+                "is_running": self.isRunning,
+                "is_tracking": self.isTrackingActivity,
+                "authorization_status": self.authorizationStatus.rawValue
+            ], key: "location_tracking")
+            scope.setLevel(.error)
+        }
+        
         // Consider pausing or notifying user based on error severity
+        if let clError = error as? CLError {
+            switch clError.code {
+            case .denied:
+                // User has denied location access
+                stop()
+            case .network:
+                // Network-related error, might be temporary
+                let breadcrumb = Breadcrumb()
+                breadcrumb.level = .warning
+                breadcrumb.category = "location"
+                breadcrumb.message = "Network error during location update"
+                SentrySDK.addBreadcrumb(breadcrumb)
+            default:
+                break
+            }
+        }
     }
     
     // Track whether the user has explicitly requested to start tracking
@@ -211,6 +248,13 @@ class RunManager: NSObject, CLLocationManagerDelegate, ObservableObject {
         // If we're running and permission is revoked, stop the run
         else if isRunning && (newStatus != .authorizedWhenInUse && newStatus != .authorizedAlways) {
             print("Permissions changed, stopping run.")
+            SentrySDK.capture(message: "Location permissions revoked during active run") { scope in
+                scope.setContext(value: [
+                    "old_status": self.authorizationStatus.rawValue,
+                    "new_status": newStatus.rawValue
+                ], key: "permissions")
+                scope.setLevel(.error)
+            }
             stop()
             // Inform user that permissions were revoked
         }

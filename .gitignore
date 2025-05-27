@@ -66,4 +66,7 @@ frameworks/
 *.txt
 .DS_Store
 
+# Sensitive configuration files
 .sentryclirc
+Configuration-Private.swift
+*.xcconfig

@@ -6,6 +6,7 @@
 //
 
 import SpotifyiOS
+import Sentry
 
 /// Manages Spotify interactions including authentication, playback, and song queuing
 class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRemotePlayerStateDelegate, SPTSessionManagerDelegate {
@@ -125,6 +126,10 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
             print("Keychain SUCCESS: Saved \(key) to Keychain")
         } else {
             print("Keychain ERROR: Failed saving \(key) to Keychain: \(status) - \(describeKeychainError(status))")
+            SentrySDK.capture(message: "Keychain save failed") { scope in
+                scope.setContext(value: ["key": key, "status": status, "error_description": self.describeKeychainError(status)], key: "keychain_error")
+                scope.setLevel(.error)
+            }
         }
     }
     
@@ -148,6 +153,10 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
                 print("Keychain INFO: Item \(key) not found in Keychain")
             } else {
                 print("Keychain ERROR: Failed loading \(key) from Keychain: \(status) - \(describeKeychainError(status))")
+                SentrySDK.capture(message: "Keychain load failed") { scope in
+                    scope.setContext(value: ["key": key, "status": status, "error_description": self.describeKeychainError(status)], key: "keychain_error")
+                    scope.setLevel(.warning)
+                }
             }
             return nil
         }
@@ -164,6 +173,10 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
         
         if status != errSecSuccess && status != errSecItemNotFound{
             print("Keychain ERROR: Failed deleting \(key) from Keychain: \(status) - \(describeKeychainError(status))")
+            SentrySDK.capture(message: "Keychain delete failed") { scope in
+                scope.setContext(value: ["key": key, "status": status, "error_description": self.describeKeychainError(status)], key: "keychain_error")
+                scope.setLevel(.warning)
+            }
         }
     }
     
@@ -301,6 +314,10 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
         appRemote.playerAPI?.play(uri, callback: { result, error in
             if let error = error {
                 print("Error playing: \(error.localizedDescription)")
+                SentrySDK.capture(error: error) { scope in
+                    scope.setContext(value: ["uri": uri], key: "spotify_playback")
+                    scope.setLevel(.error)
+                }
             }
             self.isSkipping = false
         })
@@ -311,6 +328,10 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
         appRemote.playerAPI?.resume({ result, error in
             if let error = error {
                 print("Error resuming playback: \(error)")
+                SentrySDK.capture(error: error) { scope in
+                    scope.setContext(value: ["action": "resume"], key: "spotify_playback")
+                    scope.setLevel(.warning)
+                }
             }
         })
     }
@@ -320,6 +341,10 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
         appRemote.playerAPI?.pause({ result, error in
             if let error = error {
                 print("Error pausing playback: \(error)")
+                SentrySDK.capture(error: error) { scope in
+                    scope.setContext(value: ["action": "pause"], key: "spotify_playback")
+                    scope.setLevel(.warning)
+                }
             }
         })
     }
@@ -336,6 +361,10 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
         appRemote.playerAPI?.seek(toPosition: 0, callback: { result, error in
             if let error = error {
                 print("Error rewinding track: \(error)")
+                SentrySDK.capture(error: error) { scope in
+                    scope.setContext(value: ["action": "rewind", "position": 0], key: "spotify_playback")
+                    scope.setLevel(.warning)
+                }
             }
         })
     }
@@ -384,6 +413,10 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
         self.appRemote.playerAPI?.setRepeatMode(.off, callback: { result, error in
             if let error = error {
                 print("Error turning off repeat: \(error)")
+                SentrySDK.capture(error: error) { scope in
+                    scope.setContext(value: ["action": "set_repeat_off"], key: "spotify_playback")
+                    scope.setLevel(.info)
+                }
             }
         })
     }
@@ -402,6 +435,12 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
         print("Access Token: \(session.accessToken)")
         print("Expiration Date: \(session.expirationDate)")
         
+        let breadcrumb = Breadcrumb()
+        breadcrumb.level = .info
+        breadcrumb.category = "spotify"
+        breadcrumb.message = "Session initiated successfully"
+        SentrySDK.addBreadcrumb(breadcrumb)
+        
         refreshToken = session.refreshToken
         accessToken = session.accessToken
         tokenExpirationDate = session.expirationDate
@@ -417,6 +456,12 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
         print("Access Token: \(session.accessToken)")
         print("Expiration Date: \(session.expirationDate)")
         
+        let breadcrumb = Breadcrumb()
+        breadcrumb.level = .info
+        breadcrumb.category = "spotify"
+        breadcrumb.message = "Session renewed successfully"
+        SentrySDK.addBreadcrumb(breadcrumb)
+        
         accessToken = session.accessToken
         tokenExpirationDate = session.expirationDate
         
@@ -430,6 +475,12 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
         print("Session failed with error: \(error)")
         print("Error domain: \(error._domain)")
         print("Error code: \(error._code)")
+        
+        SentrySDK.capture(error: error) { scope in
+            scope.setContext(value: ["error_domain": error._domain, "error_code": error._code], key: "spotify_session")
+            scope.setLevel(.error)
+        }
+        
         DispatchQueue.main.async {
             self.connectionState = .error("Session failed: \(error.localizedDescription)")
         }
@@ -448,11 +499,20 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
         appRemote.playerAPI?.subscribe(toPlayerState: { [weak self] result, error in
             if let error = error {
                 print("Player subscription error: \(error)")
+                SentrySDK.capture(error: error) { scope in
+                    scope.setContext(value: ["action": "subscribe_to_player_state"], key: "spotify_connection")
+                    scope.setLevel(.error)
+                }
                 DispatchQueue.main.async {
                     self?.connectionState = .error("Player subscription error: \(error.localizedDescription)")
                 }
             } else {
                 print("Successfully subscribed to player state")
+                let breadcrumb = Breadcrumb()
+                breadcrumb.level = .info
+                breadcrumb.category = "spotify"
+                breadcrumb.message = "Successfully subscribed to player state"
+                SentrySDK.addBreadcrumb(breadcrumb)
             }
         })
         //        pause()
@@ -469,12 +529,30 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
     func appRemote(_ appRemote: SPTAppRemote, didFailConnectionAttemptWithError error: Error?) {
         print("Connection attempt failed with error: \(String(describing: error))")
         
+        if let error = error {
+            SentrySDK.capture(error: error) { scope in
+                scope.setContext(value: ["action": "connection_attempt"], key: "spotify_connection")
+                scope.setLevel(.error)
+            }
+        } else {
+            SentrySDK.capture(message: "Spotify connection failed with unknown error") { scope in
+                scope.setLevel(.error)
+            }
+        }
+        
         DispatchQueue.main.async {
             self.connectionState = .error("Connection failed: \(error?.localizedDescription ?? "Unknown error")")
         }
     }
     
     func appRemote(_ appRemote: SPTAppRemote, didDisconnectWithError error: Error?) {
+        if let error = error {
+            print("Disconnected with error: \(error)")
+            SentrySDK.capture(error: error) { scope in
+                scope.setContext(value: ["action": "disconnect"], key: "spotify_connection")
+                scope.setLevel(.warning)
+            }
+        }
         DispatchQueue.main.async {
             self.connectionState = .disconnected
         }

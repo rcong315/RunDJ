@@ -7,6 +7,7 @@
 
 import SwiftUI
 //import SwiftData
+import Sentry
 
 struct RunningView: View {
     @StateObject private var pedometerManager = PedometerManager.shared
@@ -111,6 +112,10 @@ struct RunningView: View {
                                 isThumbsUpSelected = false
                                 errorMessage = "Failed to send like feedback"
                                 showSpotifyError = true
+                                SentrySDK.capture(message: "Failed to send like feedback") { scope in
+                                    scope.setContext(value: ["song_id": spotifyManager.currentId], key: "feedback")
+                                    scope.setLevel(.warning)
+                                }
                             }
                         }
                     }) {
@@ -130,6 +135,10 @@ struct RunningView: View {
                                 isThumbsDownSelected = false
                                 errorMessage = "Failed to send dislike feedback"
                                 showSpotifyError = true
+                                SentrySDK.capture(message: "Failed to send dislike feedback") { scope in
+                                    scope.setContext(value: ["song_id": spotifyManager.currentId], key: "feedback")
+                                    scope.setLevel(.warning)
+                                }
                             }
                         }
                     }) {
@@ -205,12 +214,24 @@ struct RunningView: View {
             case .error(let message):
                 errorMessage = message
                 showSpotifyError = true
+                SentrySDK.capture(message: "Spotify connection error displayed to user") { scope in
+                    scope.setContext(value: ["error_message": message], key: "ui_error")
+                    scope.setLevel(.warning)
+                }
             case .connected:
                 rundjService.register(accessToken: token, completion: { success in
                     if success {
                         print("Successfully registered user")
+                        let breadcrumb = Breadcrumb()
+                        breadcrumb.level = .info
+                        breadcrumb.category = "user"
+                        breadcrumb.message = "User registered successfully"
+                        SentrySDK.addBreadcrumb(breadcrumb)
                     } else {
                         print("Failed to register user")
+                        SentrySDK.capture(message: "Failed to register user") { scope in
+                            scope.setLevel(.error)
+                        }
                     }
                 })
                 refreshSongsBasedOnSettings()

@@ -7,6 +7,7 @@
 
 import CoreMotion
 import Combine
+import Sentry
 
 /// Manages pedometer data tracking including steps per minute
 class PedometerManager: ObservableObject {
@@ -44,8 +45,19 @@ class PedometerManager: ObservableObject {
         
         isActive = true
         pedometer.startUpdates(from: Date()) { [weak self] data, error in
-            guard let self = self, let data = data, error == nil else {
-                print("Error starting pedometer: \(error?.localizedDescription ?? "Unknown error")")
+            guard let self = self else { return }
+            
+            if let error = error {
+                print("Error starting pedometer: \(error.localizedDescription)")
+                SentrySDK.capture(error: error) { scope in
+                    scope.setContext(value: ["action": "start_pedometer_updates"], key: "pedometer")
+                    scope.setLevel(.error)
+                }
+                return
+            }
+            
+            guard let data = data else {
+                print("No pedometer data received")
                 return
             }
             

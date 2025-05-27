@@ -45,7 +45,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
         SentrySDK.start { options in
-            options.dsn = "https://17790a7e5b233847b12b14cb8c3bcad5@o4509359544008704.ingest.us.sentry.io/4509359546105856"
+            options.dsn = Configuration.sentryDSN
             options.debug = true // Enabled debug when first installing is always helpful
 
             // Adds IP for users.
