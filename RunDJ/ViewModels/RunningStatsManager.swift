@@ -28,6 +28,9 @@ class RunningStatsManager: ObservableObject {
     /// Current running data
     @Published private(set) var runningData = RunningData()
     
+    /// Rolling mile pace in seconds
+    @Published private(set) var rollingMilePace: Double?
+    
     /// Total elapsed time for the run, in seconds (convenience accessor)
     var totalElapsedTime: TimeInterval {
         return runningData.elapsedTime
@@ -38,26 +41,21 @@ class RunningStatsManager: ObservableObject {
         return runningData.totalDistance
     }
     
-    /// Overall average pace for the run, in seconds per kilometer (convenience accessor)
-    var currentPace: TimeInterval {
+    /// Overall average speed for the run, in meters per second (convenience accessor)
+    var currentPace: Double {
         return runningData.currentPace
     }
-    
-    /// Pace for the most recently completed full mile
-    @Published private(set) var rollingMilePace: TimeInterval?
 
     // MARK: - Private State
     private var startTime: Date?
     private var lastLocationTimestamp: Date? // Timestamp of the last recorded data point
-    private var paceDataPoints: [PaceDataPoint] = []
     private var routeCoordinates: [CLLocationCoordinate2D] = []
+    private var paceDataPoints: [PaceDataPoint] = []
     
     // Constants for distance conversion
     private let mileInMeters: Double = 1609.344
     private let kilometerInMeters: Double = 1000.0
-    
-    // Maximum number of historical data points to keep
-    private let maxPaceDataPointsCount = 500
+    private let maxPaceDataPointsCount: Int = 100 // Limit stored data points for memory efficiency
 
     // MARK: - Initialization
     init() {}
@@ -69,11 +67,6 @@ class RunningStatsManager: ObservableObject {
         resetStats()
         startTime = Date()
         lastLocationTimestamp = startTime
-        
-        // Add an initial data point at the start of the run
-        if let runStartTime = startTime {
-            paceDataPoints.append(PaceDataPoint(timestamp: runStartTime, cumulativeDistance: 0))
-        }
         print("Run started at \(startTime!)")
     }
 
@@ -93,10 +86,10 @@ class RunningStatsManager: ObservableObject {
     func resetStats() {
         startTime = nil
         runningData = RunningData()
-        rollingMilePace = nil
-        paceDataPoints.removeAll()
         routeCoordinates.removeAll()
         lastLocationTimestamp = nil
+        paceDataPoints.removeAll()
+        rollingMilePace = nil
         print("Stats reset.")
     }
 
@@ -134,21 +127,23 @@ class RunningStatsManager: ObservableObject {
             runningData.route = routeCoordinates
         }
 
-        // Add data point for rolling pace calculation
-        if paceDataPoints.last?.cumulativeDistance != runningData.totalDistance || paceDataPoints.isEmpty {
-            paceDataPoints.append(PaceDataPoint(timestamp: timestamp, cumulativeDistance: runningData.totalDistance))
-        }
-
-        // Calculate overall average pace (seconds per km)
-        if runningData.totalDistance > 0 && runningData.elapsedTime > 0 {
-            runningData.currentPace = (runningData.elapsedTime / runningData.totalDistance) * kilometerInMeters
+        // Calculate overall average pace (time per distance)
+        // Convert from m/s to seconds per mile for pace display
+        if runningData.totalDistance > 0 {
+            // Calculate pace in seconds per mile
+            let distanceInMiles = runningData.totalDistance / mileInMeters
+            runningData.currentPace = runningData.elapsedTime / distanceInMiles
         } else {
             runningData.currentPace = 0
         }
-
-        // Calculate rolling 1-mile pace
+        
+        // Add data point for rolling pace calculation
+        let dataPoint = PaceDataPoint(timestamp: timestamp, cumulativeDistance: newCumulativeDistance)
+        paceDataPoints.append(dataPoint)
+        
+        // Calculate rolling mile pace if we have enough data
         calculateRollingMilePace()
-
+        
         // Prune old data points to manage memory
         prunePaceDataPoints()
     }

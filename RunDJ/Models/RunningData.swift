@@ -38,13 +38,14 @@ struct RunningData {
         }
     }
     
-    /// Format pace in minutes per kilometer
+    /// Format pace (already in seconds per mile from RunningStatsManager)
     func formattedPace() -> String {
         guard currentPace > 0 else { return "--:--" }
         
-        let minutesPerKm = currentPace
-        let minutes = Int(minutesPerKm)
-        let seconds = Int((minutesPerKm - Double(minutes)) * 60)
+        // currentPace is already in seconds per mile
+        let totalSeconds = Int(currentPace)
+        let minutes = totalSeconds / 60
+        let seconds = totalSeconds % 60
         
         return String(format: "%d:%02d", minutes, seconds)
     }
