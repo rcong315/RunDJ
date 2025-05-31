@@ -24,11 +24,15 @@ struct RunningView: View {
     @State private var isThumbsDownSelected = false
     @State private var isRunning = false
     @State private var showingSettingsModal = false
+    @State private var showConfirmation = false
+    @State private var confirmationMessage = ""
+    @State private var confirmationColor = Color.green
     
     var bpm: Double
     
     var body: some View {
-        VStack {
+        ZStack {
+            VStack {
             if connectionStateText != "Connected" {
                 Button(action: {
                     switch spotifyManager.connectionState {
@@ -94,11 +98,14 @@ struct RunningView: View {
                 
                 HStack(spacing: 30) {
                     Button(action: {
+                        showConfirmationMessage("Creating playlist...", color: .blue)
                         rundjService.createPlaylist(accessToken: token, bpm: bpm, sources: settingsManager.musicSources, completion: { playlistIdOptional in
                             if let playlistId = playlistIdOptional {
                                 print("Playlist created with ID: \(playlistId) using sources: \(settingsManager.musicSources)")
+                                showConfirmationMessage("Playlist saved!", color: .green)
                             } else {
                                 print("Failed to create playlist. Sources: \(settingsManager.musicSources)")
+                                showConfirmationMessage("Failed to save playlist", color: .red)
                             }
                         })
                     }) {
@@ -107,11 +114,13 @@ struct RunningView: View {
                     Button(action: {
                         isThumbsUpSelected = true
                         isThumbsDownSelected = false
+                        showConfirmationMessage("Song liked!", color: .blue)
                         rundjService.sendFeedback(accessToken: token, songId: spotifyManager.currentId, feedback: "LIKE") { success in
                             if !success {
                                 isThumbsUpSelected = false
                                 errorMessage = "Failed to send like feedback"
                                 showSpotifyError = true
+                                showConfirmationMessage("Failed to like song", color: .red)
                                 SentrySDK.capture(message: "Failed to send like feedback") { scope in
                                     scope.setContext(value: ["song_id": spotifyManager.currentId], key: "feedback")
                                     scope.setLevel(.warning)
@@ -129,12 +138,14 @@ struct RunningView: View {
                     Button(action: {
                         isThumbsDownSelected = true
                         isThumbsUpSelected = false
+                        showConfirmationMessage("Song disliked, skipping...", color: .orange)
                         spotifyManager.skipToNext()
                         rundjService.sendFeedback(accessToken: token, songId: spotifyManager.currentId, feedback: "DISLIKE") { success in
                             if !success {
                                 isThumbsDownSelected = false
                                 errorMessage = "Failed to send dislike feedback"
                                 showSpotifyError = true
+                                showConfirmationMessage("Failed to dislike song", color: .red)
                                 SentrySDK.capture(message: "Failed to send dislike feedback") { scope in
                                     scope.setContext(value: ["song_id": spotifyManager.currentId], key: "feedback")
                                     scope.setLevel(.warning)
@@ -208,6 +219,30 @@ struct RunningView: View {
                 .frame(maxWidth: .infinity)
             }
             .frame(maxHeight: 100)
+        }
+            
+            // Confirmation overlay
+            if showConfirmation {
+                VStack {
+                    HStack {
+                        Text(confirmationMessage)
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 10)
+                            .background(confirmationColor)
+                            .cornerRadius(8)
+                            .shadow(radius: 4)
+                    }
+                    .padding(.top, 50)
+                    Spacer()
+                }
+                .transition(.asymmetric(
+                    insertion: .move(edge: .top).combined(with: .opacity),
+                    removal: .opacity
+                ))
+                .zIndex(1)
+                .animation(.easeInOut(duration: 0.3), value: showConfirmation)
+            }
         }
         .onChange(of: spotifyManager.connectionState) { _, newState in
             switch newState {
@@ -311,6 +346,17 @@ struct RunningView: View {
                 print("Successfully fetched \(fetchedSongs.count) songs. Queuing them now.")
                 spotifyManager.queue(songs: fetchedSongs)
             }
+        }
+    }
+    
+    func showConfirmationMessage(_ message: String, color: Color = .green) {
+        confirmationMessage = message
+        confirmationColor = color
+        showConfirmation = true
+        
+        // Hide the confirmation after 2 seconds
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            showConfirmation = false
         }
     }
     
