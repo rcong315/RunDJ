@@ -21,7 +21,7 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
     private let refreshTokenKey = "spotify_refresh_token"
     private let accessTokenKey = "spotify_access_token"
     private let expirationDateKey = "spotify_expiration_date"
-        
+    
     @Published var currentlyPlaying: String = ""
     @Published var currentId: String = ""
     @Published var currentArtist: String = ""
@@ -251,13 +251,13 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
     
     // MARK: - Authentication Flow
     
-    func initiateSession(completion: (() -> Void)? = nil) {
+    func initiateSession() {
         print("Initiating Spotify session...")
         
         if appRemote.isConnected {
             disconnect()
         }
-                
+        
         let scopes: SPTScope = [
             .appRemoteControl,
             .streaming,
@@ -306,7 +306,7 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
     
     /// Play a track with the given URI
     /// - Parameter uri: Spotify URI for the track to play
-    func play(uri: String, completion: @escaping () -> Void) {
+    func play(uri: String) {
         print("Playing: \(uri)")
         appRemote.playerAPI?.play(uri, callback: { result, error in
             if let error = error {
@@ -376,16 +376,15 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
     /// Queue a list of songs for playback
     /// - Parameter songs: Dictionary mapping song IDs to their BPM values
     func queue(songs: [String: Double]) {
-        flushQueue(completion: {
-            self.songMap = songs
-            if !self.songMap.isEmpty {
-                for song in self.songMap.keys.shuffled() {
-                    self.enQueue(id: song)
-                }
-            } else {
-                print("Queue initialized with empty song list.")
+        //        flushQueue()
+        self.songMap = songs
+        if !self.songMap.isEmpty {
+            for song in self.songMap.keys.shuffled() {
+                self.enQueue(id: song)
             }
-        })
+        } else {
+            print("Queue initialized with empty song list.")
+        }
     }
     
     func enQueue(id: String) {
@@ -401,8 +400,8 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
         })
     }
     
-    func flushQueue(completion: @escaping () -> Void) {
-        let id = ""
+    func flushQueue() {
+        let id = "2bNCdW4rLnCTzgqUXTTDO1"
         var skips = 0
         enQueue(id: id)
         while currentId != id && skips < 100 {
@@ -420,7 +419,6 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
         } else {
             skipToNext()
         }
-        
     }
     
     func turnOffRepeat() {
@@ -585,16 +583,16 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
                 self.currentBPM = self.songMap[self.currentId] ?? 0.0
             }
             
-//            self.turnOffRepeat()
+            //            self.turnOffRepeat()
             
             // Check if we need to play next song
             // If song duration is available and we're near the end
-//            if !self.isSkipping && !playerState.isPaused {
-//                if playerState.playbackPosition < 500 && self.songMap[self.currentId] == nil { // Less than 500ms remaining
-//                    print("Song ending, playing next song")
-//                    self.skipToNext()
-//                }
-//            }
+            //            if !self.isSkipping && !playerState.isPaused {
+            //                if playerState.playbackPosition < 500 && self.songMap[self.currentId] == nil { // Less than 500ms remaining
+            //                    print("Song ending, playing next song")
+            //                    self.skipToNext()
+            //                }
+            //            }
         }
     }
 }
