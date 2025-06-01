@@ -1,6 +1,15 @@
 {
-  "originHash" : "b85d7ccf7ccdd23744c5f69411978dd895e8545c680a7ffd7dff5c80c3dd6e74",
+  "originHash" : "2b22aca2a84f3b1dd79aad6baf8ecbc70d51673f70e77d88d25c132ceb8cd1d2",
   "pins" : [
+    {
+      "identity" : "ios-sdk",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/spotify/ios-sdk",
+      "state" : {
+        "branch" : "master",
+        "revision" : "af71ec0bcf3baa7ec88c72119b7fdf65eb91fd67"
+      }
+    },
     {
       "identity" : "sentry-cocoa",
       "kind" : "remoteSourceControl",
