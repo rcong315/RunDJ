@@ -232,7 +232,7 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
            let tokenRefreshURL = URL(string: "\(serverURL)/api/v1/spotify/auth/refresh") {
             config.tokenSwapURL = tokenSwapURL
             config.tokenRefreshURL = tokenRefreshURL
-            config.playURI = "2HHtWyy5CgaQbC7XSoOb0e" // Eye of the Tiger
+            config.playURI = "spotify:track:2HHtWyy5CgaQbC7XSoOb0e" // Eye of the Tiger
         }
         
         return config
@@ -349,9 +349,16 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
     func skipToNext() {
         print("SkipToNext called. Playing next song from custom list.")
         isSkipping = true
-        playNextSongInList() {
+        appRemote.playerAPI?.skip(toNext: { result, error in
+            if let error = error {
+                print("")
+                SentrySDK.capture(error: error) { scope in
+                    scope.setContext(value: ["action": "skip"], key: "spotify_playback")
+                    scope.setLevel(.warning)
+                }
+            }
             self.isSkipping = false
-        }
+        })
     }
     
     func rewind() {
@@ -369,36 +376,51 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
     /// Queue a list of songs for playback
     /// - Parameter songs: Dictionary mapping song IDs to their BPM values
     func queue(songs: [String: Double]) {
-        songMap = songs
-        if !songMap.isEmpty {
-            for song in songMap.keys {
-                enQueue(id: song)
+        flushQueue(completion: {
+            self.songMap = songs
+            if !self.songMap.isEmpty {
+                for song in self.songMap.keys.shuffled() {
+                    self.enQueue(id: song)
+                }
+            } else {
+                print("Queue initialized with empty song list.")
             }
-        } else {
-            print("Queue initialized with empty song list.")
-        }
+        })
     }
     
     func enQueue(id: String) {
-        appRemote.playerAPI?.enqueueTrackUri(id, callback: { result, error in
+        let uri = "spotify:track:\(id)"
+        appRemote.playerAPI?.enqueueTrackUri(uri, callback: { result, error in
             if let error = error {
                 print("Error enqueuing track: \(error)")
                 SentrySDK.capture(error: error) { scope in
-                    scope.setContext(value: ["action": "enqueue_track", "uri": id], key: "spotify_playback")
+                    scope.setContext(value: ["action": "enqueue_track", "uri": uri], key: "spotify_playback")
                     scope.setLevel(.warning)
                 }
             }
         })
     }
     
-    func flushQueue() {
+    func flushQueue(completion: @escaping () -> Void) {
         let id = ""
+        var skips = 0
         enQueue(id: id)
-        while currentId != id {
-            skipToNext() // WAIT For Finish
+        while currentId != id && skips < 100 {
+            if !isSkipping {
+                skipToNext()
+                skips += 1
+            }
         }
-        skipToNext()
-        // TODO: skip until enqueued song reached
+        if currentId != id {
+            print("Failed to flush queue, placeholder track not reached")
+            SentrySDK.capture(message: "Failed to flush queue, placeholder track not reached" ) { scope in
+                scope.setContext(value: ["action": "flush_queue"], key: "spotify_playback")
+                scope.setLevel(.error)
+            }
+        } else {
+            skipToNext()
+        }
+        
     }
     
     func turnOffRepeat() {
@@ -563,16 +585,16 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
                 self.currentBPM = self.songMap[self.currentId] ?? 0.0
             }
             
-            self.turnOffRepeat()
+//            self.turnOffRepeat()
             
             // Check if we need to play next song
             // If song duration is available and we're near the end
-            if !self.isSkipping && !playerState.isPaused {
-                if playerState.playbackPosition < 500 && self.songMap[self.currentId] == nil { // Less than 500ms remaining
-                    print("Song ending, playing next song")
-                    self.skipToNext()
-                }
-            }
+//            if !self.isSkipping && !playerState.isPaused {
+//                if playerState.playbackPosition < 500 && self.songMap[self.currentId] == nil { // Less than 500ms remaining
+//                    print("Song ending, playing next song")
+//                    self.skipToNext()
+//                }
+//            }
         }
     }
 }
