@@ -26,4 +26,14 @@ struct Configuration {
     static var sentryDSN: String? {
         return Bundle.main.object(forInfoDictionaryKey: "SENTRY_DSN") as? String
     }
+    
+    // MARK: - Spotify Configuration
+    
+    static var spotifyClientID: String {
+        return Bundle.main.object(forInfoDictionaryKey: "SPOTIFY_CLIENT_ID") as? String ?? ""
+    }
+    
+    static var spotifyRedirectURI: String {
+        return Bundle.main.object(forInfoDictionaryKey: "SPOTIFY_REDIRECT_URI") as? String ?? ""
+    }
 }

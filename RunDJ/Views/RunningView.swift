@@ -27,6 +27,7 @@ struct RunningView: View {
     @State private var showConfirmation = false
     @State private var confirmationMessage = ""
     @State private var confirmationColor = Color.green
+    @State private var isPlaylistButtonDisabled = true // Start disabled until Spotify connects
     
     var bpm: Double
     
@@ -75,7 +76,7 @@ struct RunningView: View {
                     }) {
                         Image(systemName: "backward.fill")
                             .font(.title)
-                            .foregroundColor(.green)
+                            .foregroundColor(spotifyManager.connectionState == .connected ? .green : .gray)
                     }
                     
                     Button(action: {
@@ -83,7 +84,7 @@ struct RunningView: View {
                     }) {
                         Image(systemName: spotifyManager.isPlaying ? "pause.fill" : "play.fill")
                             .font(.system(size: 44))
-                            .foregroundColor(.green)
+                            .foregroundColor(spotifyManager.connectionState == .connected ? .green : .gray)
                     }
                     
                     Button(action: {
@@ -91,13 +92,14 @@ struct RunningView: View {
                     }) {
                         Image(systemName: "forward.fill")
                             .font(.title)
-                            .foregroundColor(.green)
+                            .foregroundColor(spotifyManager.connectionState == .connected ? .green : .gray)
                     }
                 }
                 .padding(.bottom, 30)
                 
                 HStack(spacing: 30) {
                     Button(action: {
+                        isPlaylistButtonDisabled = true
                         showConfirmationMessage("Creating playlist...", color: .blue)
                         rundjService.createPlaylist(accessToken: token, bpm: bpm, sources: settingsManager.musicSources, completion: { playlistIdOptional in
                             if let playlistId = playlistIdOptional {
@@ -106,11 +108,15 @@ struct RunningView: View {
                             } else {
                                 print("Failed to create playlist. Sources: \(settingsManager.musicSources)")
                                 showConfirmationMessage("Failed to save playlist", color: .red)
+                                // Re-enable button on failure so user can retry
+                                isPlaylistButtonDisabled = false
                             }
                         })
                     }) {
                         Text("Save Playlist")
+                            .foregroundColor(isPlaylistButtonDisabled ? .gray : .blue)
                     }
+                    .disabled(isPlaylistButtonDisabled)
                     Button(action: {
                         isThumbsUpSelected = true
                         isThumbsDownSelected = false
@@ -130,10 +136,10 @@ struct RunningView: View {
                     }) {
                         Image(systemName: isThumbsUpSelected ? "hand.thumbsup.fill" : "hand.thumbsup")
                             .font(.title)
-                            .foregroundColor(.blue)
+                            .foregroundColor(spotifyManager.currentId == "" ? .gray : .blue)
                             .padding(10)
                     }
-                    .disabled(isThumbsUpSelected)
+                    .disabled(spotifyManager.currentId == "" || isThumbsUpSelected)
                     
                     Button(action: {
                         isThumbsDownSelected = true
@@ -155,10 +161,10 @@ struct RunningView: View {
                     }) {
                         Image(systemName: isThumbsDownSelected ? "hand.thumbsdown.fill" : "hand.thumbsdown")
                             .font(.title)
-                            .foregroundColor(.blue)
+                            .foregroundColor(spotifyManager.currentId == "" ? .gray : .blue)
                             .padding(10)
                     }
-                    .disabled(isThumbsDownSelected)
+                    .disabled(spotifyManager.currentId == "" || isThumbsDownSelected)
                 }
             }
             .padding()
@@ -249,11 +255,15 @@ struct RunningView: View {
             case .error(let message):
                 errorMessage = message
                 showSpotifyError = true
+                // Disable playlist button on error
+                isPlaylistButtonDisabled = true
                 SentrySDK.capture(message: "Spotify connection error displayed to user") { scope in
                     scope.setContext(value: ["error_message": message], key: "ui_error")
                     scope.setLevel(.warning)
                 }
             case .connected:
+                // Re-enable playlist button when Spotify connects
+                isPlaylistButtonDisabled = false
                 rundjService.register(accessToken: token, completion: { success in
                     if success {
                         print("Successfully registered user")
@@ -270,14 +280,19 @@ struct RunningView: View {
                     }
                 })
                 refreshSongsBasedOnSettings()
-            default:
-                break
+            case .disconnected:
+                // Disable playlist button when disconnected
+                isPlaylistButtonDisabled = true
             }
         }
         .onAppear() {
             print("On appear")
             if (connectionStateText == "Connected") {
                 refreshSongsBasedOnSettings()
+                isPlaylistButtonDisabled = false
+            } else {
+                // Disable playlist button if not connected
+                isPlaylistButtonDisabled = true
             }
         }
         .onChange(of: spotifyManager.currentId) { _, _ in

@@ -13,8 +13,8 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
     
     static let shared = SpotifyManager()
     
-    private let clientID = "6f69b8394f8d46fc87b274b54a3d9f1b"
-    private let redirectURI = "run-dj://auth"
+    private let clientID = Configuration.spotifyClientID
+    private let redirectURI = Configuration.spotifyRedirectURI
     private let serverURL = Configuration.serverBaseURL
     
     private let keychainServiceName = "com.rundj.spotifyauth"
@@ -30,8 +30,6 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
     @Published var isPlaying: Bool = false
     
     private var songMap = [String: Double]()
-    private var songList = [String]()
-    private var songIndex: Int = 0
     private var isSkipping = false
     
     enum ConnectionState: Equatable {
@@ -372,40 +370,35 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
     /// - Parameter songs: Dictionary mapping song IDs to their BPM values
     func queue(songs: [String: Double]) {
         songMap = songs
-        songList = Array(songs.keys).shuffled()
-        print(songList)
-        songIndex = 0
-        
-        if !songList.isEmpty {
-            skipToNext()
+        if !songMap.isEmpty {
+            for song in songMap.keys {
+                enQueue(id: song)
+            }
         } else {
             print("Queue initialized with empty song list.")
         }
     }
     
-    func getNextSong() -> String {
-        print("Getting next song from list. Index: \(songIndex)")
-        if songList.isEmpty {
-            return ""
-        }
-        return songList[songIndex]
+    func enQueue(id: String) {
+        appRemote.playerAPI?.enqueueTrackUri(id, callback: { result, error in
+            if let error = error {
+                print("Error enqueuing track: \(error)")
+                SentrySDK.capture(error: error) { scope in
+                    scope.setContext(value: ["action": "enqueue_track", "uri": id], key: "spotify_playback")
+                    scope.setLevel(.warning)
+                }
+            }
+        })
     }
     
-    func playNextSongInList(completion: @escaping () -> Void) {
-        if songList.isEmpty {
-            print("Song list empty, cannot play next song.")
-            return
+    func flushQueue() {
+        let id = ""
+        enQueue(id: id)
+        while currentId != id {
+            skipToNext() // WAIT For Finish
         }
-        
-        let songIDToPlay = getNextSong()
-        print("Playing next song from list: \(songIDToPlay), index: \(songIndex)")
-        self.play(uri: "spotify:track:\(songIDToPlay)") {
-            completion()
-        }
-
-        if !songList.isEmpty {
-            songIndex = (songIndex + 1) % songList.count
-        }
+        skipToNext()
+        // TODO: skip until enqueued song reached
     }
     
     func turnOffRepeat() {
