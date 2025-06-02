@@ -1,24 +1,16 @@
 {
-  "originHash" : "2b22aca2a84f3b1dd79aad6baf8ecbc70d51673f70e77d88d25c132ceb8cd1d2",
-  "pins" : [
-    {
-      "identity" : "ios-sdk",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/spotify/ios-sdk",
-      "state" : {
-        "branch" : "master",
-        "revision" : "af71ec0bcf3baa7ec88c72119b7fdf65eb91fd67"
+  "object": {
+    "pins": [
+      {
+        "package": "Sentry",
+        "repositoryURL": "https://github.com/getsentry/sentry-cocoa/",
+        "state": {
+          "branch": null,
+          "revision": "11aee2d3efdd74db8ce51533118500d140210292",
+          "version": "8.51.0"
+        }
       }
-    },
-    {
-      "identity" : "sentry-cocoa",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/getsentry/sentry-cocoa/",
-      "state" : {
-        "revision" : "11aee2d3efdd74db8ce51533118500d140210292",
-        "version" : "8.51.0"
-      }
-    }
-  ],
-  "version" : 3
+    ]
+  },
+  "version": 1
 }

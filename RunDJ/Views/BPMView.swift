@@ -32,7 +32,7 @@ struct BPMView: View {
                     .padding(.horizontal)
                     .foregroundColor(.secondary)
                 
-                Text("\(pedometerManager.stepsPerMinute)\nSteps Per Minute")
+                Text("\(pedometerManager.stepsPerMinute.formatted(.number.precision(.fractionLength(1))))\nSteps Per Minute")
                     .font(.headline)
                     .multilineTextAlignment(.center)
                     .padding()

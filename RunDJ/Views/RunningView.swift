@@ -10,15 +10,15 @@ import SwiftUI
 import Sentry
 
 struct RunningView: View {
-    @StateObject private var pedometerManager = PedometerManager.shared
-    @StateObject private var spotifyManager = SpotifyManager.shared
     @StateObject private var rundjService = RunDJService.shared
+    @StateObject private var spotifyManager = SpotifyManager.shared
+    @StateObject private var pedometerManager = PedometerManager.shared
     @StateObject private var runManager = RunManager.shared
     @StateObject private var runningStatsManager = RunningStatsManager.shared
     @EnvironmentObject var settingsManager: SettingsManager
     
-    @State private var showSpotifyError = false
-    @State private var errorMessage = ""
+    @State private var showSpotifyErrorAlert = false
+    @State private var spotifyErrorMessage = ""
     @State private var showingHelp = false
     @State private var isThumbsUpSelected = false
     @State private var isThumbsDownSelected = false
@@ -33,201 +33,50 @@ struct RunningView: View {
     
     var body: some View {
         ZStack {
-            VStack {
-            if connectionStateText != "Connected" {
-                Button(action: {
-                    switch spotifyManager.connectionState {
-                    case .disconnected:
-                        spotifyManager.initiateSession()
-                    case .error:
-                        spotifyManager.initiateSession()
-                    default:
-                        break
-                    }
-                }) {
-                    VStack {
-                        Text("Please connect your Spotify account in order to play music")
-                            .font(.headline)
-                        Text("Connect")
-                            .padding()
-                            .background(.green)
-                            .foregroundColor(.white)
-                            .cornerRadius(10)
-                    }
-                }
-            }
-            Text("Spotify Status: \(connectionStateText)")
-                .font(.headline)
-            
-            Rectangle()
-                .frame(height: 1)
-                .foregroundColor(.gray)
-                .padding(.horizontal, 20)
-            
-            Text("Playing: \(spotifyManager.currentlyPlaying)")
-            Text("By: \(spotifyManager.currentArtist)")
-            Text("BPM: \(String(format: "%.3f", spotifyManager.currentBPM))")
-            
-            VStack(spacing: 0) {
-                HStack(spacing: 40) {
-                    
-                    Button(action: {
-                        spotifyManager.rewind()
-                    }) {
-                        Image(systemName: "backward.fill")
-                            .font(.title)
-                            .foregroundColor(spotifyManager.connectionState == .connected ? .green : .gray)
-                    }
-                    
-                    Button(action: {
-                        spotifyManager.isPlaying ? spotifyManager.pause() : spotifyManager.resume()
-                    }) {
-                        Image(systemName: spotifyManager.isPlaying ? "pause.fill" : "play.fill")
-                            .font(.system(size: 44))
-                            .foregroundColor(spotifyManager.connectionState == .connected ? .green : .gray)
-                    }
-                    
-                    Button(action: {
-                        spotifyManager.skipToNext()
-                    }) {
-                        Image(systemName: "forward.fill")
-                            .font(.title)
-                            .foregroundColor(spotifyManager.connectionState == .connected ? .green : .gray)
-                    }
-                }
-                .padding(.bottom, 30)
+            VStack(spacing: 15) {
+                // Spotify Connection
+                SpotifyConnectionPromptView(spotifyManager: spotifyManager)
+                    .opacity(spotifyManager.connectionState != .connected ? 1.0 : 0.0)
+                // Only allow interactions with the prompt view if it's visible (i.e., not connected)
+                    .allowsHitTesting(spotifyManager.connectionState != .connected)
                 
-                HStack(spacing: 30) {
-                    Button(action: {
-                        isPlaylistButtonDisabled = true
-                        showConfirmationMessage("Creating playlist...", color: .blue)
-                        rundjService.createPlaylist(accessToken: token, bpm: bpm, sources: settingsManager.musicSources, completion: { playlistIdOptional in
-                            if let playlistId = playlistIdOptional {
-                                print("Playlist created with ID: \(playlistId) using sources: \(settingsManager.musicSources)")
-                                showConfirmationMessage("Playlist saved!", color: .green)
-                            } else {
-                                print("Failed to create playlist. Sources: \(settingsManager.musicSources)")
-                                showConfirmationMessage("Failed to save playlist", color: .red)
-                                // Re-enable button on failure so user can retry
-                                isPlaylistButtonDisabled = false
-                            }
-                        })
-                    }) {
-                        Text("Save Playlist")
-                            .foregroundColor(isPlaylistButtonDisabled ? .gray : .blue)
-                    }
-                    .disabled(isPlaylistButtonDisabled)
-                    Button(action: {
-                        isThumbsUpSelected = true
-                        isThumbsDownSelected = false
-                        showConfirmationMessage("Song liked!", color: .blue)
-                        rundjService.sendFeedback(accessToken: token, songId: spotifyManager.currentId, feedback: "LIKE") { success in
-                            if !success {
-                                isThumbsUpSelected = false
-                                errorMessage = "Failed to send like feedback"
-                                showSpotifyError = true
-                                showConfirmationMessage("Failed to like song", color: .red)
-                                SentrySDK.capture(message: "Failed to send like feedback") { scope in
-                                    scope.setContext(value: ["song_id": spotifyManager.currentId], key: "feedback")
-                                    scope.setLevel(.warning)
-                                }
-                            }
-                        }
-                    }) {
-                        Image(systemName: isThumbsUpSelected ? "hand.thumbsup.fill" : "hand.thumbsup")
-                            .font(.title)
-                            .foregroundColor(spotifyManager.currentId == "" ? .gray : .blue)
-                            .padding(10)
-                    }
-                    .disabled(spotifyManager.currentId == "" || isThumbsUpSelected)
-                    
-                    Button(action: {
-                        isThumbsDownSelected = true
-                        isThumbsUpSelected = false
-                        showConfirmationMessage("Song disliked, skipping...", color: .orange)
-                        spotifyManager.skipToNext()
-                        rundjService.sendFeedback(accessToken: token, songId: spotifyManager.currentId, feedback: "DISLIKE") { success in
-                            if !success {
-                                isThumbsDownSelected = false
-                                errorMessage = "Failed to send dislike feedback"
-                                showSpotifyError = true
-                                showConfirmationMessage("Failed to dislike song", color: .red)
-                                SentrySDK.capture(message: "Failed to send dislike feedback") { scope in
-                                    scope.setContext(value: ["song_id": spotifyManager.currentId], key: "feedback")
-                                    scope.setLevel(.warning)
-                                }
-                            }
-                        }
-                    }) {
-                        Image(systemName: isThumbsDownSelected ? "hand.thumbsdown.fill" : "hand.thumbsdown")
-                            .font(.title)
-                            .foregroundColor(spotifyManager.currentId == "" ? .gray : .blue)
-                            .padding(10)
-                    }
-                    .disabled(spotifyManager.currentId == "" || isThumbsDownSelected)
-                }
-            }
-            .padding()
-            
-            Rectangle()
-                .frame(height: 1)
-                .foregroundColor(.gray)
-                .padding(.horizontal, 20)
-            
-            if !isRunning {
-                Button("Start Run") {
-                    runManager.requestPermissionsAndStart()
-                    isRunning = true
-                }
-                .padding()
-                .background(Color.blue)
-                .foregroundColor(.white)
-                .cornerRadius(10)
-            } else {
-                Button("Stop Run") {
-                    runManager.stop()
-                    isRunning = false
-                }
-                .padding()
-                .background(Color.red)
-                .foregroundColor(.white)
-                .cornerRadius(10)
-            }
-            
-            HStack {
-                VStack {
-                    Text("Distance")
-                        .padding()
-                    Text(runningStatsManager.formatDistance(runningStatsManager.totalDistance))
-                }
-                .frame(maxWidth: .infinity)
+                Text("Spotify Status: \(connectionStateText)")
+                    .font(.headline)
+                    .padding(.bottom, 5)
                 
-                Rectangle()
-                    .frame(width: 1)
-                    .foregroundColor(.gray)
+                DividerView()
                 
-                VStack {
-                    Text("Pace")
-                        .padding()
-                    Text(runningStatsManager.formatPace(runningStatsManager.currentPace))
-                }
-                .frame(maxWidth: .infinity)
+                NowPlayingView(spotifyManager: spotifyManager)
                 
-                Rectangle()
-                    .frame(width: 1)
-                    .foregroundColor(.gray)
-                 
-                VStack {
-                    Text("Time")
-                        .padding()
-                    Text(runningStatsManager.formatTimeInterval(runningStatsManager.totalElapsedTime))
+                // Playback Controls Section
+                VStack(spacing: 0) {
+                    PlaybackControlsView(spotifyManager: spotifyManager, onSpotifyError: handleSpotifyError)
+                    ActionButtonsView(
+                        spotifyManager: spotifyManager,
+                        rundjService: rundjService,
+                        settingsManager: settingsManager, // Passed as ObservedObject
+                        token: token,
+                        bpm: bpm,
+                        isPlaylistButtonDisabled: $isPlaylistButtonDisabled,
+                        isThumbsUpSelected: $isThumbsUpSelected,
+                        isThumbsDownSelected: $isThumbsDownSelected,
+                        showConfirmationMessage: showConfirmationMessage,
+                        onSpotifyError: handleSpotifyError
+                    )
                 }
-                .frame(maxWidth: .infinity)
+                .padding(.bottom) // Padding for the whole controls section
+                
+                DividerView()
+                
+                RunControlView(isRunning: $isRunning, runManager: runManager)
+                
+                RunStatsHorizontalView(pedometerManager: pedometerManager, runningStatsManager: runningStatsManager)
+                
+                Spacer() // Pushes content to the top
             }
-            .frame(maxHeight: 100)
-        }
+            .padding(.top) // Add some padding at the top of the VStack
             
-            // Confirmation overlay
+            // Confirmation Overlay
             if showConfirmation {
                 VStack {
                     HStack {
@@ -244,55 +93,51 @@ struct RunningView: View {
                 }
                 .transition(.asymmetric(
                     insertion: .move(edge: .top).combined(with: .opacity),
-                    removal: .opacity
-                ))
+                    removal: .opacity.combined(with: .move(edge: .top)))
+                )
                 .zIndex(1)
                 .animation(.easeInOut(duration: 0.3), value: showConfirmation)
             }
         }
-        .onChange(of: spotifyManager.connectionState) { _, newState in
+        .onChange(of: spotifyManager.connectionState) { _, newState in // For Swift 5.5+
             switch newState {
             case .error(let message):
-                errorMessage = message
-                showSpotifyError = true
-                // Disable playlist button on error
+                spotifyErrorMessage = message
+                showSpotifyErrorAlert = true
                 isPlaylistButtonDisabled = true
                 SentrySDK.capture(message: "Spotify connection error displayed to user") { scope in
                     scope.setContext(value: ["error_message": message], key: "ui_error")
                     scope.setLevel(.warning)
                 }
             case .connected:
-                // Re-enable playlist button when Spotify connects
                 isPlaylistButtonDisabled = false
-                rundjService.register(accessToken: token, completion: { success in
+                rundjService.register(accessToken: token) { success in
                     if success {
                         print("Successfully registered user")
-                        let breadcrumb = Breadcrumb()
-                        breadcrumb.level = .info
-                        breadcrumb.category = "user"
+                        let breadcrumb = Breadcrumb(level: .info, category: "user")
                         breadcrumb.message = "User registered successfully"
                         SentrySDK.addBreadcrumb(breadcrumb)
                     } else {
                         print("Failed to register user")
-                        SentrySDK.capture(message: "Failed to register user") { scope in
-                            scope.setLevel(.error)
-                        }
+                        SentrySDK.capture(message: "Failed to register user") { scope in scope.setLevel(.error) }
                     }
-                })
+                }
                 refreshSongsBasedOnSettings()
             case .disconnected:
-                // Disable playlist button when disconnected
                 isPlaylistButtonDisabled = true
             }
         }
         .onAppear() {
-            print("On appear")
-            if (connectionStateText == "Connected") {
+            print("RunningView onAppear. Current BPM: \(bpm)")
+            if spotifyManager.connectionState == .connected {
                 refreshSongsBasedOnSettings()
                 isPlaylistButtonDisabled = false
             } else {
-                // Disable playlist button if not connected
                 isPlaylistButtonDisabled = true
+                if spotifyManager.getAccessToken() == nil {
+                    // Consider if auto-initiation is desired or should be user-driven
+                    // spotifyManager.initiateSession()
+                }
             }
         }
         .onChange(of: spotifyManager.currentId) { _, _ in
@@ -303,12 +148,10 @@ struct RunningView: View {
             print("Music sources changed in SettingsManager, new sources: \(newSources)")
             refreshSongsBasedOnSettings()
         }
-        .alert(isPresented: $showSpotifyError) {
-            return Alert(
-                title: Text("Spotify Connection Error"),
-                message: Text(errorMessage),
-                dismissButton: .default(Text("OK"))
-            )
+        .alert("Spotify Error", isPresented: $showSpotifyErrorAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(spotifyErrorMessage)
         }
         .sheet(isPresented: $showingHelp) {
             HelpView(context: .runningView)
@@ -324,27 +167,32 @@ struct RunningView: View {
         .toolbar {
             ToolbarItem(placement: .principal) {
                 Text("\(Int(round(bpm))) BPM")
-                    .font(.title)
+                    .font(.title2)
+                    .fontWeight(.bold)
             }
             ToolbarItem(placement: .navigationBarTrailing) {
                 HStack {
-                    Button(action: {
-                        showingSettingsModal = true
-                    }) {
-                        Image(systemName: "gearshape")
-                            .font(.title2)
-                            .foregroundColor(.blue)
+                    Button(action: { showingSettingsModal = true }) {
+                        Image(systemName: "gearshape.fill")
+                            .imageScale(.large)
                     }
-                    
-                    Button(action: {
-                        showingHelp = true
-                    }) {
-                        Image(systemName: "questionmark.circle")
-                            .font(.title2)
-                            .foregroundColor(.blue)
+                    Button(action: { showingHelp = true }) {
+                        Image(systemName: "questionmark.circle.fill")
+                            .imageScale(.large)
                     }
                 }
+                .foregroundColor(.blue)
             }
+        }
+    }
+    
+    // MARK: - Helper Functions
+    private func handleSpotifyError(_ error: Error, message: String) {
+        print("\(message) Error: \(error.localizedDescription)")
+        spotifyErrorMessage = "\(message)\nDetails: \(error.localizedDescription)"
+        showSpotifyErrorAlert = true
+        SentrySDK.capture(error: error) { scope in
+            scope.setContext(value: ["user_action_message": message], key: "spotify_action_error")
         }
     }
     
@@ -354,12 +202,21 @@ struct RunningView: View {
             return
         }
         print("Refreshing songs with BPM \(bpm) from sources: \(settingsManager.musicSources)")
+        showConfirmationMessage("Finding songs for \(Int(round(bpm))) BPM...", color: .blue)
+        
         rundjService.getSongsByBPM(accessToken: token, bpm: bpm, sources: settingsManager.musicSources) { fetchedSongs in
-            if fetchedSongs.isEmpty {
-                print("Failed to get songs or no songs found for current settings.")
-            } else {
-                print("Successfully fetched \(fetchedSongs.count) songs. Queuing them now.")
-                spotifyManager.queue(songs: fetchedSongs)
+            DispatchQueue.main.async {
+                if fetchedSongs.isEmpty {
+                    print("Failed to get songs or no songs found for current settings.")
+                    self.showConfirmationMessage("No songs found for \(Int(round(bpm))) BPM.", color: .orange)
+                } else {
+                    print("Successfully fetched \(fetchedSongs.count) songs. Flushing queue and adding new songs.")
+                    Task { // This Task runs on MainActor due to refreshSongsBasedOnSettings' context
+                        await self.spotifyManager.flushQueue()
+                        await self.spotifyManager.queueSongs(fetchedSongs)
+                        self.showConfirmationMessage("New songs queued!", color: .green)
+                    }
+                }
             }
         }
     }
@@ -367,11 +224,14 @@ struct RunningView: View {
     func showConfirmationMessage(_ message: String, color: Color = .green) {
         confirmationMessage = message
         confirmationColor = color
-        showConfirmation = true
+        withAnimation {
+            showConfirmation = true
+        }
         
-        // Hide the confirmation after 2 seconds
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-            showConfirmation = false
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+            withAnimation {
+                showConfirmation = false
+            }
         }
     }
     
@@ -381,13 +241,286 @@ struct RunningView: View {
     
     private var connectionStateText: String {
         switch spotifyManager.connectionState {
-        case .connected:
-            return "Connected"
-        case .disconnected:
-            return "Disconnected"
+        case .connected: return "Connected"
+        case .disconnected: return "Disconnected"
         case .error(let message):
-            return "Error: \(message)"
+            let shortMessage = message.prefix(50) + (message.count > 50 ? "..." : "")
+            return "Error: \(shortMessage)"
         }
+    }
+}
+
+// MARK: - Child View Components
+
+struct SpotifyConnectionPromptView: View {
+    @ObservedObject var spotifyManager: SpotifyManager
+    
+    var body: some View {
+        Button(action: {
+            switch spotifyManager.connectionState {
+            case .disconnected, .error:
+                spotifyManager.initiateSession()
+            default:
+                break
+            }
+        }) {
+            VStack {
+                Text("Please connect your Spotify account")
+                    .font(.headline)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
+                Text("Connect Spotify")
+                    .padding()
+                    .background(Color.green)
+                    .foregroundColor(.white)
+                    .cornerRadius(10)
+            }
+            .padding(.vertical)
+        }
+    }
+}
+
+struct DividerView: View {
+    var body: some View {
+        Rectangle()
+            .frame(height: 1)
+            .foregroundColor(.gray.opacity(0.5))
+            .padding(.horizontal, 20)
+    }
+}
+
+struct NowPlayingView: View {
+    @ObservedObject var spotifyManager: SpotifyManager
+    
+    var body: some View {
+        Group {
+            Text("Playing: \(spotifyManager.currentlyPlaying.isEmpty ? "N/A" : spotifyManager.currentlyPlaying)")
+                .lineLimit(1)
+            Text("By: \(spotifyManager.currentArtist.isEmpty ? "N/A" : spotifyManager.currentArtist)")
+                .lineLimit(1)
+            Text("Track BPM: \(spotifyManager.currentBPM == 0.0 ? "N/A" : String(format: "%.1f", spotifyManager.currentBPM))")
+        }
+        .font(.headline)
+        .padding(.horizontal)
+        .frame(minHeight: 30) // Ensure some space for text
+    }
+}
+
+struct PlaybackControlsView: View {
+    @ObservedObject var spotifyManager: SpotifyManager
+    var onSpotifyError: (Error, String) -> Void
+    
+    var body: some View {
+        HStack(spacing: 40) {
+            Button(action: {
+                Task {
+                    do { try await spotifyManager.rewindTrack() }
+                    catch { onSpotifyError(error, "Failed to rewind.") }
+                }
+            }) {
+                Image(systemName: "backward.fill")
+                    .font(.title)
+            }
+            .disabled(spotifyManager.connectionState != .connected)
+            
+            Button(action: {
+                Task {
+                    do {
+                        if spotifyManager.isPlaying { try await spotifyManager.pausePlayback() }
+                        else { try await spotifyManager.resumePlayback() }
+                    } catch {
+                        onSpotifyError(error, spotifyManager.isPlaying ? "Failed to pause." : "Failed to resume.")
+                    }
+                }
+            }) {
+                Image(systemName: spotifyManager.isPlaying ? "pause.fill" : "play.fill")
+                    .font(.system(size: 44))
+            }
+            .disabled(spotifyManager.connectionState != .connected)
+            
+            Button(action: {
+                Task {
+                    do { try await spotifyManager.skipToNextTrack() }
+                    catch { onSpotifyError(error, "Failed to skip.") }
+                }
+            }) {
+                Image(systemName: "forward.fill")
+                    .font(.title)
+            }
+            .disabled(spotifyManager.connectionState != .connected)
+        }
+        .foregroundColor(spotifyManager.connectionState == .connected ? .green : .gray) // Apply to all buttons in HStack
+        .padding(.vertical, 20)
+    }
+}
+
+struct ActionButtonsView: View {
+    @ObservedObject var spotifyManager: SpotifyManager
+    @ObservedObject var rundjService: RunDJService
+    @ObservedObject var settingsManager: SettingsManager // Changed to ObservedObject
+    
+    let token: String
+    let bpm: Double
+    
+    @Binding var isPlaylistButtonDisabled: Bool
+    @Binding var isThumbsUpSelected: Bool
+    @Binding var isThumbsDownSelected: Bool
+    
+    var showConfirmationMessage: (String, Color) -> Void
+    var onSpotifyError: (Error, String) -> Void
+    
+    var body: some View {
+        HStack(spacing: 30) {
+            Button(action: {
+                isPlaylistButtonDisabled = true
+                showConfirmationMessage("Creating playlist...", .blue)
+                rundjService.createPlaylist(accessToken: token, bpm: bpm, sources: settingsManager.musicSources) { playlistIdOptional in
+                    DispatchQueue.main.async {
+                        if let playlistId = playlistIdOptional {
+                            print("Playlist created with ID: \(playlistId)")
+                            showConfirmationMessage("Playlist saved!", .green)
+                        } else {
+                            showConfirmationMessage("Failed to save playlist", .red)
+                            isPlaylistButtonDisabled = spotifyManager.connectionState != .connected
+                        }
+                    }
+                }
+            }) {
+                Text("Save Playlist")
+                    .foregroundColor(isPlaylistButtonDisabled || spotifyManager.connectionState != .connected ? .gray : .blue)
+            }
+            .disabled(isPlaylistButtonDisabled || spotifyManager.connectionState != .connected)
+            
+            Button(action: {
+                guard !spotifyManager.currentId.isEmpty else { return }
+                isThumbsUpSelected = true
+                isThumbsDownSelected = false
+                showConfirmationMessage("Song liked!", .blue)
+                rundjService.sendFeedback(accessToken: token, songId: spotifyManager.currentId, feedback: "LIKE") { success in
+                    DispatchQueue.main.async {
+                        if !success {
+                            isThumbsUpSelected = false
+                            showConfirmationMessage("Failed to like song", .red)
+                            SentrySDK.capture(message: "Failed to send like feedback") { scope in
+                                scope.setContext(value: ["song_id": spotifyManager.currentId], key: "feedback_like_fail")
+                                scope.setLevel(.warning)
+                            }
+                        }
+                    }
+                }
+            }) {
+                Image(systemName: isThumbsUpSelected ? "hand.thumbsup.fill" : "hand.thumbsup")
+            }
+            .disabled(spotifyManager.currentId.isEmpty || isThumbsUpSelected || spotifyManager.connectionState != .connected)
+            
+            Button(action: {
+                guard !spotifyManager.currentId.isEmpty else { return }
+                isThumbsDownSelected = true
+                isThumbsUpSelected = false
+                showConfirmationMessage("Song disliked, skipping...", .orange)
+                Task {
+                    async let skipTask: () = spotifyManager.skipToNextTrack()
+                    rundjService.sendFeedback(accessToken: token, songId: spotifyManager.currentId, feedback: "DISLIKE") { success in
+                        DispatchQueue.main.async {
+                            if !success {
+                                showConfirmationMessage("Failed to send dislike feedback", .red)
+                                SentrySDK.capture(message: "Failed to send dislike feedback") { scope in
+                                    scope.setContext(value: ["song_id": spotifyManager.currentId], key: "feedback_dislike_fail")
+                                    scope.setLevel(.warning)
+                                }
+                            }
+                        }
+                    }
+                    do { try await skipTask } catch {
+                        DispatchQueue.main.async { onSpotifyError(error, "Failed to skip after dislike.") }
+                    }
+                }
+            }) {
+                Image(systemName: isThumbsDownSelected ? "hand.thumbsdown.fill" : "hand.thumbsdown")
+            }
+            .disabled(spotifyManager.currentId.isEmpty || isThumbsDownSelected || spotifyManager.connectionState != .connected)
+        }
+        .font(.title) // Apply font to all images in HStack
+        .foregroundColor(spotifyManager.currentId.isEmpty || spotifyManager.connectionState != .connected ? .gray : .blue) // Default color for icons
+        .padding(.bottom) // Add some padding below these action buttons
+    }
+}
+
+struct RunControlView: View {
+    @Binding var isRunning: Bool
+    @ObservedObject var runManager: RunManager
+    
+    var body: some View {
+        if !isRunning {
+            Button("Start Run") {
+                runManager.requestPermissionsAndStart()
+                isRunning = true
+            }
+            .buttonStyle(PrimaryActionButtonStyle(backgroundColor: .blue))
+        } else {
+            Button("Stop Run") {
+                runManager.stop()
+                isRunning = false
+            }
+            .buttonStyle(PrimaryActionButtonStyle(backgroundColor: .red))
+        }
+    }
+}
+
+struct RunStatsHorizontalView: View {
+    @ObservedObject var pedometerManager: PedometerManager
+    @ObservedObject var runningStatsManager: RunningStatsManager
+    
+    var body: some View {
+        StatView(title: "Current Steps Per Minute", value: pedometerManager.stepsPerMinute.formatted(.number.precision(.fractionLength(1))))
+        HStack {
+            StatView(title: "Distance", value: runningStatsManager.formatDistance(runningStatsManager.totalDistance))
+            Divider() // Uses the standard SwiftUI Divider
+            StatView(title: "Pace", value: runningStatsManager.formatPace(runningStatsManager.currentPace))
+            Divider()
+            StatView(title: "Time", value: runningStatsManager.formatTimeInterval(runningStatsManager.totalElapsedTime))
+        }
+        .frame(maxHeight: 100)
+        .padding(.vertical)
+    }
+}
+
+// MARK: - Helper Structs (Styles, Small Views)
+
+struct StatView: View {
+    let title: String
+    let value: String
+    
+    var body: some View {
+        VStack {
+            Text(title)
+                .font(.caption)
+                .foregroundColor(.gray)
+            Text(value)
+                .font(.headline)
+                .fontWeight(.medium)
+        }
+        .frame(maxWidth: .infinity)
+    }
+}
+
+struct PrimaryActionButtonStyle: ButtonStyle {
+    let backgroundColor: Color
+    
+    // Use explicit ButtonStyleConfiguration for the parameter type
+    func makeBody(configuration: ButtonStyleConfiguration) -> some View {
+        configuration.label
+            .padding() // Padding for the content (e.g., Text)
+            .frame(maxWidth: .infinity) // Make the button's content area stretch
+            .background(backgroundColor) // Apply background to the padded content area
+            .foregroundColor(.white) // Text color on the background
+        // The .padding(.horizontal) that was here previously was applied *after* the background
+        // and corner radius. If you intended to make the backgrounded area wider,
+        // that padding should be applied *before* .background().
+        // If it was for spacing around the button, apply it to the Button instance itself.
+        // For now, I'm assuming the single .padding() above is for content padding.
+            .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
+            .animation(.spring(), value: configuration.isPressed) // Animate scale effect based on press state
     }
 }
 
