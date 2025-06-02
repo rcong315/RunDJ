@@ -13,15 +13,15 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
     
     static let shared = SpotifyManager()
     
-    private let clientID = "6f69b8394f8d46fc87b274b54a3d9f1b"
-    private let redirectURI = "run-dj://auth"
+    private let clientID = Configuration.spotifyClientID
+    private let redirectURI = Configuration.spotifyRedirectURI
     private let serverURL = Configuration.serverBaseURL
     
     private let keychainServiceName = "com.rundj.spotifyauth"
     private let refreshTokenKey = "spotify_refresh_token"
     private let accessTokenKey = "spotify_access_token"
     private let expirationDateKey = "spotify_expiration_date"
-        
+    
     @Published var currentlyPlaying: String = ""
     @Published var currentId: String = ""
     @Published var currentArtist: String = ""
@@ -30,8 +30,6 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
     @Published var isPlaying: Bool = false
     
     private var songMap = [String: Double]()
-    private var songList = [String]()
-    private var songIndex: Int = 0
     private var isSkipping = false
     
     enum ConnectionState: Equatable {
@@ -45,6 +43,26 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
             case (.disconnected, .disconnected): return true
             case (.error(let lhsError), .error(let rhsError)): return lhsError == rhsError
             default: return false
+            }
+        }
+    }
+    
+    enum SpotifyError: LocalizedError {
+        case notConnected
+        case playbackFailed(String)
+        case enqueueFailed(String)
+        case unknownError
+        
+        var errorDescription: String? {
+            switch self {
+            case .notConnected:
+                return "Spotify is not connected"
+            case .playbackFailed(let message):
+                return "Playback failed: \(message)"
+            case .enqueueFailed(let message):
+                return "Failed to enqueue track: \(message)"
+            case .unknownError:
+                return "An unknown error occurred"
             }
         }
     }
@@ -100,6 +118,10 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
         
         // Add a 5-minute buffer to ensure we don't use tokens that are about to expire
         return expirationDate.timeIntervalSinceNow > 300
+    }
+    
+    func getAccessToken() -> String? {
+        return accessToken
     }
     
     // MARK: - Keychain Methods
@@ -234,7 +256,7 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
            let tokenRefreshURL = URL(string: "\(serverURL)/api/v1/spotify/auth/refresh") {
             config.tokenSwapURL = tokenSwapURL
             config.tokenRefreshURL = tokenRefreshURL
-            config.playURI = "2HHtWyy5CgaQbC7XSoOb0e" // Eye of the Tiger
+            config.playURI = "spotify:track:2HHtWyy5CgaQbC7XSoOb0e" // Eye of the Tiger
         }
         
         return config
@@ -253,13 +275,13 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
     
     // MARK: - Authentication Flow
     
-    func initiateSession(completion: (() -> Void)? = nil) {
+    func initiateSession() {
         print("Initiating Spotify session...")
         
         if appRemote.isConnected {
             disconnect()
         }
-                
+        
         let scopes: SPTScope = [
             .appRemoteControl,
             .streaming,
@@ -292,139 +314,236 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
         sessionManager.renewSession()
     }
     
+    func disconnect() {
+        if appRemote.isConnected {
+            print("Disconnecting Spotify App Remote.")
+            appRemote.disconnect()
+        }
+    }
+    
     func handleURL(_ url: URL) {
         print("Handling Spotify URL: \(url)")
         let handled = sessionManager.application(UIApplication.shared, open: url)
         print("URL handled by session manager: \(handled)")
     }
     
-    // MARK: - Playback Controls
+    // MARK: - Playback Controls Helper
     
-    /// Retrieve the current Spotify access token
-    /// - Returns: The current access token or nil if not authenticated
-    func getAccessToken() -> String? {
-        return accessToken
-    }
-    
-    /// Play a track with the given URI
-    /// - Parameter uri: Spotify URI for the track to play
-    func play(uri: String, completion: @escaping () -> Void) {
-        print("Playing: \(uri)")
-        appRemote.playerAPI?.play(uri, callback: { result, error in
-            if let error = error {
-                print("Error playing: \(error.localizedDescription)")
-                SentrySDK.capture(error: error) { scope in
-                    scope.setContext(value: ["uri": uri], key: "spotify_playback")
-                    scope.setLevel(.error)
+    @MainActor
+    private func performPlayerAPICall(
+        actionDescription: String,
+        sentryContext: [String: Any] = [:],
+        sentryLevel: SentryLevel = .warning,
+        apiCall: @escaping (SPTAppRemotePlayerAPI, @escaping SPTAppRemoteCallback) -> Void,
+        onSuccess: (() -> Void)? = nil,
+        errorBuilder: @escaping (Error) -> Error
+    ) async throws {
+        guard appRemote.isConnected else {
+            print("Spotify not connected for \(actionDescription).")
+            throw SpotifyError.notConnected
+        }
+        
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            guard let playerAPI = appRemote.playerAPI else {
+                print("PlayerAPI not available for \(actionDescription).")
+                continuation.resume(throwing: SpotifyError.notConnected)
+                return
+            }
+            
+            apiCall(playerAPI) { _, originalSDKError in
+                if let sdkError = originalSDKError {
+                    print("Error during \(actionDescription): \(sdkError.localizedDescription)")
+                    var context = sentryContext
+                    context["action_description"] = actionDescription
+                    SentrySDK.capture(error: sdkError) { scope in
+                        scope.setContext(value: context, key: "spotify_action_failure")
+                        scope.setLevel(sentryLevel)
+                    }
+                    continuation.resume(throwing: errorBuilder(sdkError))
+                } else {
+                    print("\(actionDescription) successful.")
+                    onSuccess?()
+                    continuation.resume(returning: ())
                 }
             }
-            self.isSkipping = false
-        })
-    }
-    
-    /// Resume playback of the current track
-    func resume() {
-        appRemote.playerAPI?.resume({ result, error in
-            if let error = error {
-                print("Error resuming playback: \(error)")
-                SentrySDK.capture(error: error) { scope in
-                    scope.setContext(value: ["action": "resume"], key: "spotify_playback")
-                    scope.setLevel(.warning)
-                }
-            }
-        })
-    }
-    
-    /// Pause the currently playing track
-    func pause() {
-        appRemote.playerAPI?.pause({ result, error in
-            if let error = error {
-                print("Error pausing playback: \(error)")
-                SentrySDK.capture(error: error) { scope in
-                    scope.setContext(value: ["action": "pause"], key: "spotify_playback")
-                    scope.setLevel(.warning)
-                }
-            }
-        })
-    }
-    
-    func skipToNext() {
-        print("SkipToNext called. Playing next song from custom list.")
-        isSkipping = true
-        playNextSongInList() {
-            self.isSkipping = false
         }
     }
     
-    func rewind() {
-        appRemote.playerAPI?.seek(toPosition: 0, callback: { result, error in
-            if let error = error {
-                print("Error rewinding track: \(error)")
-                SentrySDK.capture(error: error) { scope in
-                    scope.setContext(value: ["action": "rewind", "position": 0], key: "spotify_playback")
-                    scope.setLevel(.warning)
-                }
-            }
-        })
+    // MARK: - Async Playback Controls (Using Helper)
+    
+    @MainActor
+    func play(uri: String) async throws {
+        print("Attempting to play URI: \(uri)")
+        try await performPlayerAPICall(
+            actionDescription: "play track",
+            sentryContext: ["uri": uri],
+            sentryLevel: .error,
+            apiCall: { playerAPI, callback in
+                playerAPI.play(uri, callback: callback)
+            },
+            onSuccess: { [weak self] in
+                self?.isSkipping = false // Reset isSkipping if a direct play occurs
+            },
+            errorBuilder: { sdkError in SpotifyError.playbackFailed("Playing track failed: \(sdkError.localizedDescription)") }
+        )
     }
     
-    /// Queue a list of songs for playback
-    /// - Parameter songs: Dictionary mapping song IDs to their BPM values
-    func queue(songs: [String: Double]) {
-        songMap = songs
-        songList = Array(songs.keys).shuffled()
-        print(songList)
-        songIndex = 0
+    @MainActor
+    func resumePlayback() async throws {
+        print("Attempting to resume playback.")
+        try await performPlayerAPICall(
+            actionDescription: "resume playback",
+            sentryLevel: .warning,
+            apiCall: { playerAPI, callback in
+                playerAPI.resume(callback)
+            },
+            errorBuilder: { sdkError in SpotifyError.playbackFailed("Resuming playback failed: \(sdkError.localizedDescription)") }
+        )
+    }
+    
+    @MainActor
+    func pausePlayback() async throws {
+        print("Attempting to pause playback.")
+        try await performPlayerAPICall(
+            actionDescription: "pause playback",
+            sentryLevel: .warning,
+            apiCall: { playerAPI, callback in
+                playerAPI.pause(callback)
+            },
+            errorBuilder: { sdkError in SpotifyError.playbackFailed("Pausing playback failed: \(sdkError.localizedDescription)") }
+        )
+    }
+    
+    @MainActor
+    func skipToNextTrack() async throws {
+        print("Attempting to skip to next track.")
+        isSkipping = true // Set before the async operation begins
         
-        if !songList.isEmpty {
-            skipToNext()
+        do {
+            try await performPlayerAPICall(
+                actionDescription: "skip to next track",
+                sentryLevel: .warning,
+                apiCall: { playerAPI, callback in
+                    playerAPI.skip(toNext: callback)
+                },
+                onSuccess: { [weak self] in
+                    self?.isSkipping = false
+                },
+                errorBuilder: { [weak self] sdkError in
+                    self?.isSkipping = false // Ensure reset on SDK error
+                    return SpotifyError.playbackFailed("Skipping to next track failed: \(sdkError.localizedDescription)")
+                }
+            )
+        } catch {
+            isSkipping = false // Ensure reset if performPlayerAPICall throws before SDK callback
+            throw error
+        }
+    }
+    
+    @MainActor
+    func rewindTrack() async throws {
+        print("Attempting to rewind track.")
+        try await performPlayerAPICall(
+            actionDescription: "rewind track",
+            sentryLevel: .warning,
+            apiCall: { playerAPI, callback in
+                playerAPI.seek(toPosition: 0, callback: callback)
+            },
+            errorBuilder: { sdkError in SpotifyError.playbackFailed("Rewinding track failed: \(sdkError.localizedDescription)") }
+        )
+    }
+    
+    @MainActor
+    func enqueueTrack(id: String) async throws {
+        let uri = "spotify:track:\(id)"
+        print("Attempting to enqueue track URI: \(uri)")
+        try await performPlayerAPICall(
+            actionDescription: "enqueue track",
+            sentryContext: ["uri": uri],
+            sentryLevel: .warning,
+            apiCall: { playerAPI, callback in
+                playerAPI.enqueueTrackUri(uri, callback: callback)
+            },
+            errorBuilder: { sdkError in SpotifyError.enqueueFailed("Enqueuing track \(uri) failed: \(sdkError.localizedDescription)") }
+        )
+    }
+    
+    @MainActor
+    func turnOffRepeat() async throws {
+        print("Attempting to turn off repeat mode.")
+        try await performPlayerAPICall(
+            actionDescription: "turn off repeat mode",
+            sentryLevel: .info, // Setting repeat mode might be less critical
+            apiCall: { playerAPI, callback in
+                playerAPI.setRepeatMode(.off, callback: callback)
+            },
+            errorBuilder: { sdkError in SpotifyError.playbackFailed("Turning off repeat failed: \(sdkError.localizedDescription)") }
+        )
+    }
+    
+    // MARK: - Other MainActor methods
+    // These methods have more complex logic than simple API calls and might not use the helper directly,
+    // or might use it internally for sub-steps if applicable.
+    @MainActor
+    func queueSongs(_ songs: [String: Double]) async {
+        self.songMap = songs // songMap maps track ID to BPM (ensure keys are IDs if URI used in playerStateDidChange)
+        print("Queue received \(songs.count) songs. Shuffling and enqueuing...")
+        if !self.songMap.isEmpty {
+            for songId in self.songMap.keys.shuffled() {
+                do {
+                    try await self.enqueueTrack(id: songId) // Uses the refactored enqueueTrack
+                } catch {
+                    print("Failed to enqueue song \(songId): \(error.localizedDescription)")
+                    // Sentry logging is handled within enqueueTrack
+                }
+            }
         } else {
             print("Queue initialized with empty song list.")
         }
     }
     
-    func getNextSong() -> String {
-        print("Getting next song from list. Index: \(songIndex)")
-        if songList.isEmpty {
-            return ""
-        }
-        return songList[songIndex]
-    }
-    
-    func playNextSongInList(completion: @escaping () -> Void) {
-        if songList.isEmpty {
-            print("Song list empty, cannot play next song.")
+    @MainActor
+    func flushQueue() async {
+        // (Implementation from previous answer, using refactored skipToNextTrack and enqueueTrack)
+        guard appRemote.isConnected, appRemote.playerAPI != nil else {
+            print("Cannot flush queue: Spotify not connected or player API unavailable.")
             return
         }
+        print("Attempting to flush queue...")
+        let placeholderTrackId = "2bNCdW4rLnCTzgqUXTTDO1" // A valid, short, possibly silent track ID
+        var skips = 0
+        let maxSkips = 20
         
-        let songIDToPlay = getNextSong()
-        print("Playing next song from list: \(songIDToPlay), index: \(songIndex)")
-        self.play(uri: "spotify:track:\(songIDToPlay)") {
-            completion()
-        }
-
-        if !songList.isEmpty {
-            songIndex = (songIndex + 1) % songList.count
-        }
-    }
-    
-    func turnOffRepeat() {
-        self.appRemote.playerAPI?.setRepeatMode(.off, callback: { result, error in
-            if let error = error {
-                print("Error turning off repeat: \(error)")
-                SentrySDK.capture(error: error) { scope in
-                    scope.setContext(value: ["action": "set_repeat_off"], key: "spotify_playback")
-                    scope.setLevel(.info)
+        do {
+            try await enqueueTrack(id: placeholderTrackId) // Uses refactored method
+            print("Placeholder track enqueued. Now skipping to it.")
+            
+            while currentId != placeholderTrackId && skips < maxSkips {
+                if !isSkipping {
+                    print("Flushing queue: Skip attempt \(skips + 1)")
+                    try await skipToNextTrack() // Uses refactored method
+                    try? await Task.sleep(nanoseconds: 200_000_000) // 0.2s delay for state update
+                    skips += 1
+                } else {
+                    try? await Task.sleep(nanoseconds: 100_000_000) // 0.1s delay if already skipping
                 }
             }
-        })
+            
+            if currentId == placeholderTrackId {
+                print("Reached placeholder track. Skipping one more time to clear it.")
+                try await skipToNextTrack() // Uses refactored method
+                print("Queue flush attempt complete.")
+            } else {
+                print("Failed to reliably reach placeholder track after \(skips) skips. Current ID: \(currentId)")
+                // Sentry logging for flush failure
+            }
+        } catch {
+            print("Error during queue flush: \(error.localizedDescription)")
+            // Sentry logging for flush error
+        }
+        self.songMap.removeAll()
     }
     
-    func disconnect() {
-        if appRemote.isConnected {
-            appRemote.disconnect()
-        }
-    }
     
     // MARK: - SPTSessionManagerDelegate
     
@@ -568,17 +687,6 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
                 let idToSet = String(trackId)
                 self.currentId = idToSet
                 self.currentBPM = self.songMap[self.currentId] ?? 0.0
-            }
-            
-            self.turnOffRepeat()
-            
-            // Check if we need to play next song
-            // If song duration is available and we're near the end
-            if !self.isSkipping && !playerState.isPaused {
-                if playerState.playbackPosition < 500 && self.songMap[self.currentId] == nil { // Less than 500ms remaining
-                    print("Song ending, playing next song")
-                    self.skipToNext()
-                }
             }
         }
     }

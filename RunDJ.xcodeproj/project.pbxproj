@@ -34,7 +34,6 @@
 		8FD3D1D52D58939A00367F7C /* RunDJ.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RunDJ.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8FD3D1E72D58939B00367F7C /* RunDJTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RunDJTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		8FD3D1F12D58939B00367F7C /* RunDJUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RunDJUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		8FE5AAF52DD6EF2800E3B3D0 /* SpotifyiOS.xcframework */ = {isa = PBXFileReference; expectedSignature = "AppleDeveloperProgram:2FNC3A47ZF:Spotify"; lastKnownFileType = wrapper.xcframework; name = SpotifyiOS.xcframework; path = "frameworks/ios-sdk/SpotifyiOS.xcframework"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -42,7 +41,6 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				config.xcconfig,
-				"frameworks/ios-sdk",
 				Info.plist,
 			);
 			target = 8FD3D1D42D58939A00367F7C /* RunDJ */;
@@ -99,21 +97,12 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		8FC6CEE42D62CFB200F58371 /* Frameworks */ = {
-			isa = PBXGroup;
-			children = (
-				8FE5AAF52DD6EF2800E3B3D0 /* SpotifyiOS.xcframework */,
-			);
-			name = Frameworks;
-			sourceTree = "<group>";
-		};
 		8FD3D1CC2D58939A00367F7C = {
 			isa = PBXGroup;
 			children = (
 				8FD3D1D72D58939A00367F7C /* RunDJ */,
 				8FD3D1EA2D58939B00367F7C /* RunDJTests */,
 				8FD3D1F42D58939B00367F7C /* RunDJUITests */,
-				8FC6CEE42D62CFB200F58371 /* Frameworks */,
 				8FD3D1D62D58939A00367F7C /* Products */,
 			);
 			sourceTree = "<group>";
