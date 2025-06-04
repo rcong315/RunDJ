@@ -132,6 +132,10 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
         
         guard let dataToStore = data.data(using: .utf8) else {
             print("Keychain ERROR: Failed to convert \(key) to Data")
+            SentrySDK.capture(message: "Keychain data conversion failed") { scope in
+                scope.setContext(value: ["key": key], key: "keychain_error")
+                scope.setLevel(.error)
+            }
             return
         }
         
@@ -208,9 +212,17 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
     }
     
     private func loadDateFromKeychain(key: String) -> Date? {
-        guard let timestampString = loadFromKeychain(key: key),
-              let timestamp = Double(timestampString) else {
+        guard let timestampString = loadFromKeychain(key: key) else {
+            print("Keychain ERROR: Failed to load date for \(key)")
+            return nil
+        }
+        
+        guard let timestamp = Double(timestampString) else {
             print("Keychain ERROR: Failed to parse date for \(key)")
+            SentrySDK.capture(message: "Keychain date parsing failed") { scope in
+                scope.setContext(value: ["key": key, "timestamp_string": timestampString], key: "keychain_error")
+                scope.setLevel(.error)
+            }
             return nil
         }
         let date = Date(timeIntervalSince1970: timestamp)
@@ -503,7 +515,10 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
         do {
             try await skipToNextTrack()
         } catch {
-            
+            SentrySDK.capture(error: error) { scope in
+                scope.setContext(value: ["action": "skip_after_queueing", "song_count": songs.count], key: "spotify_queue")
+                scope.setLevel(.warning)
+            }
         }
     }
     
@@ -539,11 +554,21 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
                 print("Queue flush attempt complete.")
             } else {
                 print("Failed to reliably reach placeholder track after \(skips) skips. Current ID: \(currentId)")
-                // Sentry logging for flush failure
+                SentrySDK.capture(message: "Queue flush failed - placeholder track not reached") { scope in
+                    scope.setContext(value: [
+                        "skips_attempted": skips,
+                        "current_id": self.currentId,
+                        "placeholder_id": placeholderTrackId
+                    ], key: "queue_flush")
+                    scope.setLevel(.warning)
+                }
             }
         } catch {
             print("Error during queue flush: \(error.localizedDescription)")
-            // Sentry logging for flush error
+            SentrySDK.capture(error: error) { scope in
+                scope.setContext(value: ["action": "queue_flush"], key: "spotify_queue")
+                scope.setLevel(.error)
+            }
         }
         self.songMap.removeAll()
     }
