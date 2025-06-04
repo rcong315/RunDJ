@@ -500,19 +500,23 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
         } else {
             print("Queue initialized with empty song list.")
         }
+        do {
+            try await skipToNextTrack()
+        } catch {
+            
+        }
     }
     
     @MainActor
     func flushQueue() async {
-        // (Implementation from previous answer, using refactored skipToNextTrack and enqueueTrack)
         guard appRemote.isConnected, appRemote.playerAPI != nil else {
             print("Cannot flush queue: Spotify not connected or player API unavailable.")
             return
         }
         print("Attempting to flush queue...")
-        let placeholderTrackId = "2bNCdW4rLnCTzgqUXTTDO1" // A valid, short, possibly silent track ID
+        let placeholderTrackId = "2bNCdW4rLnCTzgqUXTTDO1"
         var skips = 0
-        let maxSkips = 20
+        let maxSkips = 100
         
         do {
             try await enqueueTrack(id: placeholderTrackId) // Uses refactored method
@@ -522,10 +526,10 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
                 if !isSkipping {
                     print("Flushing queue: Skip attempt \(skips + 1)")
                     try await skipToNextTrack() // Uses refactored method
-                    try? await Task.sleep(nanoseconds: 200_000_000) // 0.2s delay for state update
+                    try? await Task.sleep(nanoseconds: 50_000_000) // 0.05s delay for state update
                     skips += 1
                 } else {
-                    try? await Task.sleep(nanoseconds: 100_000_000) // 0.1s delay if already skipping
+                    try? await Task.sleep(nanoseconds: 50_000_000) // 0.05s delay if already skipping
                 }
             }
             

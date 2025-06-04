@@ -202,7 +202,7 @@ struct RunningView: View {
             return
         }
         print("Refreshing songs with BPM \(bpm) from sources: \(settingsManager.musicSources)")
-        showConfirmationMessage("Finding songs for \(Int(round(bpm))) BPM...", color: .blue)
+        showConfirmationMessage("One moment, finding songs...", color: .blue)
         
         rundjService.getSongsByBPM(accessToken: token, bpm: bpm, sources: settingsManager.musicSources) { fetchedSongs in
             DispatchQueue.main.async {
@@ -214,7 +214,7 @@ struct RunningView: View {
                     Task { // This Task runs on MainActor due to refreshSongsBasedOnSettings' context
                         await self.spotifyManager.flushQueue()
                         await self.spotifyManager.queueSongs(fetchedSongs)
-                        self.showConfirmationMessage("New songs queued!", color: .green)
+                        self.showConfirmationMessage("\(fetchedSongs.count) songs queued!", color: .green)
                     }
                 }
             }

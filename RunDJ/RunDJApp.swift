@@ -27,6 +27,7 @@ struct RunDJApp: App {
         WindowGroup {
             BPMView()
                 .environmentObject(SettingsManager.shared)
+                .preferredColorScheme(.dark) // Force dark mode
                 .onOpenURL { url in
                     logger.info("Received URL: \(url)")
                     SpotifyManager.shared.handleURL(url)
