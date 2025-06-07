@@ -16,11 +16,11 @@ enum HelpContext {
     var title: String {
         switch self {
         case .bpmView:
-            return "BPM"
+            return "Getting Started"
         case .runningView:
-            return "Start Running"
+            return "Running with RunDJ"
         case .settingsView:
-            return "Music Source Settings"
+            return "Music Sources"
         }
     }
 }
@@ -29,26 +29,30 @@ struct HelpView: View {
     @Environment(\.dismiss) private var dismiss
     var context: HelpContext
     
-    // Initialize with a default context if none is provided
     init(context: HelpContext = .bpmView) {
         self.context = context
     }
     
     var body: some View {
         NavigationView {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    // Show different content based on the context
-                    switch context {
-                    case .bpmView:
-                        bpmHelpContent
-                    case .runningView:
-                        runningHelpContent
-                    case .settingsView:
-                        settingsHelpContent
+            ZStack {
+                Color.rundjBackground
+                    .ignoresSafeArea()
+                
+                ScrollView(showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 16) {
+                        switch context {
+                        case .bpmView:
+                            bpmHelpContent
+                        case .runningView:
+                            runningHelpContent
+                        case .settingsView:
+                            settingsHelpContent
+                        }
                     }
+                    .padding()
+                    .padding(.bottom, 20)
                 }
-                .padding()
             }
             .navigationTitle(context.title)
             .navigationBarTitleDisplayMode(.inline)
@@ -57,84 +61,121 @@ struct HelpView: View {
                     Button("Done") {
                         dismiss()
                     }
+                    .foregroundColor(.rundjMusicGreen)
                 }
             }
         }
     }
     
-    
     private var bpmHelpContent: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            HelpSection(title: "What is BPM?", content: """
-                BPM (beats per minute) is the the measure of a song's tempo. RunDJ uses this measurement to filter songs that will match you running rhythm.
-                """)
+        VStack(alignment: .leading, spacing: 16) {
+            HelpSection(
+                title: "What is BPM?",
+                icon: "music.note",
+                content: "BPM (beats per minute) measures a song's tempo. RunDJ matches songs to your running rhythm using this measurement.",
+                isMusic: true
+            )
             
-            HelpSection(title: "Tailored BPM", content: """
-                RunDJ can choose your BPM for you. Just start running and give it a few seconds to detect your cadence. Click start in the top section to lock in your BPM as your steps per minute.
-                """)
+            HelpSection(
+                title: "Auto BPM Detection",
+                icon: "figure.run",
+                content: "Start running and RunDJ will automatically detect your cadence. It takes just a few seconds to measure your steps per minute and find matching songs."
+            )
             
-            HelpSection(title: "Custom BPM", content: """
-                If you know your regular running pace, or you want to set a custom BPM, you can do so as well in the bottom section. The allowed range is 100-200 BPM.
-                """)
+            HelpSection(
+                title: "Manual BPM",
+                icon: "slider.horizontal.3",
+                content: "Know your pace? Set a custom BPM between 100-200. Perfect for targeting specific training cadences or matching your favorite running tempo."
+            )
         }
     }
     
     private var runningHelpContent: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            HelpSection(title: "Spotify", content: """
-                RunDJ uses Spotify to play music and control playback. Click the connect button to give RunDJ access to your Spotify listening data and playback controls. If music is paused for 30 seconds straight, your connection with Spotify will be lost and you will have to reconnect in order to play music. Unfortunately this is a limitation of the Spotify app and iOS background app management, so nothing can be done about this.
-                """)
+        VStack(alignment: .leading, spacing: 16) {
+            HelpSection(
+                title: "Spotify Connection",
+                icon: "music.note.house",
+                content: "Connect your Spotify account to play music. If playback pauses for 30+ seconds, you'll need to reconnect due to iOS limitations.",
+                isMusic: true
+            )
             
-            HelpSection(title: "Feedback Controls", content: """
-                • Tap the thumbs up icon if you like the current song - this will improve your recommendations
-                • Tap the thumbs down icon to skip the song and mark it as disliked, this song will not be played again
-                • If you like the music RunDJ chose for you, you can click the save button to save the music as a playlist to your Spotify account
-                """)
+            HelpSection(
+                title: "Music Controls",
+                icon: "hand.thumbsup",
+                content: "• Thumbs up: Like songs to improve recommendations\n• Thumbs down: Skip and never play again\n• Save playlist: Export your run's music to Spotify",
+                isMusic: true
+            )
             
-            HelpSection(title: "Run Tracking", content: """
-                • Tap "Start Run" to begin tracking your run metrics (distance, pace, time)
-                • "Pace" is your overall pace over the entire run
-                • Tap "Stop Run" to end your run
-                """)
+            HelpSection(
+                title: "Run Tracking",
+                icon: "figure.run",
+                content: "Track distance, pace, and time. Your pace shows your overall average for the entire run."
+            )
             
-            HelpSection(title: "Settings", content: """
-                • Tap the gear icon to access music source settings
-                • Changes to music sources will affect the next batch of songs queued
-                """)
+            HelpSection(
+                title: "Music Sources",
+                icon: "gearshape",
+                content: "Tap the gear icon to customize which music sources RunDJ searches. Changes apply to the next batch of songs."
+            )
         }
     }
     
     private var settingsHelpContent: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            HelpSection(title: "Music Sources", content: """
-                Select what music sources you would want RunDJ to look through. Selecting too few sources might produce too few tracks. Selecting too many might produce a tracklist less tailored to your tastes.
-                """)
+        VStack(alignment: .leading, spacing: 16) {
+            HelpSection(
+                title: "Choosing Sources",
+                icon: "music.note.list",
+                content: "Balance is key: too few sources may limit variety, while too many might dilute your preferences.",
+                isMusic: true
+            )
 
-            HelpSection(title: "Source Options", content: """
-                • Top tracks: Songs you listen to most frequently
-                • Saved tracks: Songs you've liked on Spotify
-                • Playlists: Songs from your saved and followed playlists
-                • Top artists' tracks: Songs from artists you listen to most frequently
-                • Followed artists' content: Songs from artists you follow
-                • Saved albums: Songs from albums you've saved
-                """)
+            HelpSection(
+                title: "Available Sources",
+                icon: "square.stack.3d.up",
+                content: "• Top & Saved tracks: Your favorites\n• Playlists: Curated collections\n• Artists' content: From your top and followed artists\n• Albums: Songs from saved albums",
+                isMusic: true
+            )
+            
+            HelpSection(
+                title: "Pro Tip",
+                icon: "lightbulb",
+                content: "Start with 3-4 sources for the best balance of variety and personalization. You can always adjust based on results."
+            )
         }
     }
 }
 
 struct HelpSection: View {
     let title: String
+    let icon: String
     let content: String
+    var isMusic: Bool = false
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(title)
-                .font(.headline)
-                .foregroundColor(.primary)
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                Image(systemName: icon)
+                    .font(.system(size: 16))
+                    .foregroundColor(isMusic ? .rundjMusicGreen : .rundjAccent)
+                
+                Text(title)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.rundjTextPrimary)
+            }
             
             Text(content)
-                .font(.body)
-                .foregroundColor(.secondary)
+                .font(.system(size: 14))
+                .foregroundColor(.rundjTextSecondary)
+                .lineSpacing(4)
+                .fixedSize(horizontal: false, vertical: true)
         }
+        .padding()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.rundjCardBackground)
+        .cornerRadius(12)
     }
+}
+
+#Preview {
+    HelpView(context: .bpmView)
 }
