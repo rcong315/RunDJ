@@ -3,19 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleIconName</key>
-	<string>AppIcon</string>
-	<key>NSMotionUsageDescription</key>
-	<string>This app uses your motion data to get your cadence in steps per minute</string>
-	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>This app uses your location data to measure running stats like distance and pace</string>
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Your app needs your location to track your runs while you are using the app.</string>
-	<key>NSLocationAlwaysUsageDescription</key>
-	<string>Your app needs your location even when in the background to accurately track your entire run.</string>
-	<key>UIBackgroundModes</key>
-	<array>
-		<string>location</string>
-	</array>
+	<string>AppLaunchScreen</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
@@ -34,15 +22,21 @@
 		<string>spotify</string>
 		<string>spotify-action</string>
 	</array>
-	<key>SERVER_BASE_URL</key>
-	<string>$(SERVER_BASE_URL)</string>
-	<key>SERVER_API_KEY</key>
-	<string>$(SERVER_API_KEY)</string>
 	<key>SENTRY_DSN</key>
 	<string>$(SENTRY_DSN)</string>
-    <key>SPOTIFY_CLIENT_ID</key>
-    <string>$(SPOTIFY_CLIENT_ID)</string>
-    <key>SPOTIFY_REDIRECT_URI</key>
-    <string>$(SPOTIFY_REDIRECT_URI)</string>
+	<key>SERVER_API_KEY</key>
+	<string>$(SERVER_API_KEY)</string>
+	<key>SERVER_BASE_URL</key>
+	<string>$(SERVER_BASE_URL)</string>
+	<key>SPOTIFY_CLIENT_ID</key>
+	<string>$(SPOTIFY_CLIENT_ID)</string>
+	<key>SPOTIFY_REDIRECT_URI</key>
+	<string>$(SPOTIFY_REDIRECT_URI)</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>location</string>
+	</array>
+	<key>UILaunchStoryboardName</key>
+	<string>Launch Screen</string>
 </dict>
 </plist>
