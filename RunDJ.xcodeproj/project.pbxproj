@@ -10,7 +10,7 @@
 		0234DA4D27DB41528B4948A1 /* Sentry in Frameworks */ = {isa = PBXBuildFile; productRef = 96739FD883EB4D498DAB5094 /* Sentry */; };
 		8F7F1A822DDEE8CC00F55637 /* (null) in Frameworks */ = {isa = PBXBuildFile; };
 		8F7F1A832DDEE8CC00F55637 /* (null) in Frameworks */ = {isa = PBXBuildFile; };
-		8FDEF17C2DEEBE0500E6B42D /* SpotifyiOS in Frameworks */ = {isa = PBXBuildFile; productRef = 8FDEF17B2DEEBE0500E6B42D /* SpotifyiOS */; };
+		8FDEF1862DEFFA6D00E6B42D /* SpotifyiOS in Frameworks */ = {isa = PBXBuildFile; productRef = 8FDEF1852DEFFA6D00E6B42D /* SpotifyiOS */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -74,7 +74,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				0234DA4D27DB41528B4948A1 /* Sentry in Frameworks */,
-				8FDEF17C2DEEBE0500E6B42D /* SpotifyiOS in Frameworks */,
+				8FDEF1862DEFFA6D00E6B42D /* SpotifyiOS in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -103,7 +103,7 @@
 				8FD3D1D72D58939A00367F7C /* RunDJ */,
 				8FD3D1EA2D58939B00367F7C /* RunDJTests */,
 				8FD3D1F42D58939B00367F7C /* RunDJUITests */,
-				8FDEF17A2DEEBE0500E6B42D /* Frameworks */,
+				8FDEF1842DEFFA6D00E6B42D /* Frameworks */,
 				8FD3D1D62D58939A00367F7C /* Products */,
 			);
 			sourceTree = "<group>";
@@ -118,7 +118,7 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		8FDEF17A2DEEBE0500E6B42D /* Frameworks */ = {
+		8FDEF1842DEFFA6D00E6B42D /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
 			);
@@ -147,7 +147,7 @@
 			name = RunDJ;
 			packageProductDependencies = (
 				96739FD883EB4D498DAB5094 /* Sentry */,
-				8FDEF17B2DEEBE0500E6B42D /* SpotifyiOS */,
+				8FDEF1852DEFFA6D00E6B42D /* SpotifyiOS */,
 			);
 			productName = RunDJ;
 			productReference = 8FD3D1D52D58939A00367F7C /* RunDJ.app */;
@@ -233,7 +233,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				FEFC19CD959A4BE79529FB80 /* XCRemoteSwiftPackageReference "sentry-cocoa" */,
-				8FDEF1792DEEBDF700E6B42D /* XCRemoteSwiftPackageReference "ios-sdk" */,
+				8FDEF1832DEFFA5200E6B42D /* XCRemoteSwiftPackageReference "ios-sdk" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 8FD3D1D62D58939A00367F7C /* Products */;
@@ -628,7 +628,7 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		8FDEF1792DEEBDF700E6B42D /* XCRemoteSwiftPackageReference "ios-sdk" */ = {
+		8FDEF1832DEFFA5200E6B42D /* XCRemoteSwiftPackageReference "ios-sdk" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/spotify/ios-sdk";
 			requirement = {
@@ -647,9 +647,9 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		8FDEF17B2DEEBE0500E6B42D /* SpotifyiOS */ = {
+		8FDEF1852DEFFA6D00E6B42D /* SpotifyiOS */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 8FDEF1792DEEBDF700E6B42D /* XCRemoteSwiftPackageReference "ios-sdk" */;
+			package = 8FDEF1832DEFFA5200E6B42D /* XCRemoteSwiftPackageReference "ios-sdk" */;
 			productName = SpotifyiOS;
 		};
 		96739FD883EB4D498DAB5094 /* Sentry */ = {

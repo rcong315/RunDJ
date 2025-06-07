@@ -269,7 +269,7 @@ class RunManager: NSObject, CLLocationManagerDelegate, ObservableObject {
             
             let time = self.runStatsManager.formatTimeInterval(self.runStatsManager.totalElapsedTime)
             let distance = self.runStatsManager.formatDistance(self.runStatsManager.totalDistance)
-            let pace = self.runStatsManager.formatPace(self.runStatsManager.currentPace, perKm: true)
+            let pace = self.runStatsManager.formatPace(self.runStatsManager.currentPace, perKm: false)
             
             var rollingPaceInfo = "--:--"
             if let rollingMilePace = self.runStatsManager.rollingMilePace {
@@ -293,7 +293,7 @@ class RunManager: NSObject, CLLocationManagerDelegate, ObservableObject {
             print("--- FINAL RUN STATS ---")
             print("Total Time: \(self.runStatsManager.formatTimeInterval(self.runStatsManager.totalElapsedTime))")
             print("Total Distance: \(self.runStatsManager.formatDistance(self.runStatsManager.totalDistance))")
-            print("Avg Pace: \(self.runStatsManager.formatPace(self.runStatsManager.currentPace, perKm: true))")
+            print("Avg Pace: \(self.runStatsManager.formatPace(self.runStatsManager.currentPace, perKm: false))")
             
             if let finalRollingPace = self.runStatsManager.rollingMilePace {
                 print("Last Mile Pace: \(self.runStatsManager.formatPace(finalRollingPace))")
