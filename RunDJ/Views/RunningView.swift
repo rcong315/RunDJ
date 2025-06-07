@@ -37,11 +37,9 @@ struct RunningView: View {
             
             VStack(spacing: 12) {
                 // Spotify Connection Section
-                if spotifyManager.connectionState != .connected {
-                    SpotifyConnectionPromptView(spotifyManager: spotifyManager)
-                        .padding(.horizontal)
-                        .transition(.move(edge: .top).combined(with: .opacity))
-                }
+                SpotifyConnectionPromptView(spotifyManager: spotifyManager)
+                    .padding(.horizontal)
+                    .transition(.move(edge: .top).combined(with: .opacity))
                 
                 // Connection Status (Compact)
                 HStack {
@@ -222,7 +220,7 @@ struct RunningView: View {
             return
         }
         print("Refreshing songs with BPM \(bpm) from sources: \(settingsManager.musicSources)")
-        showConfirmationMessage("Finding songs...", color: .rundjAccent)
+        showConfirmationMessage("Flushing queue, please wait...", color: .rundjAccent)
         
         rundjService.getSongsByBPM(accessToken: token, bpm: bpm, sources: settingsManager.musicSources) { fetchedSongs in
             DispatchQueue.main.async {
@@ -271,6 +269,10 @@ struct RunningView: View {
 struct SpotifyConnectionPromptView: View {
     @ObservedObject var spotifyManager: SpotifyManager
     
+    private var connected: Bool {
+        spotifyManager.connectionState == .connected
+    }
+    
     var body: some View {
         VStack(spacing: 12) {
             Image(systemName: "music.note.house.fill")
@@ -291,7 +293,7 @@ struct SpotifyConnectionPromptView: View {
             }) {
                 Text("Connect Spotify")
             }
-            .buttonStyle(RundjPrimaryButtonStyle(isMusic: true))
+            .buttonStyle(RundjPrimaryButtonStyle(isDisabled: connected, isMusic: true))
         }
         .padding()
         .frame(maxWidth: .infinity)
@@ -314,22 +316,32 @@ struct NowPlayingCompactView: View {
                     .foregroundColor(.rundjTextSecondary)
             }
             
-            Text(spotifyManager.currentlyPlaying.isEmpty ? "Nothing playing" : spotifyManager.currentlyPlaying)
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(.rundjTextPrimary)
-                .lineLimit(1)
-                .truncationMode(.tail)
-            
-            Text(spotifyManager.currentArtist.isEmpty ? "—" : spotifyManager.currentArtist)
-                .font(.system(size: 14))
-                .foregroundColor(.rundjTextSecondary)
-                .lineLimit(1)
-                .truncationMode(.tail)
-            
-            if spotifyManager.currentBPM > 0 {
-                Text("\(Int(spotifyManager.currentBPM)) BPM")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(.rundjMusicGreen)
+            if !spotifyManager.hasQueuedSongs && spotifyManager.connectionState == .connected {
+                Text("No songs queued")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.rundjWarning)
+                
+                Text("Check settings or change BPM")
+                    .font(.system(size: 14))
+                    .foregroundColor(.rundjTextSecondary)
+            } else {
+                Text(spotifyManager.currentlyPlaying.isEmpty ? "Nothing playing" : spotifyManager.currentlyPlaying)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.rundjTextPrimary)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                
+                Text(spotifyManager.currentArtist.isEmpty ? "—" : spotifyManager.currentArtist)
+                    .font(.system(size: 14))
+                    .foregroundColor(.rundjTextSecondary)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                
+                if spotifyManager.currentBPM > 0 {
+                    Text("\(Int(spotifyManager.currentBPM)) BPM")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.rundjMusicGreen)
+                }
             }
         }
         .padding()
@@ -343,6 +355,10 @@ struct PlaybackControlsCompactView: View {
     @ObservedObject var spotifyManager: SpotifyManager
     var onSpotifyError: (Error, String) -> Void
     
+    private var isDisabled: Bool {
+        spotifyManager.connectionState != .connected || !spotifyManager.hasQueuedSongs
+    }
+    
     var body: some View {
         HStack(spacing: 32) {
             Button(action: {
@@ -353,7 +369,7 @@ struct PlaybackControlsCompactView: View {
             }) {
                 Image(systemName: "backward.fill")
             }
-            .buttonStyle(RundjIconButtonStyle(size: 40, color: .rundjMusicGreen, isDisabled: spotifyManager.connectionState != .connected))
+            .buttonStyle(RundjIconButtonStyle(size: 40, color: .rundjMusicGreen, isDisabled: isDisabled))
             
             Button(action: {
                 Task {
@@ -367,7 +383,7 @@ struct PlaybackControlsCompactView: View {
             }) {
                 Image(systemName: spotifyManager.isPlaying ? "pause.fill" : "play.fill")
             }
-            .buttonStyle(RundjIconButtonStyle(size: 56, color: .rundjMusicGreen, isDisabled: spotifyManager.connectionState != .connected))
+            .buttonStyle(RundjIconButtonStyle(size: 56, color: .rundjMusicGreen, isDisabled: isDisabled))
             
             Button(action: {
                 Task {
@@ -377,9 +393,9 @@ struct PlaybackControlsCompactView: View {
             }) {
                 Image(systemName: "forward.fill")
             }
-            .buttonStyle(RundjIconButtonStyle(size: 40, color: .rundjMusicGreen, isDisabled: spotifyManager.connectionState != .connected))
+            .buttonStyle(RundjIconButtonStyle(size: 40, color: .rundjMusicGreen, isDisabled: isDisabled))
         }
-        .disabled(spotifyManager.connectionState != .connected)
+        .disabled(isDisabled)
     }
 }
 
@@ -398,6 +414,10 @@ struct ActionButtonsCompactView: View {
     var showConfirmationMessage: (String, Color) -> Void
     var onSpotifyError: (Error, String) -> Void
     
+    private var isDisabled: Bool {
+        spotifyManager.connectionState != .connected || !spotifyManager.hasQueuedSongs
+    }
+    
     var body: some View {
         HStack(spacing: 16) {
             Button(action: {
@@ -405,7 +425,7 @@ struct ActionButtonsCompactView: View {
                 showConfirmationMessage("Creating playlist...", .rundjAccent)
                 rundjService.createPlaylist(accessToken: token, bpm: bpm, sources: settingsManager.musicSources) { playlistIdOptional in
                     DispatchQueue.main.async {
-                        if let playlistId = playlistIdOptional {
+                        if playlistIdOptional != nil {
                             showConfirmationMessage("Playlist saved!", .rundjMusicGreen)
                         } else {
                             showConfirmationMessage("Failed to save", .rundjError)
@@ -444,8 +464,7 @@ struct ActionButtonsCompactView: View {
             .buttonStyle(RundjIconButtonStyle(
                 size: 36,
                 color: .rundjMusicGreen,
-                isDisabled: spotifyManager.currentId.isEmpty || isThumbsUpSelected || spotifyManager.connectionState != .connected
-            ))
+                isDisabled: spotifyManager.currentId.isEmpty || isThumbsUpSelected || isDisabled))
             
             Button(action: {
                 guard !spotifyManager.currentId.isEmpty else { return }
@@ -465,8 +484,7 @@ struct ActionButtonsCompactView: View {
             .buttonStyle(RundjIconButtonStyle(
                 size: 36,
                 color: .rundjError,
-                isDisabled: spotifyManager.currentId.isEmpty || isThumbsDownSelected || spotifyManager.connectionState != .connected
-            ))
+                isDisabled: spotifyManager.currentId.isEmpty || isThumbsDownSelected || isDisabled))
         }
     }
 }
