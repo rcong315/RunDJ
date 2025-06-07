@@ -1,7 +1,7 @@
 {
   "images" : [
     {
-      "filename" : "rundjIcon1.png",
+      "filename" : "rundjIcon2.png",
       "idiom" : "universal",
       "scale" : "1x"
     },
@@ -12,12 +12,12 @@
           "value" : "dark"
         }
       ],
-      "filename" : "rundjIcon1Dark.png",
+      "filename" : "rundjIcon2Dark.png",
       "idiom" : "universal",
       "scale" : "1x"
     },
     {
-      "filename" : "rundjIcon1 1.png",
+      "filename" : "rundjIcon2 1.png",
       "idiom" : "universal",
       "scale" : "2x"
     },
@@ -28,12 +28,12 @@
           "value" : "dark"
         }
       ],
-      "filename" : "rundjIcon1Dark 1.png",
+      "filename" : "rundjIcon2Dark 1.png",
       "idiom" : "universal",
       "scale" : "2x"
     },
     {
-      "filename" : "rundjIcon1 2.png",
+      "filename" : "rundjIcon2 2.png",
       "idiom" : "universal",
       "scale" : "3x"
     },
@@ -44,7 +44,7 @@
           "value" : "dark"
         }
       ],
-      "filename" : "rundjIcon1Dark 2.png",
+      "filename" : "rundjIcon2Dark 2.png",
       "idiom" : "universal",
       "scale" : "3x"
     }

@@ -1,7 +1,7 @@
 {
   "images" : [
     {
-      "filename" : "rundjIcon1.png",
+      "filename" : "rundjIcon2.png",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"
@@ -13,7 +13,7 @@
           "value" : "dark"
         }
       ],
-      "filename" : "rundjIcon1Dark.png",
+      "filename" : "rundjIcon2Dark.png",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"
@@ -25,7 +25,7 @@
           "value" : "tinted"
         }
       ],
-      "filename" : "rundjIcon1 1.png",
+      "filename" : "rundjIcon2 1.png",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"
