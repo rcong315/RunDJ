@@ -39,20 +39,18 @@ struct HelpView: View {
                 Color.rundjBackground
                     .ignoresSafeArea()
                 
-                ScrollView(showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 16) {
-                        switch context {
-                        case .bpmView:
-                            bpmHelpContent
-                        case .runningView:
-                            runningHelpContent
-                        case .settingsView:
-                            settingsHelpContent
-                        }
+                VStack(alignment: .leading, spacing: 16) {
+                    switch context {
+                    case .bpmView:
+                        bpmHelpContent
+                    case .runningView:
+                        runningHelpContent
+                    case .settingsView:
+                        settingsHelpContent
                     }
-                    .padding()
-                    .padding(.bottom, 20)
                 }
+                .padding()
+                .padding(.bottom, 20)
             }
             .navigationTitle(context.title)
             .navigationBarTitleDisplayMode(.inline)
@@ -128,7 +126,7 @@ struct HelpView: View {
                 content: "Balance is key: too few sources may limit variety, while too many might dilute your preferences.",
                 isMusic: true
             )
-
+            
             HelpSection(
                 title: "Available Sources",
                 icon: "square.stack.3d.up",

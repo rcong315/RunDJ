@@ -35,63 +35,61 @@ struct RunningView: View {
             Color.rundjBackground
                 .ignoresSafeArea()
             
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: 12) {
-                    // Spotify Connection Section
-                    if spotifyManager.connectionState != .connected {
-                        SpotifyConnectionPromptView(spotifyManager: spotifyManager)
-                            .padding(.horizontal)
-                            .transition(.move(edge: .top).combined(with: .opacity))
-                    }
-                    
-                    // Connection Status (Compact)
-                    HStack {
-                        Circle()
-                            .fill(spotifyManager.connectionState == .connected ? Color.rundjMusicGreen : Color.rundjError)
-                            .frame(width: 8, height: 8)
-                        Text(connectionStateText)
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(.rundjTextSecondary)
-                    }
-                    .padding(.horizontal)
-                    
-                    // Now Playing Section
-                    NowPlayingCompactView(spotifyManager: spotifyManager)
+            VStack(spacing: 12) {
+                // Spotify Connection Section
+                if spotifyManager.connectionState != .connected {
+                    SpotifyConnectionPromptView(spotifyManager: spotifyManager)
                         .padding(.horizontal)
-                    
-                    // Playback Controls
-                    PlaybackControlsCompactView(spotifyManager: spotifyManager, onSpotifyError: handleSpotifyError)
-                        .padding(.vertical, 8)
-                    
-                    // Action Buttons
-                    ActionButtonsCompactView(
-                        spotifyManager: spotifyManager,
-                        rundjService: rundjService,
-                        settingsManager: settingsManager,
-                        token: token,
-                        bpm: bpm,
-                        isPlaylistButtonDisabled: $isPlaylistButtonDisabled,
-                        isThumbsUpSelected: $isThumbsUpSelected,
-                        isThumbsDownSelected: $isThumbsDownSelected,
-                        showConfirmationMessage: showConfirmationMessage,
-                        onSpotifyError: handleSpotifyError
-                    )
-                    .padding(.horizontal)
-                    
-                    RundjDivider()
-                        .padding(.vertical, 4)
-                    
-                    // Run Control
-                    RunControlCompactView(isRunning: $isRunning, runManager: runManager)
-                        .padding(.horizontal)
-                    
-                    // Run Stats
-                    RunStatsCompactView(pedometerManager: pedometerManager, runningStatsManager: runningStatsManager)
-                        .padding(.horizontal)
-                        .padding(.bottom, 20)
+                        .transition(.move(edge: .top).combined(with: .opacity))
                 }
-                .padding(.top, 8)
+                
+                // Connection Status (Compact)
+                HStack {
+                    Circle()
+                        .fill(spotifyManager.connectionState == .connected ? Color.rundjMusicGreen : Color.rundjError)
+                        .frame(width: 8, height: 8)
+                    Text(connectionStateText)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.rundjTextSecondary)
+                }
+                .padding(.horizontal)
+                
+                // Now Playing Section
+                NowPlayingCompactView(spotifyManager: spotifyManager)
+                    .padding(.horizontal)
+                
+                // Playback Controls
+                PlaybackControlsCompactView(spotifyManager: spotifyManager, onSpotifyError: handleSpotifyError)
+                    .padding(.vertical, 8)
+                
+                // Action Buttons
+                ActionButtonsCompactView(
+                    spotifyManager: spotifyManager,
+                    rundjService: rundjService,
+                    settingsManager: settingsManager,
+                    token: token,
+                    bpm: bpm,
+                    isPlaylistButtonDisabled: $isPlaylistButtonDisabled,
+                    isThumbsUpSelected: $isThumbsUpSelected,
+                    isThumbsDownSelected: $isThumbsDownSelected,
+                    showConfirmationMessage: showConfirmationMessage,
+                    onSpotifyError: handleSpotifyError
+                )
+                .padding(.horizontal)
+                
+                RundjDivider()
+                    .padding(.vertical, 4)
+                
+                // Run Control
+                RunControlCompactView(isRunning: $isRunning, runManager: runManager)
+                    .padding(.horizontal)
+                
+                // Run Stats
+                RunStatsCompactView(pedometerManager: pedometerManager, runningStatsManager: runningStatsManager)
+                    .padding(.horizontal)
+                    .padding(.bottom, 20)
             }
+            .padding(.top, 8)
             
             // Confirmation Overlay
             if showConfirmation {

@@ -36,27 +36,25 @@ struct SettingsView: View {
                 
                 VStack(spacing: 0) {
                     // Content
-                    ScrollView {
-                        VStack(alignment: .leading, spacing: 16) {
-                            Text("Select which music sources to include when finding songs that match your running pace.")
-                                .font(.system(size: 14))
-                                .foregroundColor(.rundjTextSecondary)
-                                .padding(.horizontal)
-                                .padding(.top, 16)
-                            
-                            VStack(spacing: 8) {
-                                ForEach(0..<sources.count, id: \.self) { index in
-                                    SourceRow(
-                                        source: $sources[index],
-                                        hasChanges: $hasChanges,
-                                        checkForChanges: checkForChanges
-                                    )
-                                }
-                            }
+                    VStack(alignment: .leading, spacing: 16) {
+                        Text("Select which music sources to include when finding songs that match your running pace.")
+                            .font(.system(size: 14))
+                            .foregroundColor(.rundjTextSecondary)
                             .padding(.horizontal)
+                            .padding(.top, 16)
+                        
+                        VStack(spacing: 8) {
+                            ForEach(0..<sources.count, id: \.self) { index in
+                                SourceRow(
+                                    source: $sources[index],
+                                    hasChanges: $hasChanges,
+                                    checkForChanges: checkForChanges
+                                )
+                            }
                         }
-                        .padding(.bottom, 100) // Space for buttons
+                        .padding(.horizontal)
                     }
+                    .padding(.bottom, 100) // Space for buttons
                     
                     // Bottom Buttons
                     VStack(spacing: 12) {
