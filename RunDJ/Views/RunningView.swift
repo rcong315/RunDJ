@@ -7,6 +7,7 @@
 
 import SwiftUI
 import Sentry
+import ActivityKit
 
 struct RunningView: View {
     @StateObject private var rundjService = RunDJService.shared
@@ -14,6 +15,7 @@ struct RunningView: View {
     @StateObject private var pedometerManager = PedometerManager.shared
     @StateObject private var runManager = RunManager.shared
     @StateObject private var runningStatsManager = RunningStatsManager.shared
+    @StateObject private var liveActivityManager = LiveActivityManager.shared
     @EnvironmentObject var settingsManager: SettingsManager
     
     @State private var showSpotifyErrorAlert = false
@@ -27,6 +29,7 @@ struct RunningView: View {
     @State private var confirmationMessage = ""
     @State private var confirmationColor = Color.rundjMusicGreen
     @State private var isPlaylistButtonDisabled = true
+    @State private var liveActivityUpdateTimer: Timer?
     
     var bpm: Double
     
@@ -119,6 +122,19 @@ struct RunningView: View {
         }
         .onAppear {
             setupOnAppear()
+            setupLiveActivityObservers()
+        }
+        .onDisappear {
+            liveActivityUpdateTimer?.invalidate()
+        }
+        .onChange(of: isRunning) { _, newValue in
+            if newValue {
+                startLiveActivity()
+                startLiveActivityUpdateTimer()
+            } else {
+                endLiveActivity()
+                stopLiveActivityUpdateTimer()
+            }
         }
         .onChange(of: spotifyManager.currentId) { _, _ in
             isThumbsUpSelected = false
@@ -260,6 +276,103 @@ struct RunningView: View {
         case .connected: return "Connected"
         case .disconnected: return "Disconnected"
         case .error: return "Error"
+        }
+    }
+    
+    // MARK: - Live Activity Functions
+    
+    private func startLiveActivity() {
+        Task {
+            do {
+                try await liveActivityManager.startActivity(targetBPM: Int(bpm))
+                print("Live Activity started successfully")
+            } catch {
+                print("Failed to start Live Activity: \(error)")
+                SentrySDK.capture(error: error) { scope in
+                    scope.setContext(value: ["targetBPM": bpm], key: "live_activity")
+                    scope.setLevel(.warning)
+                }
+            }
+        }
+    }
+    
+    private func updateLiveActivity() {
+        Task {
+            // Format pace properly for live activity
+            let paceString = runningStatsManager.currentPace < 0 ? "--:--" : runningStatsManager.formatPace(runningStatsManager.currentPace)
+            
+            await liveActivityManager.updateActivity(
+                stepsPerMinute: Int(pedometerManager.stepsPerMinute),
+                distance: runningStatsManager.totalDistance,
+                duration: runningStatsManager.totalElapsedTime,
+                pace: paceString,
+                currentSong: spotifyManager.currentlyPlaying.isEmpty ? "No song playing" : spotifyManager.currentlyPlaying,
+                currentArtist: spotifyManager.currentArtist.isEmpty ? "--" : spotifyManager.currentArtist,
+                songBPM: Int(spotifyManager.currentBPM),
+                isPlaying: spotifyManager.isPlaying
+            )
+        }
+    }
+    
+    private func endLiveActivity() {
+        Task {
+            await liveActivityManager.endActivity()
+            print("Live Activity ended")
+        }
+    }
+    
+    private func startLiveActivityUpdateTimer() {
+        liveActivityUpdateTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+            updateLiveActivity()
+        }
+    }
+    
+    private func stopLiveActivityUpdateTimer() {
+        liveActivityUpdateTimer?.invalidate()
+        liveActivityUpdateTimer = nil
+    }
+    
+    private func setupLiveActivityObservers() {
+        NotificationCenter.default.addObserver(
+            forName: .liveActivitySkipSong,
+            object: nil,
+            queue: .main
+        ) { _ in
+            Task {
+                do {
+                    try await self.spotifyManager.skipToNextTrack()
+                } catch {
+                    print("Failed to skip from Live Activity: \(error)")
+                }
+            }
+        }
+        
+        NotificationCenter.default.addObserver(
+            forName: .liveActivityPlayPause,
+            object: nil,
+            queue: .main
+        ) { _ in
+            Task {
+                do {
+                    if self.spotifyManager.isPlaying {
+                        try await self.spotifyManager.pausePlayback()
+                    } else {
+                        try await self.spotifyManager.resumePlayback()
+                    }
+                } catch {
+                    print("Failed to play/pause from Live Activity: \(error)")
+                }
+            }
+        }
+        
+        NotificationCenter.default.addObserver(
+            forName: .liveActivityStopRun,
+            object: nil,
+            queue: .main
+        ) { _ in
+            self.isRunning = false
+            self.runManager.stop()
+            self.endLiveActivity()
         }
     }
 }
