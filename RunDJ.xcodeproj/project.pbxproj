@@ -8,12 +8,22 @@
 
 /* Begin PBXBuildFile section */
 		0234DA4D27DB41528B4948A1 /* Sentry in Frameworks */ = {isa = PBXBuildFile; productRef = 96739FD883EB4D498DAB5094 /* Sentry */; };
+		8F6F77202DF686C400DA4657 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8F6F76BD2DF67C8F00DA4657 /* WidgetKit.framework */; };
+		8F6F77212DF686C400DA4657 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8F6F76BF2DF67C9000DA4657 /* SwiftUI.framework */; };
+		8F6F77302DF686C500DA4657 /* RunDJWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 8F6F771F2DF686C400DA4657 /* RunDJWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		8F7F1A822DDEE8CC00F55637 /* (null) in Frameworks */ = {isa = PBXBuildFile; };
 		8F7F1A832DDEE8CC00F55637 /* (null) in Frameworks */ = {isa = PBXBuildFile; };
 		8FDEF1862DEFFA6D00E6B42D /* SpotifyiOS in Frameworks */ = {isa = PBXBuildFile; productRef = 8FDEF1852DEFFA6D00E6B42D /* SpotifyiOS */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		8F6F772E2DF686C500DA4657 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8FD3D1CD2D58939A00367F7C /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8F6F771E2DF686C400DA4657;
+			remoteInfo = RunDJWidgetExtension;
+		};
 		8FD3D1E82D58939B00367F7C /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 8FD3D1CD2D58939A00367F7C /* Project object */;
@@ -30,13 +40,46 @@
 		};
 /* End PBXContainerItemProxy section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		8F6F76D62DF67C9100DA4657 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				8F6F77302DF686C500DA4657 /* RunDJWidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		8F6F76BD2DF67C8F00DA4657 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		8F6F76BF2DF67C9000DA4657 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		8F6F771F2DF686C400DA4657 /* RunDJWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = RunDJWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		8F6F77382DF68A3C00DA4657 /* RunDJWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RunDJWidgetExtension.entitlements; sourceTree = "<group>"; };
 		8FD3D1D52D58939A00367F7C /* RunDJ.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RunDJ.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8FD3D1E72D58939B00367F7C /* RunDJTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RunDJTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		8FD3D1F12D58939B00367F7C /* RunDJUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RunDJUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		8F6F77342DF686C500DA4657 /* Exceptions for "RunDJWidget" folder in "RunDJWidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 8F6F771E2DF686C400DA4657 /* RunDJWidgetExtension */;
+		};
+		8F6F77362DF688B900DA4657 /* Exceptions for "RunDJ" folder in "RunDJWidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				LiveActivity/RunDJLiveActivity.swift,
+				Styles/DesignSystem.swift,
+			);
+			target = 8F6F771E2DF686C400DA4657 /* RunDJWidgetExtension */;
+		};
 		8FC6CEED2D62D06100F58371 /* Exceptions for "RunDJ" folder in "RunDJ" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -48,10 +91,19 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		8F6F77222DF686C400DA4657 /* RunDJWidget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				8F6F77342DF686C500DA4657 /* Exceptions for "RunDJWidget" folder in "RunDJWidgetExtension" target */,
+			);
+			path = RunDJWidget;
+			sourceTree = "<group>";
+		};
 		8FD3D1D72D58939A00367F7C /* RunDJ */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
 				8FC6CEED2D62D06100F58371 /* Exceptions for "RunDJ" folder in "RunDJ" target */,
+				8F6F77362DF688B900DA4657 /* Exceptions for "RunDJ" folder in "RunDJWidgetExtension" target */,
 			);
 			path = RunDJ;
 			sourceTree = "<group>";
@@ -69,6 +121,15 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		8F6F771C2DF686C400DA4657 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8F6F77212DF686C400DA4657 /* SwiftUI.framework in Frameworks */,
+				8F6F77202DF686C400DA4657 /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		8FD3D1D22D58939A00367F7C /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -100,9 +161,11 @@
 		8FD3D1CC2D58939A00367F7C = {
 			isa = PBXGroup;
 			children = (
+				8F6F77382DF68A3C00DA4657 /* RunDJWidgetExtension.entitlements */,
 				8FD3D1D72D58939A00367F7C /* RunDJ */,
 				8FD3D1EA2D58939B00367F7C /* RunDJTests */,
 				8FD3D1F42D58939B00367F7C /* RunDJUITests */,
+				8F6F77222DF686C400DA4657 /* RunDJWidget */,
 				8FDEF1842DEFFA6D00E6B42D /* Frameworks */,
 				8FD3D1D62D58939A00367F7C /* Products */,
 			);
@@ -114,6 +177,7 @@
 				8FD3D1D52D58939A00367F7C /* RunDJ.app */,
 				8FD3D1E72D58939B00367F7C /* RunDJTests.xctest */,
 				8FD3D1F12D58939B00367F7C /* RunDJUITests.xctest */,
+				8F6F771F2DF686C400DA4657 /* RunDJWidgetExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -121,6 +185,8 @@
 		8FDEF1842DEFFA6D00E6B42D /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				8F6F76BD2DF67C8F00DA4657 /* WidgetKit.framework */,
+				8F6F76BF2DF67C9000DA4657 /* SwiftUI.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -128,6 +194,28 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		8F6F771E2DF686C400DA4657 /* RunDJWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8F6F77312DF686C500DA4657 /* Build configuration list for PBXNativeTarget "RunDJWidgetExtension" */;
+			buildPhases = (
+				8F6F771B2DF686C400DA4657 /* Sources */,
+				8F6F771C2DF686C400DA4657 /* Frameworks */,
+				8F6F771D2DF686C400DA4657 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				8F6F77222DF686C400DA4657 /* RunDJWidget */,
+			);
+			name = RunDJWidgetExtension;
+			packageProductDependencies = (
+			);
+			productName = RunDJWidgetExtension;
+			productReference = 8F6F771F2DF686C400DA4657 /* RunDJWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		8FD3D1D42D58939A00367F7C /* RunDJ */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 8FD3D1FB2D58939B00367F7C /* Build configuration list for PBXNativeTarget "RunDJ" */;
@@ -136,10 +224,12 @@
 				8FD3D1D22D58939A00367F7C /* Frameworks */,
 				8FD3D1D32D58939A00367F7C /* Resources */,
 				E640933B597F4CEE853E74C8 /* Upload Debug Symbols to Sentry */,
+				8F6F76D62DF67C9100DA4657 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				8F6F772F2DF686C500DA4657 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				8FD3D1D72D58939A00367F7C /* RunDJ */,
@@ -206,9 +296,12 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 1620;
+				LastSwiftUpdateCheck = 1630;
 				LastUpgradeCheck = 1630;
 				TargetAttributes = {
+					8F6F771E2DF686C400DA4657 = {
+						CreatedOnToolsVersion = 16.3;
+					};
 					8FD3D1D42D58939A00367F7C = {
 						CreatedOnToolsVersion = 16.2;
 					};
@@ -243,11 +336,19 @@
 				8FD3D1D42D58939A00367F7C /* RunDJ */,
 				8FD3D1E62D58939B00367F7C /* RunDJTests */,
 				8FD3D1F02D58939B00367F7C /* RunDJUITests */,
+				8F6F771E2DF686C400DA4657 /* RunDJWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		8F6F771D2DF686C400DA4657 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		8FD3D1D32D58939A00367F7C /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -290,6 +391,13 @@
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		8F6F771B2DF686C400DA4657 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		8FD3D1D12D58939A00367F7C /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -314,6 +422,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		8F6F772F2DF686C500DA4657 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8F6F771E2DF686C400DA4657 /* RunDJWidgetExtension */;
+			targetProxy = 8F6F772E2DF686C500DA4657 /* PBXContainerItemProxy */;
+		};
 		8FD3D1E92D58939B00367F7C /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 8FD3D1D42D58939A00367F7C /* RunDJ */;
@@ -327,6 +440,62 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		8F6F77322DF686C500DA4657 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = RunDJWidgetExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = RunDJWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = RunDJWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.rcong.RunDJ.RunDJWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		8F6F77332DF686C500DA4657 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = RunDJWidgetExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = RunDJWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = RunDJWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.rcong.RunDJ.RunDJWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 		8FD3D1F92D58939B00367F7C /* Debug */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReferenceAnchor = 8FD3D1D72D58939A00367F7C /* RunDJ */;
@@ -459,6 +628,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = RunDJ/RunDJ.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
@@ -495,6 +665,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = RunDJ/RunDJ.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
@@ -595,6 +766,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		8F6F77312DF686C500DA4657 /* Build configuration list for PBXNativeTarget "RunDJWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8F6F77322DF686C500DA4657 /* Debug */,
+				8F6F77332DF686C500DA4657 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		8FD3D1D02D58939A00367F7C /* Build configuration list for PBXProject "RunDJ" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

@@ -14,6 +14,7 @@
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>run-dj</string>
+				<string>rundj</string>
 			</array>
 		</dict>
 	</array>
@@ -38,5 +39,7 @@
 	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>Launch Screen</string>
+	<key>NSSupportsLiveActivities</key>
+	<true/>
 </dict>
 </plist>

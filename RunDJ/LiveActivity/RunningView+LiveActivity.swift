@@ -1,0 +1,42 @@
+//
+//  RunningView+LiveActivity.swift
+//  RunDJ
+//
+//  Created on 6/8/25.
+//
+//  This file contains extensions for other classes to support Live Activities.
+//  The RunningView Live Activity functions are already integrated into RunningView.swift
+//
+
+import SwiftUI
+import ActivityKit
+
+// MARK: - RunManager Extension
+extension RunManager {
+    func requestPermissionsAndStartWithLiveActivity(targetBPM: Int) {
+        // Original requestPermissionsAndStart logic
+        self.requestPermissionsAndStart()
+        
+        // Start Live Activity
+        Task {
+            do {
+                try await LiveActivityManager.shared.startActivity(targetBPM: targetBPM)
+            } catch {
+                print("Failed to start Live Activity: \(error)")
+            }
+        }
+    }
+    
+    func stopWithLiveActivity() {
+        // Original stop logic
+        self.stop()
+        
+        // End Live Activity
+        Task {
+            await LiveActivityManager.shared.endActivity()
+        }
+    }
+}
+
+// Note: Deep link handling for Live Activities is already implemented in RunDJApp.swift
+// in the .onOpenURL modifier
