@@ -298,11 +298,14 @@ struct RunningView: View {
     
     private func updateLiveActivity() {
         Task {
+            // Format pace properly for live activity
+            let paceString = runningStatsManager.currentPace < 0 ? "--:--" : runningStatsManager.formatPace(runningStatsManager.currentPace)
+            
             await liveActivityManager.updateActivity(
                 stepsPerMinute: Int(pedometerManager.stepsPerMinute),
                 distance: runningStatsManager.totalDistance,
                 duration: runningStatsManager.totalElapsedTime,
-                pace: runningStatsManager.formatPace(runningStatsManager.currentPace),
+                pace: paceString,
                 currentSong: spotifyManager.currentlyPlaying.isEmpty ? "No song playing" : spotifyManager.currentlyPlaying,
                 currentArtist: spotifyManager.currentArtist.isEmpty ? "--" : spotifyManager.currentArtist,
                 songBPM: Int(spotifyManager.currentBPM),
