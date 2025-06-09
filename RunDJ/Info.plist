@@ -13,7 +13,6 @@
 			<string>com.rcong.RunDJ</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>run-dj</string>
 				<string>rundj</string>
 			</array>
 		</dict>
@@ -36,10 +35,7 @@
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>location</string>
+		<string>processing</string>
 	</array>
-	<key>UILaunchStoryboardName</key>
-	<string>Launch Screen</string>
-	<key>NSSupportsLiveActivities</key>
-	<true/>
 </dict>
 </plist>

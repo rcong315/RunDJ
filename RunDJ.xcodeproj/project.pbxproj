@@ -7,13 +7,18 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		0234DA4D27DB41528B4948A1 /* Sentry in Frameworks */ = {isa = PBXBuildFile; productRef = 96739FD883EB4D498DAB5094 /* Sentry */; };
+		8F432E7A2DF69E0F00DAFFB8 /* (null) in Frameworks */ = {isa = PBXBuildFile; };
+		8F432E7B2DF69E0F00DAFFB8 /* Sentry in Frameworks */ = {isa = PBXBuildFile; productRef = B4006066ABF54A24B4AD0394 /* Sentry */; };
+		8F432E7C2DF69E0F00DAFFB8 /* (null) in Frameworks */ = {isa = PBXBuildFile; };
+		8F432E7D2DF69E0F00DAFFB8 /* (null) in Frameworks */ = {isa = PBXBuildFile; };
+		8F432EEF2DF69E5B00DAFFB8 /* SpotifyiOS in Frameworks */ = {isa = PBXBuildFile; productRef = 8F432EEE2DF69E5B00DAFFB8 /* SpotifyiOS */; };
+		8F432EF32DF69EB300DAFFB8 /* SpotifyiOS in Frameworks */ = {isa = PBXBuildFile; productRef = 8F432EF22DF69EB300DAFFB8 /* SpotifyiOS */; };
 		8F6F77202DF686C400DA4657 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8F6F76BD2DF67C8F00DA4657 /* WidgetKit.framework */; };
 		8F6F77212DF686C400DA4657 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8F6F76BF2DF67C9000DA4657 /* SwiftUI.framework */; };
 		8F6F77302DF686C500DA4657 /* RunDJWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 8F6F771F2DF686C400DA4657 /* RunDJWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		8F7F1A822DDEE8CC00F55637 /* (null) in Frameworks */ = {isa = PBXBuildFile; };
 		8F7F1A832DDEE8CC00F55637 /* (null) in Frameworks */ = {isa = PBXBuildFile; };
-		8FDEF1862DEFFA6D00E6B42D /* SpotifyiOS in Frameworks */ = {isa = PBXBuildFile; productRef = 8FDEF1852DEFFA6D00E6B42D /* SpotifyiOS */; };
+		AD837031D7704EA2BD8980D1 /* Sentry in Frameworks */ = {isa = PBXBuildFile; productRef = B4006066ABF54A24B4AD0394 /* Sentry */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -127,6 +132,8 @@
 			files = (
 				8F6F77212DF686C400DA4657 /* SwiftUI.framework in Frameworks */,
 				8F6F77202DF686C400DA4657 /* WidgetKit.framework in Frameworks */,
+				AD837031D7704EA2BD8980D1 /* Sentry in Frameworks */,
+				8F432EF32DF69EB300DAFFB8 /* SpotifyiOS in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -134,8 +141,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				0234DA4D27DB41528B4948A1 /* Sentry in Frameworks */,
-				8FDEF1862DEFFA6D00E6B42D /* SpotifyiOS in Frameworks */,
+				8F432E7B2DF69E0F00DAFFB8 /* Sentry in Frameworks */,
+				8F432EEF2DF69E5B00DAFFB8 /* SpotifyiOS in Frameworks */,
+				8F432E7A2DF69E0F00DAFFB8 /* (null) in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -144,6 +152,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				8F7F1A822DDEE8CC00F55637 /* (null) in Frameworks */,
+				8F432E7C2DF69E0F00DAFFB8 /* (null) in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -152,6 +161,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				8F7F1A832DDEE8CC00F55637 /* (null) in Frameworks */,
+				8F432E7D2DF69E0F00DAFFB8 /* (null) in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -211,6 +221,7 @@
 			);
 			name = RunDJWidgetExtension;
 			packageProductDependencies = (
+				8F432EF22DF69EB300DAFFB8 /* SpotifyiOS */,
 			);
 			productName = RunDJWidgetExtension;
 			productReference = 8F6F771F2DF686C400DA4657 /* RunDJWidgetExtension.appex */;
@@ -223,8 +234,8 @@
 				8FD3D1D12D58939A00367F7C /* Sources */,
 				8FD3D1D22D58939A00367F7C /* Frameworks */,
 				8FD3D1D32D58939A00367F7C /* Resources */,
-				E640933B597F4CEE853E74C8 /* Upload Debug Symbols to Sentry */,
 				8F6F76D62DF67C9100DA4657 /* Embed Foundation Extensions */,
+				8851F128136F424EBE8CB61D /* Upload Debug Symbols to Sentry */,
 			);
 			buildRules = (
 			);
@@ -236,8 +247,8 @@
 			);
 			name = RunDJ;
 			packageProductDependencies = (
-				96739FD883EB4D498DAB5094 /* Sentry */,
-				8FDEF1852DEFFA6D00E6B42D /* SpotifyiOS */,
+				B4006066ABF54A24B4AD0394 /* Sentry */,
+				8F432EEE2DF69E5B00DAFFB8 /* SpotifyiOS */,
 			);
 			productName = RunDJ;
 			productReference = 8FD3D1D52D58939A00367F7C /* RunDJ.app */;
@@ -325,8 +336,8 @@
 			mainGroup = 8FD3D1CC2D58939A00367F7C;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				FEFC19CD959A4BE79529FB80 /* XCRemoteSwiftPackageReference "sentry-cocoa" */,
-				8FDEF1832DEFFA5200E6B42D /* XCRemoteSwiftPackageReference "ios-sdk" */,
+				8F7CED542DF69D910073552D /* XCRemoteSwiftPackageReference "ios-sdk" */,
+				0B220BD35C7340B682A3D99C /* XCRemoteSwiftPackageReference "sentry-cocoa" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 8FD3D1D62D58939A00367F7C /* Products */;
@@ -373,7 +384,7 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		E640933B597F4CEE853E74C8 /* Upload Debug Symbols to Sentry */ = {
+		8851F128136F424EBE8CB61D /* Upload Debug Symbols to Sentry */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -641,10 +652,11 @@
 				INFOPLIST_KEY_NSLocationAlwaysUsageDescription = "Your app needs your location even when in the background to accurately track your entire run.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Your app needs your location to track your runs while you are using the app.";
 				INFOPLIST_KEY_NSMotionUsageDescription = "This app uses your motion data to get your cadence in steps per minute";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UILaunchStoryboardName = "Launch Screen";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -652,9 +664,13 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.rcong.RunDJ;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
@@ -678,10 +694,11 @@
 				INFOPLIST_KEY_NSLocationAlwaysUsageDescription = "Your app needs your location even when in the background to accurately track your entire run.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Your app needs your location to track your runs while you are using the app.";
 				INFOPLIST_KEY_NSMotionUsageDescription = "This app uses your motion data to get your cadence in steps per minute";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UILaunchStoryboardName = "Launch Screen";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -689,9 +706,13 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.rcong.RunDJ;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};
@@ -814,15 +835,7 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		8FDEF1832DEFFA5200E6B42D /* XCRemoteSwiftPackageReference "ios-sdk" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/spotify/ios-sdk";
-			requirement = {
-				branch = master;
-				kind = branch;
-			};
-		};
-		FEFC19CD959A4BE79529FB80 /* XCRemoteSwiftPackageReference "sentry-cocoa" */ = {
+		0B220BD35C7340B682A3D99C /* XCRemoteSwiftPackageReference "sentry-cocoa" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/getsentry/sentry-cocoa/";
 			requirement = {
@@ -830,17 +843,30 @@
 				minimumVersion = 8.0.0;
 			};
 		};
+		8F7CED542DF69D910073552D /* XCRemoteSwiftPackageReference "ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/spotify/ios-sdk";
+			requirement = {
+				branch = master;
+				kind = branch;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		8FDEF1852DEFFA6D00E6B42D /* SpotifyiOS */ = {
+		8F432EEE2DF69E5B00DAFFB8 /* SpotifyiOS */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 8FDEF1832DEFFA5200E6B42D /* XCRemoteSwiftPackageReference "ios-sdk" */;
+			package = 8F7CED542DF69D910073552D /* XCRemoteSwiftPackageReference "ios-sdk" */;
 			productName = SpotifyiOS;
 		};
-		96739FD883EB4D498DAB5094 /* Sentry */ = {
+		8F432EF22DF69EB300DAFFB8 /* SpotifyiOS */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = FEFC19CD959A4BE79529FB80 /* XCRemoteSwiftPackageReference "sentry-cocoa" */;
+			package = 8F7CED542DF69D910073552D /* XCRemoteSwiftPackageReference "ios-sdk" */;
+			productName = SpotifyiOS;
+		};
+		B4006066ABF54A24B4AD0394 /* Sentry */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 0B220BD35C7340B682A3D99C /* XCRemoteSwiftPackageReference "sentry-cocoa" */;
 			productName = Sentry;
 		};
 /* End XCSwiftPackageProductDependency section */

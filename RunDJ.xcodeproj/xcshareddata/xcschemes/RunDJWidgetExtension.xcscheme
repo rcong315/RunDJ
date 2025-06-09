@@ -16,7 +16,7 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "8F6F76BB2DF67C8F00DA4657"
+               BlueprintIdentifier = "8F6F771E2DF686C400DA4657"
                BuildableName = "RunDJWidgetExtension.appex"
                BlueprintName = "RunDJWidgetExtension"
                ReferencedContainer = "container:RunDJ.xcodeproj">

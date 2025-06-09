@@ -292,17 +292,17 @@ class LiveActivityManager: ObservableObject {
             let activity = try Activity.request(
                 attributes: attributes,
                 content: .init(state: initialState, staleDate: nil),
-                pushType: .token // Enable push updates
+                pushType: nil // Disabled push updates to fix permissions error
             )
             
             currentActivity = activity
             
-            // Store push token for remote updates
-            if let pushToken = activity.pushToken {
-                await storePushToken(pushToken)
-            }
+            // Store push token for remote updates (disabled for now)
+            // if let pushToken = activity.pushToken {
+            //     await storePushToken(pushToken)
+            // }
             
-            print("Started Live Activity with ID: \(activity.id)")
+            print("Live Activity started with ID: \(activity.id)")
         } catch {
             throw LiveActivityError.failedToStart(error)
         }
