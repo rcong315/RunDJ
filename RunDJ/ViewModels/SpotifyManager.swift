@@ -28,6 +28,7 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
     @Published var currentBPM: Double = 0.0
     @Published var connectionState: ConnectionState = .disconnected
     @Published var isPlaying: Bool = false
+    @Published var hasQueuedSongs: Bool = false
     
     private var songMap = [String: Double]()
     private var isSkipping = false
@@ -501,6 +502,7 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
         self.songMap = songs // songMap maps track ID to BPM (ensure keys are IDs if URI used in playerStateDidChange)
         print("Queue received \(songs.count) songs. Shuffling and enqueuing...")
         if !self.songMap.isEmpty {
+            self.hasQueuedSongs = true
             for songId in self.songMap.keys.shuffled() {
                 do {
                     try await self.enqueueTrack(id: songId) // Uses the refactored enqueueTrack
@@ -511,6 +513,7 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
             }
         } else {
             print("Queue initialized with empty song list.")
+            self.hasQueuedSongs = false
         }
         do {
             try await skipToNextTrack()
@@ -571,6 +574,7 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
             }
         }
         self.songMap.removeAll()
+        self.hasQueuedSongs = false
     }
     
     

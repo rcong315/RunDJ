@@ -29,88 +29,123 @@ struct SettingsView: View {
     ]
     
     var body: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Text("Music Sources")
-                    .font(.title)
-                    .padding()
+        NavigationStack {
+            ZStack {
+                Color.rundjBackground
+                    .ignoresSafeArea()
                 
-                Spacer()
-                
-                Button(action: {
-                    showingHelp = true
-                }) {
-                    Image(systemName: "questionmark.circle")
-                        .font(.title2)
-                        .foregroundColor(.blue)
-                }
-                .padding()
-            }
-            
-            List {
-                ForEach(0..<sources.count, id: \.self) { index in
-                    HStack {
-                        Image(systemName: sources[index].isSelected ? "checkmark.square.fill" : "square")
-                            .foregroundColor(sources[index].isSelected ? .green : .gray)
-                            .onTapGesture {
-                                sources[index].isSelected.toggle()
-                                checkForChanges()
+                VStack(spacing: 0) {
+                    // Content
+                    VStack(alignment: .leading, spacing: 16) {
+                        Text("Select which music sources to include when finding songs that match your running pace.")
+                            .font(.system(size: 14))
+                            .foregroundColor(.rundjTextSecondary)
+                            .padding(.horizontal)
+                            .padding(.top, 16)
+                        
+                        VStack(spacing: 8) {
+                            ForEach(0..<sources.count, id: \.self) { index in
+                                SourceRow(
+                                    source: $sources[index],
+                                    hasChanges: $hasChanges,
+                                    checkForChanges: checkForChanges
+                                )
                             }
-                        Text(sources[index].name)
-                            .padding(.leading, 8)
+                        }
+                        .padding(.horizontal)
                     }
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        sources[index].isSelected.toggle()
-                        checkForChanges()
+                    .padding(.bottom, 100) // Space for buttons
+                    
+                    // Bottom Buttons
+                    VStack(spacing: 12) {
+                        HStack(spacing: 12) {
+                            Button("Cancel") {
+                                isPresented = false
+                            }
+                            .frame(maxWidth: .infinity)
+                            .buttonStyle(RundjButtonStyle(backgroundColor: .rundjCardBackground))
+                            
+                            Button("Save") {
+                                let selectedSources = sources.filter { $0.isSelected }.map { $0.key }
+                                settingsManager.musicSources = selectedSources
+                                settingsManager.saveSettings()
+                                onSave(selectedSources)
+                                isPresented = false
+                            }
+                            .frame(maxWidth: .infinity)
+                            .buttonStyle(RundjButtonStyle(
+                                backgroundColor: .rundjMusicGreen,
+                                isDisabled: !hasChanges,
+                                isMusic: true
+                            ))
+                            .disabled(!hasChanges)
+                        }
+                        .padding(.horizontal)
+                    }
+                    .padding(.vertical, 16)
+                    .background(
+                        Color.rundjCardBackground
+                            .ignoresSafeArea(edges: .bottom)
+                            .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: -2)
+                    )
+                }
+            }
+            .navigationTitle("Music Sources")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(action: { showingHelp = true }) {
+                        Image(systemName: "questionmark.circle.fill")
+                            .font(.system(size: 20))
+                            .foregroundColor(.rundjAccent)
                     }
                 }
             }
-            
-            HStack(spacing: 20) {
-                Button("Cancel") {
-                    isPresented = false
-                }
-                .padding()
-                .background(Color.gray)
-                .foregroundColor(.white)
-                .cornerRadius(10)
-                
-                Button("Save") {
-                    let selectedSources = sources.filter { $0.isSelected }.map { $0.key }
-                    settingsManager.musicSources = selectedSources
-                    settingsManager.saveSettings()
-                    onSave(selectedSources)
-                    isPresented = false
-                }
-                .padding()
-                .background(Color.green)
-                .foregroundColor(.white)
-                .cornerRadius(10)
-                .disabled(!hasChanges)
-                .opacity(hasChanges ? 1.0 : 0.5)
+            .sheet(isPresented: $showingHelp) {
+                HelpView(context: .settingsView)
             }
-            .padding()
-        }
-        .onAppear {
-            for i in 0..<sources.count {
-                sources[i].isSelected = settingsManager.musicSources.contains(sources[i].key)
+            .onAppear {
+                for i in 0..<sources.count {
+                    sources[i].isSelected = settingsManager.musicSources.contains(sources[i].key)
+                }
+                checkForChanges()
             }
-            checkForChanges()
-        }
-        .sheet(isPresented: $showingHelp) {
-            HelpView(context: .settingsView)
         }
     }
     
     private func checkForChanges() {
         let selectedKeys = sources.filter { $0.isSelected }.map { $0.key }
-        
-        if Set(selectedKeys) != Set(settingsManager.musicSources) {
-            hasChanges = true
-        } else {
-            hasChanges = false
+        hasChanges = Set(selectedKeys) != Set(settingsManager.musicSources)
+    }
+}
+
+struct SourceRow: View {
+    @Binding var source: SourceItem
+    @Binding var hasChanges: Bool
+    let checkForChanges: () -> Void
+    
+    var body: some View {
+        Button(action: {
+            source.isSelected.toggle()
+            checkForChanges()
+        }) {
+            HStack(spacing: 12) {
+                Image(systemName: source.isSelected ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 22))
+                    .foregroundColor(source.isSelected ? .rundjMusicGreen : .rundjTextTertiary)
+                
+                Text(source.name)
+                    .font(.system(size: 16))
+                    .foregroundColor(.rundjTextPrimary)
+                
+                Spacer()
+            }
+            .padding(.vertical, 12)
+            .padding(.horizontal, 16)
+            .background(Color.rundjCardBackground)
+            .cornerRadius(10)
         }
+        .buttonStyle(PlainButtonStyle())
     }
 }
 
@@ -126,5 +161,5 @@ struct SourceItem {
         isPresented: .constant(true),
         onSave: { _ in print("Preview save triggered") }
     )
-    .environmentObject(SettingsManager.shared) // Add for preview
+    .environmentObject(SettingsManager.shared)
 }

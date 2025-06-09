@@ -30,7 +30,14 @@ struct RunDJApp: App {
                 .preferredColorScheme(.dark) // Force dark mode
                 .onOpenURL { url in
                     logger.info("Received URL: \(url)")
-                    SpotifyManager.shared.handleURL(url)
+                    
+                    // Handle Live Activity deep links
+                    if url.scheme == "rundj" {
+                        LiveActivityManager.shared.handleDeepLink(url)
+                    } else {
+                        // Handle Spotify auth callbacks
+                        SpotifyManager.shared.handleURL(url)
+                    }
                 }
         }
     }

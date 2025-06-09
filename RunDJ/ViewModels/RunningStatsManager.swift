@@ -58,6 +58,10 @@ class RunningStatsManager: ObservableObject {
     
     // Maximum number of historical data points to keep
     private let maxPaceDataPointsCount = 500
+    
+    // Minimum thresholds before calculating pace
+    private let minimumDistanceForPace: Double = 20.0 // 20 meters (about 65 feet)
+    private let minimumTimeForPace: TimeInterval = 15.0 // 15 seconds
 
     // MARK: - Initialization
     init() {}
@@ -140,10 +144,12 @@ class RunningStatsManager: ObservableObject {
         }
 
         // Calculate overall average pace (seconds per km)
-        if runningData.totalDistance > 0 && runningData.elapsedTime > 0 {
+        // Only calculate pace after minimum distance AND time thresholds are met
+        if runningData.totalDistance >= minimumDistanceForPace && runningData.elapsedTime >= minimumTimeForPace {
             runningData.currentPace = (runningData.elapsedTime / runningData.totalDistance) * kilometerInMeters
         } else {
-            runningData.currentPace = 0
+            // Not enough data yet, use -1 to indicate "calculating"
+            runningData.currentPace = -1
         }
 
         // Calculate rolling 1-mile pace
@@ -295,9 +301,22 @@ class RunningStatsManager: ObservableObject {
     /// Formats a pace into a readable string like M:SS /unit
     func formatPace(_ pace: TimeInterval, perKm: Bool = false) -> String {
         let unit = perKm ? "km" : "mi"
-        if pace <= 0 { return "--:-- /\(unit)" }
         
-        let totalSeconds = Int(round(pace))
+        // Handle special cases
+        if pace < 0 { 
+            return "--:--" // Calculating pace
+        }
+        if pace == 0 { 
+            return "--:-- /\(unit)" // No pace data
+        }
+        
+        // Convert to per mile if needed
+        let displayPace = perKm ? pace : pace * (mileInMeters / kilometerInMeters)
+        
+        // Cap at reasonable maximum (99:59 per unit)
+        let cappedPace = min(displayPace, 5999)
+        
+        let totalSeconds = Int(round(cappedPace))
         let minutes = totalSeconds / 60
         let seconds = totalSeconds % 60
         return String(format: "%d:%02d /%@", minutes, seconds, unit)
