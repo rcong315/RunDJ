@@ -19,6 +19,7 @@ struct BPMView: View {
     @State private var showingStepsAlert = false
     @State private var navigateToRunning = false
     @State private var navigateToManualRunning = false
+    @State private var capturedAutoBPM: Double = 0.0
     
     init() {
         let savedBPM = SettingsManager.shared.lastBPM
@@ -69,6 +70,7 @@ struct BPMView: View {
                         Button(action: {
                             let steps = pedometerManager.stepsPerMinute
                             if steps >= 100 && steps <= 200 {
+                                capturedAutoBPM = steps
                                 settingsManager.lastBPM = steps
                                 settingsManager.saveSettings()
                                 navigateToRunning = true
@@ -176,7 +178,7 @@ struct BPMView: View {
                 .padding(.horizontal)
             }
             .navigationDestination(isPresented: $navigateToRunning) {
-                RunningView(bpm: pedometerManager.stepsPerMinute).environmentObject(SettingsManager.shared)
+                RunningView(bpm: capturedAutoBPM).environmentObject(SettingsManager.shared)
             }
             .navigationDestination(isPresented: $navigateToManualRunning) {
                 RunningView(bpm: Double(bpmValue)).environmentObject(SettingsManager.shared)

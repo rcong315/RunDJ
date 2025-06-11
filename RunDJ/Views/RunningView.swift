@@ -40,7 +40,10 @@ struct RunningView: View {
             
             VStack(spacing: 12) {
                 // Spotify Connection Section
-                SpotifyConnectionPromptView(spotifyManager: spotifyManager)
+                SpotifyConnectionPromptView(
+                    spotifyManager: spotifyManager,
+                    onRefreshSongs: refreshSongsBasedOnSettings
+                )
                     .padding(.horizontal)
                     .transition(.move(edge: .top).combined(with: .opacity))
                 
@@ -355,6 +358,8 @@ struct RunningView: View {
             Task {
                 do {
                     try await self.spotifyManager.skipToNextTrack()
+                } catch {
+                    print("Failed to skip from Live Activity: \(error)")
                 }
             }
         }
@@ -371,6 +376,8 @@ struct RunningView: View {
                     } else {
                         try await self.spotifyManager.resumePlayback()
                     }
+                } catch {
+                    print("Failed to play/pause from Live Activity: \(error)")
                 }
             }
         }
@@ -391,6 +398,7 @@ struct RunningView: View {
 
 struct SpotifyConnectionPromptView: View {
     @ObservedObject var spotifyManager: SpotifyManager
+    let onRefreshSongs: () -> Void  // Add this callback
     
     private var connected: Bool {
         spotifyManager.connectionState == .connected
@@ -410,13 +418,13 @@ struct SpotifyConnectionPromptView: View {
                 switch spotifyManager.connectionState {
                 case .disconnected, .error:
                     spotifyManager.initiateSession()
-                default:
-                    break
+                case .connected:
+                    onRefreshSongs()
                 }
             }) {
-                Text("Connect Spotify")
+                Text(connected ? "Refresh Songs" : "Connect Spotify")
             }
-            .buttonStyle(RundjPrimaryButtonStyle(isDisabled: connected, isMusic: true))
+            .buttonStyle(RundjPrimaryButtonStyle(isMusic: true))
         }
         .padding()
         .frame(maxWidth: .infinity)
