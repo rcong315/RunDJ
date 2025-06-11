@@ -12,6 +12,7 @@ class SettingsManager: ObservableObject {
     static let shared = SettingsManager()
 
     @Published var musicSources: [String] = ["top_tracks", "saved_tracks", "playlists", "top_artists_top_tracks", "top_artists_albums", "followed_artists_top_tracks", "followed_artists_albums"]
+    @Published var lastBPM: Int = 160
 
     private init() {
         loadSettings()
@@ -21,9 +22,17 @@ class SettingsManager: ObservableObject {
         if let savedSources = UserDefaults.standard.stringArray(forKey: "musicSources") {
             self.musicSources = savedSources
         }
+        
+        let savedBPM = UserDefaults.standard.integer(forKey: "lastManualBPM")
+        if savedBPM >= 100 && savedBPM <= 200 {
+            self.lastBPM = savedBPM
+        } else {
+            self.lastBPM = 160
+        }
     }
 
     func saveSettings() {
         UserDefaults.standard.set(self.musicSources, forKey: "musicSources")
+        UserDefaults.standard.set(self.lastBPM, forKey: "lastBPM")
     }
 }

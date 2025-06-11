@@ -12,12 +12,20 @@ struct BPMView: View {
     @StateObject private var pedometerManager = PedometerManager.shared
     @StateObject private var spotifyManager = SpotifyManager.shared
     @StateObject private var runDJService = RunDJService.shared
+    @StateObject private var settingsManager = SettingsManager.shared
     
-    @State private var bpmValue = 150
-    @State private var bpmText = "150"
+    @State private var bpmValue: Int
+    @State private var bpmText: String
     @State private var showingHelp = false
     @State private var showingStepsAlert = false
     @State private var navigateToRunning = false
+    @State private var navigateToManualRunning = false
+    
+    init() {
+        let savedBPM = SettingsManager.shared.lastBPM
+        _bpmValue = State(initialValue: savedBPM)
+        _bpmText = State(initialValue: "\(savedBPM)")
+    }
     
     var body: some View {
         NavigationStack {
@@ -63,6 +71,8 @@ struct BPMView: View {
                         Button(action: {
                             let steps = pedometerManager.stepsPerMinute
                             if steps >= 100 && steps <= 200 {
+                                settingsManager.lastBPM = Int(round(steps))
+                                settingsManager.saveSettings()
                                 navigateToRunning = true
                             } else {
                                 showingStepsAlert = true
@@ -157,7 +167,11 @@ struct BPMView: View {
                             .cornerRadius(8)
                         }
                         
-                        NavigationLink(destination: RunningView(bpm: Double(bpmValue)).environmentObject(SettingsManager.shared)) {
+                        Button(action: {
+                            settingsManager.lastBPM = bpmValue
+                            settingsManager.saveSettings()
+                            navigateToManualRunning = true
+                        }) {
                             Text("Start with Manual BPM")
                         }
                         .buttonStyle(RundjPrimaryButtonStyle())
@@ -170,6 +184,9 @@ struct BPMView: View {
             }
             .navigationDestination(isPresented: $navigateToRunning) {
                 RunningView(bpm: pedometerManager.stepsPerMinute).environmentObject(SettingsManager.shared)
+            }
+            .navigationDestination(isPresented: $navigateToManualRunning) {
+                RunningView(bpm: Double(bpmValue)).environmentObject(SettingsManager.shared)
             }
             .sheet(isPresented: $showingHelp) {
                 HelpView(context: .bpmView)
@@ -197,6 +214,8 @@ struct BPMView: View {
                             bpmValue = max(100, min(200, value))
                         }
                         bpmText = "\(bpmValue)"
+                        settingsManager.lastBPM = bpmValue
+                        settingsManager.saveSettings()
                         UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
                     }
                     .foregroundColor(.rundjMusicGreen)
