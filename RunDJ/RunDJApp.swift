@@ -31,11 +31,15 @@ struct RunDJApp: App {
                 .onOpenURL { url in
                     logger.info("Received URL: \(url)")
                     
-                    // Handle Live Activity deep links
-                    if url.scheme == "rundj" {
+                    // Check if this is a Spotify callback
+                    if url.scheme == "rundj" && url.host == "callback" {
+                        // Handle Spotify auth callbacks
+                        SpotifyManager.shared.handleURL(url)
+                    } else if url.scheme == "rundj" {
+                        // Handle Live Activity deep links
                         LiveActivityManager.shared.handleDeepLink(url)
                     } else {
-                        // Handle Spotify auth callbacks
+                        // Handle any other Spotify URLs
                         SpotifyManager.shared.handleURL(url)
                     }
                 }
