@@ -10,11 +10,11 @@ import Sentry
 
 /// Protocol defining the network operations required by the app
 protocol NetworkService {
-    func register(accessToken: String, completion: @escaping (Bool) -> Void)
+    func register(accessToken: String, completion: @escaping (Bool?) -> Void)
     func getSongsByBPM(accessToken: String, bpm: Double, sources: [String], completion: @escaping ([String: Double]) -> Void)
-    func getPresetPlaylist(accessToken: String, stepsPerMinute: Double, completion: @escaping (String?) -> Void)
-    func createPlaylist(accessToken: String, bpm: Double, sources: [String], completion: @escaping (String?) -> Void)
     func sendFeedback(accessToken: String, songId: String, feedback: String, completion: @escaping (Bool) -> Void)
+    func createPlaylist(accessToken: String, bpm: Double, sources: [String], completion: @escaping (String?) -> Void)
+    //    func getPresetPlaylist(accessToken: String, stepsPerMinute: Double, completion: @escaping (String?) -> Void)
 }
 
 /// Default implementation of the NetworkService protocol
@@ -32,6 +32,10 @@ class DefaultNetworkService: NetworkService {
     
     struct PlaylistResponse: Decodable {
         let id: String
+    }
+    
+    struct RegisterResponse: Decodable {
+        let isNewUser: Bool
     }
     
     init(baseURL: String? = nil) {
@@ -56,7 +60,6 @@ class DefaultNetworkService: NetworkService {
             scope.setContext(value: context, key: "json_decode")
             
             if let data = responseData, let jsonString = String(data: data, encoding: .utf8) {
-                // Limit JSON string to prevent too large payloads
                 let truncatedJSON = String(jsonString.prefix(1000))
                 scope.setContext(value: ["raw_json": truncatedJSON], key: "response_data")
             }
@@ -64,19 +67,18 @@ class DefaultNetworkService: NetworkService {
         }
     }
     
-    func register(accessToken: String, completion: @escaping (Bool) -> Void) {
+    func register(accessToken: String, completion: @escaping (Bool?) -> Void) {
         var components = URLComponents(string: "\(baseURL)/api/v1/user/register")
         components?.queryItems = [
             URLQueryItem(name: "access_token", value: accessToken),
         ]
         
         guard let url = components?.url else {
-            print("Invalid URL")
             SentrySDK.capture(message: "Invalid URL for register endpoint") { scope in
                 scope.setContext(value: ["access_token": accessToken], key: "request_params")
                 scope.setLevel(.error)
             }
-            completion(false)
+            completion(nil)
             return
         }
         
@@ -87,63 +89,14 @@ class DefaultNetworkService: NetworkService {
         let session = URLSession.shared
         let task = session.dataTask(with: request) { data, response, error -> Void in
             if let error = error {
-                print("Error: \(error.localizedDescription)")
                 self.captureNetworkError(error, method: "register", parameters: ["access_token": accessToken])
-                completion(false)
-                return
-            }
-            
-            if let httpResponse = response as? HTTPURLResponse {
-                print("HTTP Status Code: \(httpResponse.statusCode)")
-                if httpResponse.statusCode >= 400 {
-                    let breadcrumb = Breadcrumb()
-                    breadcrumb.level = .error
-                    breadcrumb.category = "network"
-                    breadcrumb.message = "Register failed with status \(httpResponse.statusCode)"
-                    SentrySDK.addBreadcrumb(breadcrumb)
-                }
-                completion(httpResponse.statusCode < 400)
-            } else {
-                completion(false)
-            }
-        }
-        task.resume()
-    }
-    
-    func getPresetPlaylist(accessToken: String, stepsPerMinute: Double, completion: @escaping (String?) -> Void) {
-        var components = URLComponents(string: "\(baseURL)/api/songs/preset")
-        components?.queryItems = [
-            URLQueryItem(name: "access_token", value: accessToken),
-            URLQueryItem(name: "bpm", value: String(stepsPerMinute))
-        ]
-        
-        guard let url = components?.url else {
-            print("Invalid URL")
-            SentrySDK.capture(message: "Invalid URL for getPresetPlaylist endpoint") { scope in
-                scope.setContext(value: ["bpm": stepsPerMinute], key: "request_params")
-                scope.setLevel(.error)
-            }
-            completion(nil)
-            return
-        }
-        
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
-        request.setValue(apiKey, forHTTPHeaderField: "X-API-Key")
-        
-        let session = URLSession.shared
-        let task = session.dataTask(with: request) { data, response, error -> Void in
-            if let error = error {
-                print("Error: \(error.localizedDescription)")
-                self.captureNetworkError(error, method: "getPresetPlaylist", parameters: ["bpm": stepsPerMinute])
                 completion(nil)
                 return
             }
             
             guard let data = data else {
-                print("No data received")
-                SentrySDK.capture(message: "No data received from getPresetPlaylist") { scope in
-                    scope.setContext(value: ["bpm": stepsPerMinute], key: "request_params")
+                SentrySDK.capture(message: "No data received from register endpoint") { scope in
+                    scope.setContext(value: ["access_token": accessToken], key: "request_params")
                     scope.setLevel(.warning)
                 }
                 completion(nil)
@@ -151,25 +104,32 @@ class DefaultNetworkService: NetworkService {
             }
             
             if let httpResponse = response as? HTTPURLResponse {
-                print("HTTP Status Code: \(httpResponse.statusCode)")
                 if httpResponse.statusCode >= 400 {
                     let breadcrumb = Breadcrumb()
                     breadcrumb.level = .error
                     breadcrumb.category = "network"
-                    breadcrumb.message = "getPresetPlaylist failed with status \(httpResponse.statusCode)"
+                    breadcrumb.message = "Register failed with status \(httpResponse.statusCode)"
                     SentrySDK.addBreadcrumb(breadcrumb)
+                    completion(nil)
+                    return
+                }
+                
+                if let jsonString = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines),
+                   let isNewUser = Bool(jsonString) {
+                    completion(isNewUser)
+                } else {
+                    SentrySDK.capture(message: "Failed to parse response from register endpoint") { scope in
+                        scope.setContext(value: ["access_token": accessToken], key: "request_params")
+                        scope.setLevel(.warning)
+                    }
+                    completion(nil)
                 }
             }
-            
-            let uri = String(data: data, encoding: .utf8) ?? ""
-            print("Received URI: \(uri)")
-            completion(uri)
         }
         task.resume()
     }
     
     func getSongsByBPM(accessToken: String, bpm: Double, sources: [String], completion: @escaping ([String: Double]) -> Void) {
-        print("Getting songs by BPM \(bpm)")
         var components = URLComponents(string: "\(baseURL)/api/v1/songs/bpm/" + String(bpm))
         components?.queryItems = [
             URLQueryItem(name: "access_token", value: accessToken),
@@ -177,7 +137,6 @@ class DefaultNetworkService: NetworkService {
         ]
         
         guard let url = components?.url else {
-            print("Invalid URL")
             SentrySDK.capture(message: "Invalid URL for getSongsByBPM endpoint") { scope in
                 scope.setContext(value: ["bpm": bpm, "sources": sources], key: "request_params")
                 scope.setLevel(.error)
@@ -193,14 +152,12 @@ class DefaultNetworkService: NetworkService {
         let session = URLSession.shared
         let task = session.dataTask(with: request) { data, response, error -> Void in
             if let error = error {
-                print("Error: \(error.localizedDescription)")
                 self.captureNetworkError(error, method: "getSongsByBPM", parameters: ["bpm": bpm, "sources": sources])
                 completion([:])
                 return
             }
             
             guard let data = data else {
-                print("No data received")
                 SentrySDK.capture(message: "No data received from getSongsByBPM") { scope in
                     scope.setContext(value: ["bpm": bpm, "sources": sources], key: "request_params")
                     scope.setLevel(.warning)
@@ -209,14 +166,7 @@ class DefaultNetworkService: NetworkService {
                 return
             }
             
-            if let jsonString = String(data: data, encoding: .utf8) {
-                print("Raw JSON Response received:\n\(jsonString)")
-            } else {
-                print("Could not convert received data to UTF8 string. Data size: \(data.count) bytes.")
-            }
-            
             if let httpResponse = response as? HTTPURLResponse {
-                print("HTTP Status Code: \(httpResponse.statusCode)")
                 if httpResponse.statusCode >= 400 {
                     let breadcrumb = Breadcrumb()
                     breadcrumb.level = .error
@@ -230,7 +180,6 @@ class DefaultNetworkService: NetworkService {
             do {
                 let responseData = try decoder.decode(BpmSongResponse.self, from: data)
                 let songs = responseData.tracks
-                print("Successfully decoded \(responseData.count) songs.")
                 let breadcrumb = Breadcrumb()
                 breadcrumb.level = .info
                 breadcrumb.category = "network"
@@ -238,7 +187,6 @@ class DefaultNetworkService: NetworkService {
                 SentrySDK.addBreadcrumb(breadcrumb)
                 completion(songs)
             } catch {
-                print("Error decoding JSON: \(error)")
                 self.captureJSONError(error, method: "getSongsByBPM", responseData: data, parameters: ["bpm": bpm])
                 completion([:])
             }
@@ -246,79 +194,7 @@ class DefaultNetworkService: NetworkService {
         task.resume()
     }
     
-    func createPlaylist(accessToken: String, bpm: Double, sources: [String], completion: @escaping (String?) -> Void) {
-        print("Creating playlist for BPM \(bpm)")
-        var components = URLComponents(string: "\(baseURL)/api/v1/playlist/bpm/" + String(bpm))
-        components?.queryItems = [
-            URLQueryItem(name: "access_token", value: accessToken),
-            URLQueryItem(name: "sources", value: sources.joined(separator: ","))
-        ]
-        
-        guard let url = components?.url else {
-            print("Invalid URL")
-            SentrySDK.capture(message: "Invalid URL for createPlaylist endpoint") { scope in
-                scope.setContext(value: ["bpm": bpm, "sources": sources], key: "request_params")
-                scope.setLevel(.error)
-            }
-            completion(nil)
-            return
-        }
-        
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue(apiKey, forHTTPHeaderField: "X-API-Key")
-        
-        let session = URLSession.shared
-        let task = session.dataTask(with: request) { data, response, error -> Void in
-            if let error = error {
-                print("Error: \(error.localizedDescription)")
-                self.captureNetworkError(error, method: "createPlaylist", parameters: ["bpm": bpm, "sources": sources])
-                completion(nil)
-                return
-            }
-            
-            guard let data = data else {
-                print("No data received")
-                SentrySDK.capture(message: "No data received from createPlaylist") { scope in
-                    scope.setContext(value: ["bpm": bpm, "sources": sources], key: "request_params")
-                    scope.setLevel(.warning)
-                }
-                completion(nil)
-                return
-            }
-            
-            if let httpResponse = response as? HTTPURLResponse {
-                print("HTTP Status Code: \(httpResponse.statusCode)")
-                if httpResponse.statusCode >= 400 {
-                    let breadcrumb = Breadcrumb()
-                    breadcrumb.level = .error
-                    breadcrumb.category = "network"
-                    breadcrumb.message = "createPlaylist failed with status \(httpResponse.statusCode)"
-                    SentrySDK.addBreadcrumb(breadcrumb)
-                }
-            }
-            
-            let decoder = JSONDecoder()
-            do {
-                let responseData = try decoder.decode(PlaylistResponse.self, from: data)
-                print("Successfully decoded playlist \(responseData.id)")
-                let breadcrumb = Breadcrumb()
-                breadcrumb.level = .info
-                breadcrumb.category = "network"
-                breadcrumb.message = "Successfully created playlist \(responseData.id) for BPM \(bpm)"
-                SentrySDK.addBreadcrumb(breadcrumb)
-                completion(responseData.id)
-            } catch {
-                print("Error decoding JSON: \(error)")
-                self.captureJSONError(error, method: "createPlaylist", responseData: data, parameters: ["bpm": bpm])
-                completion(nil)
-            }
-        }
-        task.resume()
-    }
-    
     func sendFeedback(accessToken: String, songId: String, feedback: String, completion: @escaping (Bool) -> Void) {
-        print("Sending feedback for song \(songId)")
         var components = URLComponents(string: "\(baseURL)/api/v1/song/\(songId)/feedback")
         components?.queryItems = [
             URLQueryItem(name: "access_token", value: accessToken),
@@ -326,7 +202,6 @@ class DefaultNetworkService: NetworkService {
         ]
         
         guard let url = components?.url else {
-            print("Invalid URL")
             SentrySDK.capture(message: "Invalid URL for sendFeedback endpoint") { scope in
                 scope.setContext(value: ["songId": songId, "feedback": feedback], key: "request_params")
                 scope.setLevel(.error)
@@ -342,14 +217,12 @@ class DefaultNetworkService: NetworkService {
         let session = URLSession.shared
         let task = session.dataTask(with: request) { data, response, error -> Void in
             if let error = error {
-                print("Error: \(error.localizedDescription)")
                 self.captureNetworkError(error, method: "sendFeedback", parameters: ["songId": songId, "feedback": feedback])
                 completion(false)
                 return
             }
             
             guard data != nil else {
-                print("No data received")
                 SentrySDK.capture(message: "No data received from sendFeedback") { scope in
                     scope.setContext(value: ["songId": songId, "feedback": feedback], key: "request_params")
                     scope.setLevel(.warning)
@@ -359,8 +232,6 @@ class DefaultNetworkService: NetworkService {
             }
             
             if let httpResponse = response as? HTTPURLResponse {
-                print("HTTP Status Code: \(httpResponse.statusCode)")
-                // Check if status code indicates success (200-299)
                 let isSuccess = httpResponse.statusCode >= 200 && httpResponse.statusCode < 300
                 if !isSuccess {
                     let breadcrumb = Breadcrumb()
@@ -382,4 +253,126 @@ class DefaultNetworkService: NetworkService {
         }
         task.resume()
     }
+    
+    func createPlaylist(accessToken: String, bpm: Double, sources: [String], completion: @escaping (String?) -> Void) {
+        var components = URLComponents(string: "\(baseURL)/api/v1/playlist/bpm/" + String(bpm))
+        components?.queryItems = [
+            URLQueryItem(name: "access_token", value: accessToken),
+            URLQueryItem(name: "sources", value: sources.joined(separator: ","))
+        ]
+        
+        guard let url = components?.url else {
+            SentrySDK.capture(message: "Invalid URL for createPlaylist endpoint") { scope in
+                scope.setContext(value: ["bpm": bpm, "sources": sources], key: "request_params")
+                scope.setLevel(.error)
+            }
+            completion(nil)
+            return
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue(apiKey, forHTTPHeaderField: "X-API-Key")
+        
+        let session = URLSession.shared
+        let task = session.dataTask(with: request) { data, response, error -> Void in
+            if let error = error {
+                self.captureNetworkError(error, method: "createPlaylist", parameters: ["bpm": bpm, "sources": sources])
+                completion(nil)
+                return
+            }
+            
+            guard let data = data else {
+                SentrySDK.capture(message: "No data received from createPlaylist") { scope in
+                    scope.setContext(value: ["bpm": bpm, "sources": sources], key: "request_params")
+                    scope.setLevel(.warning)
+                }
+                completion(nil)
+                return
+            }
+            
+            if let httpResponse = response as? HTTPURLResponse {
+                if httpResponse.statusCode >= 400 {
+                    let breadcrumb = Breadcrumb()
+                    breadcrumb.level = .error
+                    breadcrumb.category = "network"
+                    breadcrumb.message = "createPlaylist failed with status \(httpResponse.statusCode)"
+                    SentrySDK.addBreadcrumb(breadcrumb)
+                }
+            }
+            
+            let decoder = JSONDecoder()
+            do {
+                let responseData = try decoder.decode(PlaylistResponse.self, from: data)
+                let breadcrumb = Breadcrumb()
+                breadcrumb.level = .info
+                breadcrumb.category = "network"
+                breadcrumb.message = "Successfully created playlist \(responseData.id) for BPM \(bpm)"
+                SentrySDK.addBreadcrumb(breadcrumb)
+                completion(responseData.id)
+            } catch {
+                self.captureJSONError(error, method: "createPlaylist", responseData: data, parameters: ["bpm": bpm])
+                completion(nil)
+            }
+        }
+        task.resume()
+    }
+    
+    //    func getPresetPlaylist(accessToken: String, stepsPerMinute: Double, completion: @escaping (String?) -> Void) {
+    //        var components = URLComponents(string: "\(baseURL)/api/songs/preset")
+    //        components?.queryItems = [
+    //            URLQueryItem(name: "access_token", value: accessToken),
+    //            URLQueryItem(name: "bpm", value: String(stepsPerMinute))
+    //        ]
+    //
+    //        guard let url = components?.url else {
+    //            print("Invalid URL")
+    //            SentrySDK.capture(message: "Invalid URL for getPresetPlaylist endpoint") { scope in
+    //                scope.setContext(value: ["bpm": stepsPerMinute], key: "request_params")
+    //                scope.setLevel(.error)
+    //            }
+    //            completion(nil)
+    //            return
+    //        }
+    //
+    //        var request = URLRequest(url: url)
+    //        request.httpMethod = "GET"
+    //        request.setValue(apiKey, forHTTPHeaderField: "X-API-Key")
+    //
+    //        let session = URLSession.shared
+    //        let task = session.dataTask(with: request) { data, response, error -> Void in
+    //            if let error = error {
+    //                print("Error: \(error.localizedDescription)")
+    //                self.captureNetworkError(error, method: "getPresetPlaylist", parameters: ["bpm": stepsPerMinute])
+    //                completion(nil)
+    //                return
+    //            }
+    //
+    //            guard let data = data else {
+    //                print("No data received")
+    //                SentrySDK.capture(message: "No data received from getPresetPlaylist") { scope in
+    //                    scope.setContext(value: ["bpm": stepsPerMinute], key: "request_params")
+    //                    scope.setLevel(.warning)
+    //                }
+    //                completion(nil)
+    //                return
+    //            }
+    //
+    //            if let httpResponse = response as? HTTPURLResponse {
+    //                print("HTTP Status Code: \(httpResponse.statusCode)")
+    //                if httpResponse.statusCode >= 400 {
+    //                    let breadcrumb = Breadcrumb()
+    //                    breadcrumb.level = .error
+    //                    breadcrumb.category = "network"
+    //                    breadcrumb.message = "getPresetPlaylist failed with status \(httpResponse.statusCode)"
+    //                    SentrySDK.addBreadcrumb(breadcrumb)
+    //                }
+    //            }
+    //
+    //            let uri = String(data: data, encoding: .utf8) ?? ""
+    //            print("Received URI: \(uri)")
+    //            completion(uri)
+    //        }
+    //        task.resume()
+    //    }
 }

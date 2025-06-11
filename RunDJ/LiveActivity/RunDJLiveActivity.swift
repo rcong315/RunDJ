@@ -10,6 +10,7 @@ import SwiftUI
 import WidgetKit
 
 // MARK: - Activity Attributes
+
 struct RunDJActivityAttributes: ActivityAttributes {
     public struct ContentState: Codable, Hashable {
         // Dynamic content that updates
@@ -31,6 +32,7 @@ struct RunDJActivityAttributes: ActivityAttributes {
 }
 
 // MARK: - Live Activity Widget
+
 struct RunDJLiveActivityWidget: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: RunDJActivityAttributes.self) { context in
@@ -149,6 +151,7 @@ struct RunDJLiveActivityWidget: Widget {
 }
 
 // MARK: - Lock Screen View
+
 struct LockScreenLiveActivityView: View {
     let context: ActivityViewContext<RunDJActivityAttributes>
     
@@ -258,6 +261,7 @@ struct LockScreenLiveActivityView: View {
 }
 
 // MARK: - Manager Class
+
 class LiveActivityManager: ObservableObject {
     static let shared = LiveActivityManager()
     
@@ -292,17 +296,9 @@ class LiveActivityManager: ObservableObject {
             let activity = try Activity.request(
                 attributes: attributes,
                 content: .init(state: initialState, staleDate: nil),
-                pushType: nil // Disabled push updates to fix permissions error
+                pushType: nil
             )
-            
             currentActivity = activity
-            
-            // Store push token for remote updates (disabled for now)
-            // if let pushToken = activity.pushToken {
-            //     await storePushToken(pushToken)
-            // }
-            
-            print("Live Activity started with ID: \(activity.id)")
         } catch {
             throw LiveActivityError.failedToStart(error)
         }
@@ -336,12 +332,11 @@ class LiveActivityManager: ObservableObject {
         await activity.update(
             ActivityContent(
                 state: updatedState,
-                staleDate: Date().addingTimeInterval(30) // Stale after 30 seconds
+                staleDate: Date().addingTimeInterval(30)
             )
         )
     }
     
-    // End the Live Activity
     func endActivity() async {
         guard let activity = currentActivity else { return }
         
@@ -365,17 +360,6 @@ class LiveActivityManager: ObservableObject {
         currentActivity = nil
     }
     
-    // Store push token for remote updates
-    private func storePushToken(_ token: Data) async {
-        // Send to your backend for push updates
-        let tokenString = token.map { String(format: "%02x", $0) }.joined()
-        print("Live Activity Push Token: \(tokenString)")
-        
-        // TODO: Send to your backend
-        // await networkService.storeLiveActivityToken(tokenString)
-    }
-    
-    // Handle deep links from Live Activity buttons
     func handleDeepLink(_ url: URL) {
         guard let host = url.host else { return }
         
@@ -393,6 +377,7 @@ class LiveActivityManager: ObservableObject {
 }
 
 // MARK: - Error Types
+
 enum LiveActivityError: LocalizedError {
     case disabled
     case failedToStart(Error)
@@ -408,6 +393,7 @@ enum LiveActivityError: LocalizedError {
 }
 
 // MARK: - Notification Names
+
 extension Notification.Name {
     static let liveActivitySkipSong = Notification.Name("liveActivitySkipSong")
     static let liveActivityPlayPause = Notification.Name("liveActivityPlayPause")

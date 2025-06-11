@@ -8,6 +8,7 @@
 import SwiftUI
 
 // MARK: - Colors
+
 extension Color {
     // Primary Colors
     static let rundjMusicGreen = Color(hex: "1DB954") // Spotify-inspired green for music elements
@@ -57,6 +58,7 @@ extension Color {
 }
 
 // MARK: - Gradients
+
 extension LinearGradient {
     static let rundjMusicGradient = LinearGradient(
         colors: [Color.rundjMusicGreen, Color.rundjMusicGreen.opacity(0.8)],
@@ -84,6 +86,7 @@ extension LinearGradient {
 }
 
 // MARK: - View Modifiers
+
 struct RundjCardStyle: ViewModifier {
     func body(content: Content) -> some View {
         content
@@ -184,6 +187,7 @@ struct RundjIconButtonStyle: ButtonStyle {
 }
 
 // MARK: - Custom Components
+
 struct RundjDivider: View {
     var body: some View {
         Rectangle()
@@ -252,6 +256,7 @@ struct RundjStatCard: View {
 }
 
 // MARK: - Compact Components for iPhone
+
 struct CompactStatView: View {
     let title: String
     let value: String
@@ -280,6 +285,7 @@ struct CompactStatView: View {
 }
 
 // MARK: - View Extensions
+
 extension View {
     func rundjCard() -> some View {
         modifier(RundjCardStyle())

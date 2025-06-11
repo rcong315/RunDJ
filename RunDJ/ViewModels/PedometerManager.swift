@@ -39,7 +39,6 @@ class PedometerManager: ObservableObject {
     /// Start tracking pedometer updates
     func startPedometerUpdates() {
         guard isStepCountingAvailable else {
-            print("Pedometer not available on this device")
             return
         }
         
@@ -48,7 +47,6 @@ class PedometerManager: ObservableObject {
             guard let self = self else { return }
             
             if let error = error {
-                print("Error starting pedometer: \(error.localizedDescription)")
                 SentrySDK.capture(error: error) { scope in
                     scope.setContext(value: ["action": "start_pedometer_updates"], key: "pedometer")
                     scope.setLevel(.error)
@@ -57,13 +55,11 @@ class PedometerManager: ObservableObject {
             }
             
             guard let data = data else {
-                print("No pedometer data received")
                 return
             }
             
             DispatchQueue.main.async {
                 self.stepsPerMinute = (data.currentCadence?.doubleValue ?? 0.0) * 60
-                print("Steps per minute: \(self.stepsPerMinute)")
             }
         }
     }

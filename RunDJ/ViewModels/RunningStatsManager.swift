@@ -74,11 +74,9 @@ class RunningStatsManager: ObservableObject {
         startTime = Date()
         lastLocationTimestamp = startTime
         
-        // Add an initial data point at the start of the run
         if let runStartTime = startTime {
             paceDataPoints.append(PaceDataPoint(timestamp: runStartTime, cumulativeDistance: 0))
         }
-        print("Run started at \(startTime!)")
     }
 
     /// Stops the current run. Finalizes the total elapsed time.
@@ -86,11 +84,8 @@ class RunningStatsManager: ObservableObject {
         if let start = startTime, let lastTimestamp = lastLocationTimestamp {
             runningData.elapsedTime = lastTimestamp.timeIntervalSince(start)
         } else if let start = startTime {
-            // Fallback if no data points were recorded
             runningData.elapsedTime = Date().timeIntervalSince(start)
         }
-        
-        print("Run stopped. Total time: \(formatTimeInterval(totalElapsedTime)), Total distance: \(formatDistance(totalDistance))")
     }
 
     /// Resets all running statistics to their initial states.
@@ -101,7 +96,6 @@ class RunningStatsManager: ObservableObject {
         paceDataPoints.removeAll()
         routeCoordinates.removeAll()
         lastLocationTimestamp = nil
-        print("Stats reset.")
     }
 
     // MARK: - Stats Update
@@ -117,45 +111,34 @@ class RunningStatsManager: ObservableObject {
      */
     func recordDataPoint(newCumulativeDistance: Double, timestamp: Date, coordinate: CLLocationCoordinate2D? = nil) {
         guard let runStartTime = startTime else {
-            print("Error: Run has not been started. Call startRun() first.")
             return
         }
 
-        // Ensure distance is not decreasing and timestamp is valid
         if newCumulativeDistance < runningData.totalDistance || (lastLocationTimestamp != nil && timestamp < lastLocationTimestamp!) {
-            print("Warning: New data point has invalid distance or timestamp. Ignoring.")
             return
         }
 
-        // Update running data
         runningData.totalDistance = newCumulativeDistance
         runningData.elapsedTime = timestamp.timeIntervalSince(runStartTime)
         lastLocationTimestamp = timestamp
         
-        // Add coordinate to route if provided
         if let coordinate = coordinate {
             routeCoordinates.append(coordinate)
             runningData.route = routeCoordinates
         }
 
-        // Add data point for rolling pace calculation
         if paceDataPoints.last?.cumulativeDistance != runningData.totalDistance || paceDataPoints.isEmpty {
             paceDataPoints.append(PaceDataPoint(timestamp: timestamp, cumulativeDistance: runningData.totalDistance))
         }
 
-        // Calculate overall average pace (seconds per km)
-        // Only calculate pace after minimum distance AND time thresholds are met
         if runningData.totalDistance >= minimumDistanceForPace && runningData.elapsedTime >= minimumTimeForPace {
             runningData.currentPace = (runningData.elapsedTime / runningData.totalDistance) * kilometerInMeters
         } else {
-            // Not enough data yet, use -1 to indicate "calculating"
             runningData.currentPace = -1
         }
 
-        // Calculate rolling 1-mile pace
         calculateRollingMilePace()
 
-        // Prune old data points to manage memory
         prunePaceDataPoints()
     }
 

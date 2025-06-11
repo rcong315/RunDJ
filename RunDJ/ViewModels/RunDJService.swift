@@ -18,22 +18,16 @@ class RunDJService: ObservableObject {
     
     init(networkService: NetworkService = DefaultNetworkService()) {
         self.networkService = networkService
-        print("RunDJService initialized")
     }
     
     // MARK: - Public Methods
     
-    func register(accessToken: String, completion: @escaping (Bool) -> Void) {
-        networkService.register(accessToken: accessToken, completion: completion)
-    }
-    
-    /// Get a preset playlist based on steps per minute
+    /// Register the user with the service
     /// - Parameters:
     ///   - accessToken: Spotify access token
-    ///   - stepsPerMinute: User's steps per minute
-    ///   - completion: Completion handler with playlist URI
-    func getPresetPlaylist(accessToken: String, stepsPerMinute: Double, completion: @escaping (String?) -> Void) {
-        networkService.getPresetPlaylist(accessToken: accessToken, stepsPerMinute: stepsPerMinute, completion: completion)
+    ///   - completion: Completion handler with optional boolean (true = new user, false = existing user, nil = error)
+    func register(accessToken: String, completion: @escaping (Bool?) -> Void) {
+        networkService.register(accessToken: accessToken, completion: completion)
     }
     
     /// Get songs matching a specific BPM
@@ -48,6 +42,16 @@ class RunDJService: ObservableObject {
         }
     }
     
+    /// Send feedback about a song
+    /// - Parameters:
+    ///   - accessToken: Spotify access token
+    ///   - songId: ID of the song to provide feedback for
+    ///   - feedback: Feedback type ("LIKE" or "DISLIKE")
+    ///   - completion: Completion handler with success status
+    func sendFeedback(accessToken: String, songId: String, feedback: String, completion: @escaping (Bool) -> Void = { _ in }) {
+        networkService.sendFeedback(accessToken: accessToken, songId: songId, feedback: feedback, completion: completion)
+    }
+    
     /// Create a playlist with songs matching the given BPM
     /// - Parameters:
     ///   - accessToken: Spotify access token
@@ -58,13 +62,12 @@ class RunDJService: ObservableObject {
         networkService.createPlaylist(accessToken: accessToken, bpm: bpm, sources: sources, completion: completion)
     }
     
-    /// Send feedback about a song
-    /// - Parameters:
-    ///   - accessToken: Spotify access token
-    ///   - songId: ID of the song to provide feedback for
-    ///   - feedback: Feedback type ("LIKE" or "DISLIKE")
-    ///   - completion: Completion handler with success status
-    func sendFeedback(accessToken: String, songId: String, feedback: String, completion: @escaping (Bool) -> Void = { _ in }) {
-        networkService.sendFeedback(accessToken: accessToken, songId: songId, feedback: feedback, completion: completion)
-    }
+    //    /// Get a preset playlist based on steps per minute
+    //    /// - Parameters:
+    //    ///   - accessToken: Spotify access token
+    //    ///   - stepsPerMinute: User's steps per minute
+    //    ///   - completion: Completion handler with playlist URI
+    //    func getPresetPlaylist(accessToken: String, stepsPerMinute: Double, completion: @escaping (String?) -> Void) {
+    //        networkService.getPresetPlaylist(accessToken: accessToken, stepsPerMinute: stepsPerMinute, completion: completion)
+    //    }
 }

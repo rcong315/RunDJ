@@ -155,7 +155,6 @@ struct SourceItem {
     var isSelected: Bool
 }
 
-// Preview
 #Preview {
     SettingsView(
         isPresented: .constant(true),

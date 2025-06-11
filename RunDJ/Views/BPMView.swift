@@ -12,12 +12,19 @@ struct BPMView: View {
     @StateObject private var pedometerManager = PedometerManager.shared
     @StateObject private var spotifyManager = SpotifyManager.shared
     @StateObject private var runDJService = RunDJService.shared
+    @StateObject private var settingsManager = SettingsManager.shared
     
-    @State private var bpmValue = 150
-    @State private var bpmText = "150"
+    @State private var bpmValue: Double
     @State private var showingHelp = false
     @State private var showingStepsAlert = false
     @State private var navigateToRunning = false
+    @State private var navigateToManualRunning = false
+    @State private var capturedAutoBPM: Double = 0.0
+    
+    init() {
+        let savedBPM = SettingsManager.shared.lastBPM
+        _bpmValue = State(initialValue: savedBPM)
+    }
     
     var body: some View {
         NavigationStack {
@@ -48,7 +55,7 @@ struct BPMView: View {
                         
                         // Steps Display
                         VStack(spacing: 8) {
-                            Text("\(pedometerManager.stepsPerMinute.formatted(.number.precision(.fractionLength(0))))")
+                            Text(String(format: "%.1f", pedometerManager.stepsPerMinute))
                                 .font(.system(size: 48, weight: .bold))
                                 .foregroundColor(.rundjMusicGreen)
                             
@@ -63,6 +70,9 @@ struct BPMView: View {
                         Button(action: {
                             let steps = pedometerManager.stepsPerMinute
                             if steps >= 100 && steps <= 200 {
+                                capturedAutoBPM = steps
+                                settingsManager.lastBPM = steps
+                                settingsManager.saveSettings()
                                 navigateToRunning = true
                             } else {
                                 showingStepsAlert = true
@@ -102,7 +112,6 @@ struct BPMView: View {
                         HStack(spacing: 16) {
                             Button(action: {
                                 bpmValue = max(100, bpmValue - 5)
-                                bpmText = "\(bpmValue)"
                             }) {
                                 Image(systemName: "minus")
                                     .font(.system(size: 20, weight: .medium))
@@ -110,8 +119,7 @@ struct BPMView: View {
                             .buttonStyle(RundjIconButtonStyle(size: 36, isMusic: true))
                             
                             VStack(spacing: 4) {
-                                TextField("BPM", text: $bpmText)
-                                    .keyboardType(.numberPad)
+                                Text(String(Int(bpmValue)))
                                     .multilineTextAlignment(.center)
                                     .font(.system(size: 32, weight: .bold))
                                     .foregroundColor(.rundjMusicGreen)
@@ -124,7 +132,6 @@ struct BPMView: View {
                             
                             Button(action: {
                                 bpmValue = min(200, bpmValue + 5)
-                                bpmText = "\(bpmValue)"
                             }) {
                                 Image(systemName: "plus")
                                     .font(.system(size: 20, weight: .medium))
@@ -136,7 +143,6 @@ struct BPMView: View {
                         HStack(spacing: 12) {
                             Button("-1") {
                                 bpmValue = max(100, bpmValue - 1)
-                                bpmText = "\(bpmValue)"
                             }
                             .font(.system(size: 14, weight: .medium))
                             .foregroundColor(.rundjTextSecondary)
@@ -147,7 +153,6 @@ struct BPMView: View {
                             
                             Button("+1") {
                                 bpmValue = min(200, bpmValue + 1)
-                                bpmText = "\(bpmValue)"
                             }
                             .font(.system(size: 14, weight: .medium))
                             .foregroundColor(.rundjTextSecondary)
@@ -157,7 +162,11 @@ struct BPMView: View {
                             .cornerRadius(8)
                         }
                         
-                        NavigationLink(destination: RunningView(bpm: Double(bpmValue)).environmentObject(SettingsManager.shared)) {
+                        Button(action: {
+                            settingsManager.lastBPM = bpmValue
+                            settingsManager.saveSettings()
+                            navigateToManualRunning = true
+                        }) {
                             Text("Start with Manual BPM")
                         }
                         .buttonStyle(RundjPrimaryButtonStyle())
@@ -169,7 +178,10 @@ struct BPMView: View {
                 .padding(.horizontal)
             }
             .navigationDestination(isPresented: $navigateToRunning) {
-                RunningView(bpm: pedometerManager.stepsPerMinute).environmentObject(SettingsManager.shared)
+                RunningView(bpm: capturedAutoBPM).environmentObject(SettingsManager.shared)
+            }
+            .navigationDestination(isPresented: $navigateToManualRunning) {
+                RunningView(bpm: Double(bpmValue)).environmentObject(SettingsManager.shared)
             }
             .sheet(isPresented: $showingHelp) {
                 HelpView(context: .bpmView)
@@ -188,18 +200,6 @@ struct BPMView: View {
                             .font(.system(size: 20))
                             .foregroundColor(.rundjAccent)
                     }
-                }
-                
-                ToolbarItemGroup(placement: .keyboard) {
-                    Spacer()
-                    Button("Done") {
-                        if let value = Int(bpmText) {
-                            bpmValue = max(100, min(200, value))
-                        }
-                        bpmText = "\(bpmValue)"
-                        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-                    }
-                    .foregroundColor(.rundjMusicGreen)
                 }
             }
         }
