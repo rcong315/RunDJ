@@ -20,7 +20,7 @@ class SpotifyManager2: UIViewController, SPTSessionManagerDelegate {
     static let shared = SpotifyManager2()
     
     private let clientID = "6f69b8394f8d46fc87b274b54a3d9f1b"
-    private let redirectURI = "run-dj://auth"
+    private let redirectURI = "rundj://callback"
     private let serverURL = "https://rundjserver.onrender.com"
     
     let configuration = SPTConfiguration(
