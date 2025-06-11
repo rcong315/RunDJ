@@ -197,36 +197,36 @@ struct RunningView: View {
                 scope.setLevel(.warning)
             }
         case .connected:
-        isPlaylistButtonDisabled = false
-        
-        // Register user and handle new/existing user logic
-        rundjService.register(accessToken: token) { isNewUser in
-        DispatchQueue.main.async {
-        if let isNewUser = isNewUser {
-                if isNewUser {
-                        self.showConfirmationMessage("Setting up your account... Please wait a few minutes and reconnect.", color: .rundjAccent)
-                        
-                        self.spotifyManager.disconnect()
-                        
-                        self.spotifyErrorMessage = "Welcome to RunDJ! We're setting up your music preferences. This usually takes 2-3 minutes but is only necessary the first time you use the app. Take time to explore the app and help pages then reconnect to Spotify."
-                        self.showSpotifyErrorAlert = true
-                        
-                        SentrySDK.capture(message: "New user registration - disconnecting for backend processing") { scope in
-                            scope.setLevel(.info)
+            isPlaylistButtonDisabled = false
+            
+            // Register user and handle new/existing user logic
+            rundjService.register(accessToken: token) { isNewUser in
+                DispatchQueue.main.async {
+                    if let isNewUser = isNewUser {
+                        if isNewUser {
+                            self.showConfirmationMessage("Setting up your account... Please wait a few minutes and reconnect.", color: .rundjAccent)
+                            
+                            self.spotifyManager.disconnect()
+                            
+                            self.spotifyErrorMessage = "Welcome to RunDJ! We're setting up your music preferences. This usually takes 2-3 minutes but is only necessary the first time you use the app. Take time to explore the app and help pages then reconnect to Spotify."
+                            self.showSpotifyErrorAlert = true
+                            
+                            SentrySDK.capture(message: "New user registration - disconnecting for backend processing") { scope in
+                                scope.setLevel(.info)
+                            }
+                        } else {
+                            self.refreshSongsBasedOnSettings()
                         }
                     } else {
-                        self.refreshSongsBasedOnSettings()
-                    }
-                } else {
-                    self.spotifyErrorMessage = "Failed to register. Please try reconnecting to Spotify."
-                    self.showSpotifyErrorAlert = true
-                    
-                    SentrySDK.capture(message: "User registration failed") { scope in
-                        scope.setLevel(.error)
+                        self.spotifyErrorMessage = "Failed to register. Please try reconnecting to Spotify."
+                        self.showSpotifyErrorAlert = true
+                        
+                        SentrySDK.capture(message: "User registration failed") { scope in
+                            scope.setLevel(.error)
+                        }
                     }
                 }
             }
-        }
         case .disconnected:
             isPlaylistButtonDisabled = true
         }
@@ -440,11 +440,11 @@ struct NowPlayingCompactView: View {
             }
             
             if !spotifyManager.hasQueuedSongs && spotifyManager.connectionState == .connected {
-                Text("No songs queued")
+                Text("Queueing Songs...")
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(.rundjWarning)
                 
-                Text("Check settings or change BPM")
+                Text("Please wait")
                     .font(.system(size: 14))
                     .foregroundColor(.rundjTextSecondary)
             } else {
@@ -461,7 +461,7 @@ struct NowPlayingCompactView: View {
                     .truncationMode(.tail)
                 
                 if spotifyManager.currentBPM > 0 {
-                    Text("\(Int(spotifyManager.currentBPM)) BPM")
+                    Text("\(String(format: "%.1f", spotifyManager.currentBPM)) BPM")
                         .font(.system(size: 12, weight: .medium))
                         .foregroundColor(.rundjMusicGreen)
                 }

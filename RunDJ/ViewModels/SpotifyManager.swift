@@ -319,7 +319,7 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
     }
     
     func handleURL(_ url: URL) {
-        let handled = sessionManager.application(UIApplication.shared, open: url)
+        sessionManager.application(UIApplication.shared, open: url)
     }
     
     // MARK: - Playback Controls Helper
