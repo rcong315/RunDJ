@@ -12,17 +12,14 @@ import SwiftUI
 import ActivityKit
 
 // MARK: - RunManager Extension
+
 extension RunManager {
     func requestPermissionsAndStartWithLiveActivity(targetBPM: Int) {
-        // Original requestPermissionsAndStart logic
         self.requestPermissionsAndStart()
         
-        // Start Live Activity
         Task {
             do {
                 try await LiveActivityManager.shared.startActivity(targetBPM: targetBPM)
-            } catch {
-                print("Failed to start Live Activity: \(error)")
             }
         }
     }
@@ -37,6 +34,3 @@ extension RunManager {
         }
     }
 }
-
-// Note: Deep link handling for Live Activities is already implemented in RunDJApp.swift
-// in the .onOpenURL modifier

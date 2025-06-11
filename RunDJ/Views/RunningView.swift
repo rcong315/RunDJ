@@ -197,22 +197,42 @@ struct RunningView: View {
                 scope.setLevel(.warning)
             }
         case .connected:
-            isPlaylistButtonDisabled = false
-            rundjService.register(accessToken: token) { success in
-                if success {
-                    print("Successfully registered user")
+        isPlaylistButtonDisabled = false
+        
+        // Register user and handle new/existing user logic
+        rundjService.register(accessToken: token) { isNewUser in
+        DispatchQueue.main.async {
+        if let isNewUser = isNewUser {
+                if isNewUser {
+                        self.showConfirmationMessage("Setting up your account... Please wait a few minutes and reconnect.", color: .rundjAccent)
+                        
+                        self.spotifyManager.disconnect()
+                        
+                        self.spotifyErrorMessage = "Welcome to RunDJ! We're setting up your music preferences. This usually takes 2-3 minutes but is only necessary the first time you use the app. Take time to explore the app and help pages then reconnect to Spotify."
+                        self.showSpotifyErrorAlert = true
+                        
+                        SentrySDK.capture(message: "New user registration - disconnecting for backend processing") { scope in
+                            scope.setLevel(.info)
+                        }
+                    } else {
+                        self.refreshSongsBasedOnSettings()
+                    }
                 } else {
-                    print("Failed to register user")
+                    self.spotifyErrorMessage = "Failed to register. Please try reconnecting to Spotify."
+                    self.showSpotifyErrorAlert = true
+                    
+                    SentrySDK.capture(message: "User registration failed") { scope in
+                        scope.setLevel(.error)
+                    }
                 }
             }
-            refreshSongsBasedOnSettings()
+        }
         case .disconnected:
             isPlaylistButtonDisabled = true
         }
     }
     
     private func setupOnAppear() {
-        print("RunningView onAppear. Current BPM: \(bpm)")
         if spotifyManager.connectionState == .connected {
             refreshSongsBasedOnSettings()
             isPlaylistButtonDisabled = false
@@ -222,7 +242,6 @@ struct RunningView: View {
     }
     
     private func handleSpotifyError(_ error: Error, message: String) {
-        print("\(message) Error: \(error.localizedDescription)")
         spotifyErrorMessage = "\(message)\nDetails: \(error.localizedDescription)"
         showSpotifyErrorAlert = true
         SentrySDK.capture(error: error) { scope in
@@ -232,10 +251,8 @@ struct RunningView: View {
     
     func refreshSongsBasedOnSettings() {
         guard spotifyManager.connectionState == .connected else {
-            print("Spotify not connected. Cannot refresh songs.")
             return
         }
-        print("Refreshing songs with BPM \(bpm) from sources: \(settingsManager.musicSources)")
         showConfirmationMessage("Flushing queue, please wait...", color: .rundjAccent)
         
         rundjService.getSongsByBPM(accessToken: token, bpm: bpm, sources: settingsManager.musicSources) { fetchedSongs in
@@ -285,9 +302,7 @@ struct RunningView: View {
         Task {
             do {
                 try await liveActivityManager.startActivity(targetBPM: Int(bpm))
-                print("Live Activity started successfully")
             } catch {
-                print("Failed to start Live Activity: \(error)")
                 SentrySDK.capture(error: error) { scope in
                     scope.setContext(value: ["targetBPM": bpm], key: "live_activity")
                     scope.setLevel(.warning)
@@ -317,7 +332,6 @@ struct RunningView: View {
     private func endLiveActivity() {
         Task {
             await liveActivityManager.endActivity()
-            print("Live Activity ended")
         }
     }
     
@@ -341,8 +355,6 @@ struct RunningView: View {
             Task {
                 do {
                     try await self.spotifyManager.skipToNextTrack()
-                } catch {
-                    print("Failed to skip from Live Activity: \(error)")
                 }
             }
         }
@@ -354,13 +366,11 @@ struct RunningView: View {
         ) { _ in
             Task {
                 do {
-                    if self.spotifyManager.isPlaying {
+                    if await self.spotifyManager.isPlaying {
                         try await self.spotifyManager.pausePlayback()
                     } else {
                         try await self.spotifyManager.resumePlayback()
                     }
-                } catch {
-                    print("Failed to play/pause from Live Activity: \(error)")
                 }
             }
         }
