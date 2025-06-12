@@ -297,7 +297,9 @@ class LiveActivityManager: ObservableObject {
                 content: .init(state: initialState, staleDate: nil),
                 pushType: nil
             )
-            currentActivity = activity
+            await MainActor.run {
+                currentActivity = activity
+            }
         } catch {
             throw LiveActivityError.failedToStart(error)
         }
@@ -356,7 +358,9 @@ class LiveActivityManager: ObservableObject {
             dismissalPolicy: .immediate
         )
         
-        currentActivity = nil
+        await MainActor.run {
+            currentActivity = nil
+        }
     }
     
     func handleDeepLink(_ url: URL) {

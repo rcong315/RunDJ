@@ -323,7 +323,7 @@ struct RunningView: View {
             
             await liveActivityManager.updateActivity(
                 stepsPerMinute: Int(pedometerManager.stepsPerMinute),
-                distance: runningStatsManager.totalDistance,
+                distance: runningStatsManager.totalDistance / 1609.34, // Convert meters to miles
                 duration: runningStatsManager.totalElapsedTime,
                 pace: paceString,
                 currentSong: spotifyManager.currentlyPlaying.isEmpty ? "No song playing" : spotifyManager.currentlyPlaying,
