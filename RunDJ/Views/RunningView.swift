@@ -319,17 +319,23 @@ struct RunningView: View {
     private func updateLiveActivity() {
         Task {
             // Format pace properly for live activity
-            let paceString = runningStatsManager.currentPace < 0 ? "--:--" : runningStatsManager.formatPace(runningStatsManager.currentPace)
+            let paceString = runningStatsManager.currentPace < 0 ? "--:--" : runningStatsManager.formatPace(runningStatsManager.currentPace, perKm: settingsManager.useMetricUnits)
+            
+            // Convert distance based on unit setting
+            let distanceValue = settingsManager.useMetricUnits ? 
+                runningStatsManager.totalDistance / 1000.0 : // Convert meters to kilometers
+                runningStatsManager.totalDistance / 1609.34   // Convert meters to miles
             
             await liveActivityManager.updateActivity(
                 stepsPerMinute: Int(pedometerManager.stepsPerMinute),
-                distance: runningStatsManager.totalDistance / 1609.34, // Convert meters to miles
+                distance: distanceValue,
                 duration: runningStatsManager.totalElapsedTime,
                 pace: paceString,
                 currentSong: spotifyManager.currentlyPlaying.isEmpty ? "No song playing" : spotifyManager.currentlyPlaying,
                 currentArtist: spotifyManager.currentArtist.isEmpty ? "--" : spotifyManager.currentArtist,
                 songBPM: Int(spotifyManager.currentBPM),
-                isPlaying: spotifyManager.isPlaying
+                isPlaying: spotifyManager.isPlaying,
+                useMetricUnits: settingsManager.useMetricUnits
             )
         }
     }
@@ -719,13 +725,13 @@ struct RunStatsCompactView: View {
             HStack(spacing: 8) {
                 RundjStatCard(
                     title: "Distance",
-                    value: runningStatsManager.formatDistance(runningStatsManager.totalDistance),
+                    value: runningStatsManager.formatDistance(runningStatsManager.totalDistance, useMetric: settingsManager.useMetricUnits),
                     icon: "location.fill"
                 )
                 
                 RundjStatCard(
                     title: "Pace",
-                    value: runningStatsManager.formatPace(runningStatsManager.currentPace),
+                    value: runningStatsManager.formatPace(runningStatsManager.currentPace, perKm: settingsManager.useMetricUnits),
                     icon: "speedometer"
                 )
                 
