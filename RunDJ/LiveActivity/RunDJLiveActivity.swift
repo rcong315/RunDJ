@@ -76,10 +76,10 @@ struct RunDJLiveActivityWidget: Widget {
                         Text(timerInterval: context.attributes.startTime...Date.distantFuture,
                              countsDown: false,
                              showsHours: true)
-                            .font(.system(size: 20, weight: .medium, design: .monospaced))
-                            .foregroundColor(.rundjTextPrimary)
-                            .frame(width: 80)
-                            .multilineTextAlignment(.center)
+                        .font(.system(size: 20, weight: .medium, design: .monospaced))
+                        .foregroundColor(.rundjTextPrimary)
+                        .frame(width: 80)
+                        .multilineTextAlignment(.center)
                         
                         // Now Playing
                         VStack(spacing: 2) {
@@ -113,15 +113,15 @@ struct RunDJLiveActivityWidget: Widget {
                         Link(destination: URL(string: "rundj://thumbsdown")!) {
                             Label("Dislike", systemImage: "hand.thumbsdown.fill")
                                 .font(.caption)
-                                .foregroundColor(.rundjWarning)
+                                .foregroundColor(.rundjError)
                         }
                         
                         // End run button
-                        Link(destination: URL(string: "rundj://stop")!) {
-                            Label("End", systemImage: "stop.fill")
-                                .font(.caption)
-                                .foregroundColor(.rundjError)
-                        }
+                        //                        Link(destination: URL(string: "rundj://stop")!) {
+                        //                            Label("End", systemImage: "stop.fill")
+                        //                                .font(.caption)
+                        //                                .foregroundColor(.rundjError)
+                        //                        }
                     }
                 }
             } compactLeading: {
@@ -173,8 +173,8 @@ struct LockScreenLiveActivityView: View {
                 Text(timerInterval: context.attributes.startTime...Date.distantFuture,
                      countsDown: false,
                      showsHours: true)
-                    .font(.system(size: 16, weight: .medium, design: .monospaced))
-                    .foregroundColor(.rundjTextPrimary)
+                .font(.system(size: 16, weight: .medium, design: .monospaced))
+                .foregroundColor(.rundjTextPrimary)
             }
             
             // Stats Row
@@ -246,7 +246,7 @@ struct LockScreenLiveActivityView: View {
                     Link(destination: URL(string: "rundj://thumbsdown")!) {
                         Image(systemName: "hand.thumbsdown.fill")
                             .font(.body)
-                            .foregroundColor(.rundjWarning)
+                            .foregroundColor(.rundjError)
                     }
                 }
             }
@@ -353,7 +353,7 @@ class LiveActivityManager: ObservableObject {
         
         await activity.end(
             ActivityContent(state: finalState, staleDate: nil),
-            dismissalPolicy: .default
+            dismissalPolicy: .immediate
         )
         
         currentActivity = nil

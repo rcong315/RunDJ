@@ -44,8 +44,8 @@ struct RunningView: View {
                     spotifyManager: spotifyManager,
                     onRefreshSongs: refreshSongsBasedOnSettings
                 )
-                    .padding(.horizontal)
-                    .transition(.move(edge: .top).combined(with: .opacity))
+                .padding(.horizontal)
+                .transition(.move(edge: .top).combined(with: .opacity))
                 
                 // Connection Status (Compact)
                 HStack {
@@ -89,7 +89,7 @@ struct RunningView: View {
                     .padding(.horizontal)
                 
                 // Run Stats
-                RunStatsCompactView(pedometerManager: pedometerManager, runningStatsManager: runningStatsManager)
+                RunStatsCompactView(pedometerManager: pedometerManager, runningStatsManager: runningStatsManager, isRunning: isRunning)
                     .padding(.horizontal)
                     .padding(.bottom, 20)
             }
@@ -134,9 +134,11 @@ struct RunningView: View {
             if newValue {
                 startLiveActivity()
                 startLiveActivityUpdateTimer()
+                showConfirmationMessage("Run started! Let's go! 🏃", color: .rundjMusicGreen)
             } else {
                 endLiveActivity()
                 stopLiveActivityUpdateTimer()
+                showConfirmationMessage("Run complete! Great job! 💪", color: .rundjAccent)
             }
         }
         .onChange(of: spotifyManager.currentId) { _, _ in
@@ -632,9 +634,14 @@ struct ActionButtonsCompactView: View {
 struct RunControlCompactView: View {
     @Binding var isRunning: Bool
     @ObservedObject var runManager: RunManager
+    @State private var isPressed = false
     
     var body: some View {
         Button(action: {
+            // Haptic feedback
+            let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+            impactFeedback.impactOccurred()
+            
             if !isRunning {
                 runManager.requestPermissionsAndStart()
                 isRunning = true
@@ -646,18 +653,28 @@ struct RunControlCompactView: View {
             HStack {
                 Image(systemName: isRunning ? "stop.fill" : "figure.run")
                     .font(.system(size: 16))
+                    .rotationEffect(.degrees(isRunning ? 0 : 0))
+                    .animation(.spring(response: 0.4, dampingFraction: 0.6), value: isRunning)
                 Text(isRunning ? "Stop Run" : "Start Run")
                     .font(.system(size: 16, weight: .semibold))
             }
         }
         .buttonStyle(RundjPrimaryButtonStyle(isDisabled: false))
         .padding(.vertical, 8)
+        .scaleEffect(isPressed ? 0.95 : 1.0)
+        .onLongPressGesture(minimumDuration: 0, maximumDistance: .infinity, pressing: { pressing in
+            withAnimation(.easeInOut(duration: 0.1)) {
+                isPressed = pressing
+            }
+        }, perform: {})
     }
 }
 
 struct RunStatsCompactView: View {
     @ObservedObject var pedometerManager: PedometerManager
     @ObservedObject var runningStatsManager: RunningStatsManager
+    @State private var pulseAnimation = false
+    let isRunning: Bool
     
     var body: some View {
         VStack(spacing: 12) {
@@ -679,6 +696,24 @@ struct RunStatsCompactView: View {
             .padding(.vertical, 12)
             .background(Color.rundjCardBackground)
             .cornerRadius(12)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color.rundjMusicGreen, lineWidth: 2)
+                    .scaleEffect(pulseAnimation ? 1.05 : 1.0)
+                    .opacity(pulseAnimation ? 0 : 1)
+                    .animation(pulseAnimation ? .easeOut(duration: 0.6) : .none, value: pulseAnimation)
+                    .opacity(isRunning ? 1 : 0)
+                    .animation(.easeInOut(duration: 0.3), value: isRunning)
+            )
+            .onChange(of: runningStatsManager.totalElapsedTime) { oldValue, newValue in
+                if oldValue == 0 && newValue > 0 {
+                    // Run just started
+                    pulseAnimation = true
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        pulseAnimation = false
+                    }
+                }
+            }
             
             // Stats Grid
             HStack(spacing: 8) {
