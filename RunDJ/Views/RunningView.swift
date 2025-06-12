@@ -351,33 +351,42 @@ struct RunningView: View {
     
     private func setupLiveActivityObservers() {
         NotificationCenter.default.addObserver(
-            forName: .liveActivitySkipSong,
+            forName: .liveActivityThumbsUp,
             object: nil,
             queue: .main
         ) { _ in
-            Task {
-                do {
-                    try await self.spotifyManager.skipToNextTrack()
-                } catch {
-                    print("Failed to skip from Live Activity: \(error)")
+            guard !self.spotifyManager.currentId.isEmpty else { return }
+            self.isThumbsUpSelected = true
+            self.isThumbsDownSelected = false
+            self.showConfirmationMessage("Liked!", color: .rundjMusicGreen)
+            self.rundjService.sendFeedback(accessToken: self.token, songId: self.spotifyManager.currentId, feedback: "LIKE") { success in
+                if !success {
+                    DispatchQueue.main.async {
+                        self.isThumbsUpSelected = false
+                        self.showConfirmationMessage("Failed to like", color: .rundjError)
+                    }
                 }
             }
         }
         
         NotificationCenter.default.addObserver(
-            forName: .liveActivityPlayPause,
+            forName: .liveActivityThumbsDown,
             object: nil,
             queue: .main
         ) { _ in
+            guard !self.spotifyManager.currentId.isEmpty else { return }
+            self.isThumbsDownSelected = true
+            self.isThumbsUpSelected = false
+            self.showConfirmationMessage("Skipping...", color: .rundjWarning)
             Task {
-                do {
-                    if await self.spotifyManager.isPlaying {
-                        try await self.spotifyManager.pausePlayback()
-                    } else {
-                        try await self.spotifyManager.resumePlayback()
-                    }
+                async let skipTask: () = self.spotifyManager.skipToNextTrack()
+                await self.rundjService.sendFeedback(accessToken: self.token, songId: self.spotifyManager.currentId, feedback: "DISLIKE") { _ in }
+                do { 
+                    try await skipTask 
                 } catch {
-                    print("Failed to play/pause from Live Activity: \(error)")
+                    DispatchQueue.main.async { 
+                        self.handleSpotifyError(error, message: "Failed to skip.")
+                    }
                 }
             }
         }

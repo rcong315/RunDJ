@@ -102,19 +102,18 @@ struct RunDJLiveActivityWidget: Widget {
                 
                 DynamicIslandExpandedRegion(.bottom) {
                     HStack(spacing: 20) {
-                        // Skip button
-                        Link(destination: URL(string: "rundj://skip")!) {
-                            Label("Skip", systemImage: "forward.fill")
+                        // Thumbs up button
+                        Link(destination: URL(string: "rundj://thumbsup")!) {
+                            Label("Like", systemImage: "hand.thumbsup.fill")
                                 .font(.caption)
                                 .foregroundColor(.rundjMusicGreen)
                         }
                         
-                        // Pause/Resume button
-                        Link(destination: URL(string: "rundj://playpause")!) {
-                            Label(context.state.isPlaying ? "Pause" : "Play", 
-                                  systemImage: context.state.isPlaying ? "pause.fill" : "play.fill")
+                        // Thumbs down button
+                        Link(destination: URL(string: "rundj://thumbsdown")!) {
+                            Label("Dislike", systemImage: "hand.thumbsdown.fill")
                                 .font(.caption)
-                                .foregroundColor(.rundjMusicGreen)
+                                .foregroundColor(.rundjWarning)
                         }
                         
                         // End run button
@@ -238,16 +237,16 @@ struct LockScreenLiveActivityView: View {
                 
                 // Action buttons
                 HStack(spacing: 16) {
-                    Link(destination: URL(string: "rundj://skip")!) {
-                        Image(systemName: "forward.fill")
+                    Link(destination: URL(string: "rundj://thumbsup")!) {
+                        Image(systemName: "hand.thumbsup.fill")
                             .font(.body)
                             .foregroundColor(.rundjMusicGreen)
                     }
                     
-                    Link(destination: URL(string: "rundj://playpause")!) {
-                        Image(systemName: context.state.isPlaying ? "pause.fill" : "play.fill")
-                            .font(.title3)
-                            .foregroundColor(.rundjMusicGreen)
+                    Link(destination: URL(string: "rundj://thumbsdown")!) {
+                        Image(systemName: "hand.thumbsdown.fill")
+                            .font(.body)
+                            .foregroundColor(.rundjWarning)
                     }
                 }
             }
@@ -364,10 +363,10 @@ class LiveActivityManager: ObservableObject {
         guard let host = url.host else { return }
         
         switch host {
-        case "skip":
-            NotificationCenter.default.post(name: .liveActivitySkipSong, object: nil)
-        case "playpause":
-            NotificationCenter.default.post(name: .liveActivityPlayPause, object: nil)
+        case "thumbsup":
+            NotificationCenter.default.post(name: .liveActivityThumbsUp, object: nil)
+        case "thumbsdown":
+            NotificationCenter.default.post(name: .liveActivityThumbsDown, object: nil)
         case "stop":
             NotificationCenter.default.post(name: .liveActivityStopRun, object: nil)
         default:
@@ -395,7 +394,7 @@ enum LiveActivityError: LocalizedError {
 // MARK: - Notification Names
 
 extension Notification.Name {
-    static let liveActivitySkipSong = Notification.Name("liveActivitySkipSong")
-    static let liveActivityPlayPause = Notification.Name("liveActivityPlayPause")
+    static let liveActivityThumbsUp = Notification.Name("liveActivityThumbsUp")
+    static let liveActivityThumbsDown = Notification.Name("liveActivityThumbsDown")
     static let liveActivityStopRun = Notification.Name("liveActivityStopRun")
 }
