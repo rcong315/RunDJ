@@ -257,7 +257,7 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
            let tokenRefreshURL = URL(string: "\(serverURL)/api/v1/spotify/auth/refresh") {
             config.tokenSwapURL = tokenSwapURL
             config.tokenRefreshURL = tokenRefreshURL
-            config.playURI = "spotify:track:2HHtWyy5CgaQbC7XSoOb0e" // Eye of the Tiger
+            config.playURI = "spotify:track:2bNCdW4rLnCTzgqUXTTDO1" // Dummy track
         }
         
         return config
