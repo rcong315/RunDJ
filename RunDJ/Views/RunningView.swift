@@ -242,8 +242,8 @@ struct RunningView: View {
     
     private func setupOnAppear() {
         // Set up auto-queue callback
-        spotifyManager.onQueueLow = { [weak self] in
-            self?.queueMoreSongs()
+        spotifyManager.onQueueLow = {
+            queueMoreSongs()
         }
         
         if spotifyManager.connectionState == .connected {
@@ -507,9 +507,6 @@ struct NowPlayingCompactView: View {
                 Image(systemName: "music.note")
                     .font(.system(size: 14))
                     .foregroundColor(.rundjMusicGreen)
-                Text("Now Playing")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(.rundjTextSecondary)
                 Spacer()
                 if spotifyManager.queuedSongsCount > 0 {
                     Text("\(spotifyManager.queuedSongsCount) songs in queue")
