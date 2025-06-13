@@ -29,9 +29,14 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
     @Published var connectionState: ConnectionState = .disconnected
     @Published var isPlaying: Bool = false
     @Published var hasQueuedSongs: Bool = false
+    @Published var queuedSongsCount: Int = 0
     
     private var songMap = [String: Double]()
     private var isSkipping = false
+    private var queuedSongIds = Set<String>()
+    private var playedSongIds = Set<String>()
+    
+    var onQueueLow: (() -> Void)?
     
     enum ConnectionState: Equatable {
         case connected
@@ -469,25 +474,54 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
     // These methods have more complex logic than simple API calls and might not use the helper directly,
     // or might use it internally for sub-steps if applicable.
     @MainActor
-    func queueSongs(_ songs: [String: Double]) async {
-        self.songMap = songs // songMap maps track ID to BPM (ensure keys are IDs if URI used in playerStateDidChange)
+    func queueSongs(_ songs: [String: Double], skipAfterFirst: Bool = true) async {
+        self.songMap.merge(songs) { (_, new) in new } // Merge new songs with existing
         if !self.songMap.isEmpty {
             self.hasQueuedSongs = true
-            for songId in self.songMap.keys.shuffled() {
+            let songIds = Array(songs.keys).shuffled()
+            var enqueuedCount = 0
+            var shouldSkip = skipAfterFirst
+            
+            for songId in songIds {
+                // Skip if already queued
+                if queuedSongIds.contains(songId) {
+                    continue
+                }
+                
                 do {
-                    try await self.enqueueTrack(id: songId) // Uses the refactored enqueueTrack
-                } catch {}
+                    try await self.enqueueTrack(id: songId)
+                    queuedSongIds.insert(songId)
+                    enqueuedCount += 1
+                    
+                    // Skip after first song is successfully queued
+                    if shouldSkip && enqueuedCount == 1 {
+                        shouldSkip = false
+                        do {
+                            try await skipToNextTrack()
+                        } catch {
+                            SentrySDK.capture(error: error) { scope in
+                                scope.setContext(value: ["action": "skip_after_first_enqueue"], key: "spotify_queue")
+                                scope.setLevel(.warning)
+                            }
+                        }
+                    }
+                } catch {
+                    // Continue queueing even if one fails
+                }
             }
+            
+            updateQueuedSongsCount()
         } else {
             self.hasQueuedSongs = false
         }
-        do {
-            try await skipToNextTrack()
-        } catch {
-            SentrySDK.capture(error: error) { scope in
-                scope.setContext(value: ["action": "skip_after_queueing", "song_count": songs.count], key: "spotify_queue")
-                scope.setLevel(.warning)
-            }
+    }
+    
+    private func updateQueuedSongsCount() {
+        queuedSongsCount = queuedSongIds.subtracting(playedSongIds).count
+        
+        // Trigger callback when queue is getting low (less than 10 songs remaining)
+        if queuedSongsCount <= 10 && queuedSongsCount > 0 {
+            onQueueLow?()
         }
     }
     
@@ -506,10 +540,10 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
             while currentId != placeholderTrackId && skips < maxSkips {
                 if !isSkipping {
                     try await skipToNextTrack() // Uses refactored method
-                    try? await Task.sleep(nanoseconds: 50_000_000) // 0.05s delay for state update
+                    try? await Task.sleep(nanoseconds: 25_000_000) // 0.025s delay for state update
                     skips += 1
                 } else {
-                    try? await Task.sleep(nanoseconds: 50_000_000) // 0.05s delay if already skipping
+                    try? await Task.sleep(nanoseconds: 25_000_000) // 0.025s delay if already skipping
                 }
             }
             
@@ -532,6 +566,9 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
             }
         }
         self.songMap.removeAll()
+        self.queuedSongIds.removeAll()
+        self.playedSongIds.removeAll()
+        self.queuedSongsCount = 0
         self.hasQueuedSongs = false
     }
     
@@ -654,8 +691,15 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
             let components = playerState.track.uri.split(separator: ":")
             if let trackId = components.last {
                 let idToSet = String(trackId)
+                let previousId = self.currentId
                 self.currentId = idToSet
                 self.currentBPM = self.songMap[self.currentId] ?? 0.0
+                
+                // Track played songs and update count
+                if previousId != idToSet && self.queuedSongIds.contains(previousId) {
+                    self.playedSongIds.insert(previousId)
+                    self.updateQueuedSongsCount()
+                }
             }
         }
     }

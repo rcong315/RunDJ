@@ -30,6 +30,9 @@ struct RunningView: View {
     @State private var confirmationColor = Color.rundjMusicGreen
     @State private var isPlaylistButtonDisabled = true
     @State private var liveActivityUpdateTimer: Timer?
+    @State private var allAvailableSongs: [String: Double] = [:]
+    @State private var unqueuedSongIds: [String] = []
+    @State private var isLoadingMoreSongs = false
     
     var bpm: Double
     
@@ -238,6 +241,11 @@ struct RunningView: View {
     }
     
     private func setupOnAppear() {
+        // Set up auto-queue callback
+        spotifyManager.onQueueLow = { [weak self] in
+            self?.queueMoreSongs()
+        }
+        
         if spotifyManager.connectionState == .connected {
             refreshSongsBasedOnSettings()
             isPlaylistButtonDisabled = false
@@ -265,14 +273,60 @@ struct RunningView: View {
                 if fetchedSongs.isEmpty {
                     self.showConfirmationMessage("No songs found", color: .rundjWarning)
                 } else {
+                    // Store all available songs
+                    self.allAvailableSongs = fetchedSongs
+                    self.unqueuedSongIds = Array(fetchedSongs.keys).shuffled()
+                    
                     Task {
                         await self.spotifyManager.flushQueue()
-                        await self.spotifyManager.queueSongs(fetchedSongs)
-                        self.showConfirmationMessage("\(fetchedSongs.count) songs queued!", color: .rundjMusicGreen)
+                        
+                        // Queue first batch of 10 songs
+                        let firstBatch = self.getNextBatchOfSongs(count: 10)
+                        if !firstBatch.isEmpty {
+                            await self.spotifyManager.queueSongs(firstBatch)
+                            self.showConfirmationMessage("\(firstBatch.count) of \(fetchedSongs.count) songs queued!", color: .rundjMusicGreen)
+                        }
                     }
                 }
             }
         }
+    }
+    
+    func queueMoreSongs() {
+        guard !isLoadingMoreSongs, !unqueuedSongIds.isEmpty else {
+            return
+        }
+        
+        isLoadingMoreSongs = true
+        let nextBatch = getNextBatchOfSongs(count: 10)
+        
+        if !nextBatch.isEmpty {
+            Task {
+                await spotifyManager.queueSongs(nextBatch, skipAfterFirst: false)
+                DispatchQueue.main.async {
+                    self.isLoadingMoreSongs = false
+                    self.showConfirmationMessage("\(nextBatch.count) more songs added!", color: .rundjMusicGreen)
+                }
+            }
+        } else {
+            isLoadingMoreSongs = false
+        }
+    }
+    
+    private func getNextBatchOfSongs(count: Int) -> [String: Double] {
+        var batch: [String: Double] = [:]
+        let songsToTake = min(count, unqueuedSongIds.count)
+        
+        for _ in 0..<songsToTake {
+            if let songId = unqueuedSongIds.first {
+                unqueuedSongIds.removeFirst()
+                if let bpm = allAvailableSongs[songId] {
+                    batch[songId] = bpm
+                }
+            }
+        }
+        
+        return batch
     }
     
     func showConfirmationMessage(_ message: String, color: Color = .rundjMusicGreen) {
@@ -456,6 +510,12 @@ struct NowPlayingCompactView: View {
                 Text("Now Playing")
                     .font(.system(size: 12, weight: .medium))
                     .foregroundColor(.rundjTextSecondary)
+                Spacer()
+                if spotifyManager.queuedSongsCount > 0 {
+                    Text("\(spotifyManager.queuedSongsCount) songs in queue")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(spotifyManager.queuedSongsCount <= 10 ? .rundjWarning : .rundjTextSecondary)
+                }
             }
             
             if !spotifyManager.hasQueuedSongs && spotifyManager.connectionState == .connected {
