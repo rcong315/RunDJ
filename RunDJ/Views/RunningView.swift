@@ -679,6 +679,7 @@ struct RunControlCompactView: View {
 struct RunStatsCompactView: View {
     @ObservedObject var pedometerManager: PedometerManager
     @ObservedObject var runningStatsManager: RunningStatsManager
+    @EnvironmentObject var settingsManager: SettingsManager
     @State private var pulseAnimation = false
     let isRunning: Bool
     
