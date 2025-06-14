@@ -262,7 +262,7 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
            let tokenRefreshURL = URL(string: "\(serverURL)/api/v1/spotify/auth/refresh") {
             config.tokenSwapURL = tokenSwapURL
             config.tokenRefreshURL = tokenRefreshURL
-            config.playURI = "spotify:track:2bNCdW4rLnCTzgqUXTTDO1" // Dummy track
+            config.playURI = "spotify:track:7depNAqAh1r9unkIRzibID" // Dummy track
         }
         
         return config
@@ -478,7 +478,7 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
         self.songMap.merge(songs) { (_, new) in new } // Merge new songs with existing
         if !self.songMap.isEmpty {
             self.hasQueuedSongs = true
-            let songIds = Array(songs.keys).shuffled()
+            let songIds = Array(songs.keys) // Don't shuffle here - already shuffled by caller
             var enqueuedCount = 0
             var shouldSkip = skipAfterFirst
             
@@ -519,8 +519,9 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
     private func updateQueuedSongsCount() {
         queuedSongsCount = queuedSongIds.subtracting(playedSongIds).count
         
-        // Trigger callback when queue is getting low (less than 10 songs remaining)
-        if queuedSongsCount <= 10 && queuedSongsCount > 0 {
+        // Trigger callback when queue is getting low (5 or fewer songs remaining)
+        // This gives time to queue more before running out
+        if queuedSongsCount <= 5 && queuedSongsCount > 0 {
             onQueueLow?()
         }
     }
@@ -530,7 +531,7 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
         guard appRemote.isConnected, appRemote.playerAPI != nil else {
             return
         }
-        let placeholderTrackId = "2bNCdW4rLnCTzgqUXTTDO1"
+        let placeholderTrackId = "5kiJ9x6eX37H5J9lyyXkua"
         var skips = 0
         let maxSkips = 100
         

@@ -221,16 +221,16 @@ class RunManager: NSObject, CLLocationManagerDelegate, ObservableObject {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
 
-            let time = self.runStatsManager.formatTimeInterval(self.runStatsManager.totalElapsedTime)
-            let distance = self.runStatsManager.formatDistance(self.runStatsManager.totalDistance)
-            let pace = self.runStatsManager.formatPace(self.runStatsManager.currentPace, perKm: false)
+            _ = self.runStatsManager.formatTimeInterval(self.runStatsManager.totalElapsedTime)
+            _ = self.runStatsManager.formatDistance(self.runStatsManager.totalDistance)
+            _ = self.runStatsManager.formatPace(self.runStatsManager.currentPace, perKm: false)
         }
     }
     
     /// Display final statistics after run completion
     private func displayFinalStats() {
         DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
+            guard self != nil else { return }
         }
     }
 }

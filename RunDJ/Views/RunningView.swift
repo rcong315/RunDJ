@@ -317,12 +317,14 @@ struct RunningView: View {
         var batch: [String: Double] = [:]
         let songsToTake = min(count, unqueuedSongIds.count)
         
-        for _ in 0..<songsToTake {
-            if let songId = unqueuedSongIds.first {
-                unqueuedSongIds.removeFirst()
-                if let bpm = allAvailableSongs[songId] {
-                    batch[songId] = bpm
-                }
+        // Take songs from the beginning to maintain order
+        let selectedSongIds = Array(unqueuedSongIds.prefix(songsToTake))
+        unqueuedSongIds.removeFirst(songsToTake)
+        
+        // Build batch maintaining the order
+        for songId in selectedSongIds {
+            if let bpm = allAvailableSongs[songId] {
+                batch[songId] = bpm
             }
         }
         
@@ -487,9 +489,10 @@ struct SpotifyConnectionPromptView: View {
                     onRefreshSongs()
                 }
             }) {
-                Text(connected ? "Refresh Songs" : "Connect Spotify")
+                Text("Connect Spotify")
             }
             .buttonStyle(RundjPrimaryButtonStyle(isMusic: true))
+            .disabled(connected)
         }
         .padding()
         .frame(maxWidth: .infinity)
@@ -507,12 +510,12 @@ struct NowPlayingCompactView: View {
                 Image(systemName: "music.note")
                     .font(.system(size: 14))
                     .foregroundColor(.rundjMusicGreen)
-                Spacer()
                 if spotifyManager.queuedSongsCount > 0 {
                     Text("\(spotifyManager.queuedSongsCount) songs in queue")
                         .font(.system(size: 11, weight: .medium))
                         .foregroundColor(spotifyManager.queuedSongsCount <= 10 ? .rundjWarning : .rundjTextSecondary)
                 }
+                Spacer()
             }
             
             if !spotifyManager.hasQueuedSongs && spotifyManager.connectionState == .connected {
@@ -692,6 +695,8 @@ struct RunControlCompactView: View {
     @Binding var isRunning: Bool
     @ObservedObject var runManager: RunManager
     @State private var isPressed = false
+    @State private var confirmStop = false
+    @State private var pulseAnimation = false
     
     var body: some View {
         Button(action: {
@@ -703,27 +708,71 @@ struct RunControlCompactView: View {
                 runManager.requestPermissionsAndStart()
                 isRunning = true
             } else {
-                runManager.stop()
-                isRunning = false
+                if confirmStop {
+                    // Second tap - actually stop
+                    runManager.stop()
+                    isRunning = false
+                    confirmStop = false
+                } else {
+                    // First tap - show confirmation state
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        confirmStop = true
+                    }
+                    
+                    // Start pulse animation
+                    withAnimation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true)) {
+                        pulseAnimation = true
+                    }
+                    
+                    // Reset after 3 seconds if not confirmed
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                        if self.confirmStop {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                self.confirmStop = false
+                                self.pulseAnimation = false
+                            }
+                        }
+                    }
+                }
             }
         }) {
             HStack {
-                Image(systemName: isRunning ? "stop.fill" : "figure.run")
+                Image(systemName: confirmStop ? "exclamationmark.triangle.fill" : (isRunning ? "stop.fill" : "figure.run"))
                     .font(.system(size: 16))
-                    .rotationEffect(.degrees(isRunning ? 0 : 0))
-                    .animation(.spring(response: 0.4, dampingFraction: 0.6), value: isRunning)
-                Text(isRunning ? "Stop Run" : "Start Run")
+                    .animation(.spring(response: 0.3, dampingFraction: 0.6), value: confirmStop)
+                Text(confirmStop ? "Tap to Confirm" : (isRunning ? "Stop Run" : "Start Run"))
                     .font(.system(size: 16, weight: .semibold))
             }
+            .font(.system(size: 16, weight: .semibold))
+            .foregroundColor(.white)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(confirmStop || isRunning ? Color.rundjError : Color.rundjMusicGreen)
+                    .overlay(
+                        // Pulsing overlay for confirm state
+                        confirmStop ? 
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.white.opacity(pulseAnimation ? 0.15 : 0))
+                        : nil
+                    )
+            )
+            .shadow(color: confirmStop ? Color.rundjError.opacity(pulseAnimation ? 0.5 : 0.3) : Color.black.opacity(0.15), 
+                    radius: confirmStop && pulseAnimation ? 12 : 4, 
+                    x: 0, y: 2)
         }
-        .buttonStyle(RundjPrimaryButtonStyle(isDisabled: false))
-        .padding(.vertical, 8)
+        .buttonStyle(PlainButtonStyle()) // Use plain style to have full control
         .scaleEffect(isPressed ? 0.95 : 1.0)
+        .scaleEffect(confirmStop && pulseAnimation ? 1.02 : 1.0)
+        .animation(.easeInOut(duration: 0.2), value: confirmStop)
+        .animation(.easeInOut(duration: 0.1), value: isPressed)
         .onLongPressGesture(minimumDuration: 0, maximumDistance: .infinity, pressing: { pressing in
             withAnimation(.easeInOut(duration: 0.1)) {
                 isPressed = pressing
             }
         }, perform: {})
+        .padding(.vertical, 8)
     }
 }
 
