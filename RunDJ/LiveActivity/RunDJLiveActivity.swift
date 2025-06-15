@@ -157,7 +157,7 @@ struct RunDJLiveActivityWidget: Widget {
                         // Helper function for Dynamic Island feedback appearance
                         let isRecentFeedback = {
                             guard let feedbackTime = context.state.lastFeedbackTime else { return false }
-                            return Date().timeIntervalSince(feedbackTime) < 2.0
+                            return Date().timeIntervalSince(feedbackTime) < 1.5
                         }()
                         
                         // Thumbs up button
@@ -239,10 +239,10 @@ struct RunDJLiveActivityWidget: Widget {
 struct LockScreenLiveActivityView: View {
     let context: ActivityViewContext<RunDJActivityAttributes>
     
-    // Helper to determine if feedback was recent (within 2 seconds)
+    // Helper to determine if feedback was recent (within 1.5 seconds)
     private var isRecentFeedback: Bool {
         guard let feedbackTime = context.state.lastFeedbackTime else { return false }
-        return Date().timeIntervalSince(feedbackTime) < 2.0
+        return Date().timeIntervalSince(feedbackTime) < 1.5
     }
     
     // Helper to get feedback button appearance
@@ -433,9 +433,7 @@ class LiveActivityManager: ObservableObject {
             songBPM: targetBPM,
             isPlaying: false,
             elapsedTime: Date(),
-            lastFeedbackType: nil,
-            lastFeedbackTime: nil
-            useMetricUnits: false
+            useMetricUnits: false,
             lastFeedbackType: nil,
             lastFeedbackTime: nil
         )
@@ -476,8 +474,8 @@ class LiveActivityManager: ObservableObject {
             lastFeedbackType = sharedDefaults.string(forKey: "lastFeedbackType")
             lastFeedbackTime = sharedDefaults.object(forKey: "lastFeedbackTime") as? Date
             
-            // Clear feedback if it's older than 3 seconds
-            if let feedbackTime = lastFeedbackTime, Date().timeIntervalSince(feedbackTime) > 3.0 {
+            // Clear feedback if it's older than 2 seconds
+            if let feedbackTime = lastFeedbackTime, Date().timeIntervalSince(feedbackTime) > 2.0 {
                 sharedDefaults.removeObject(forKey: "lastFeedbackType")
                 sharedDefaults.removeObject(forKey: "lastFeedbackTime")
                 lastFeedbackType = nil
@@ -495,9 +493,7 @@ class LiveActivityManager: ObservableObject {
             songBPM: songBPM,
             isPlaying: isPlaying,
             elapsedTime: Date(),
-            lastFeedbackType: lastFeedbackType,
-            lastFeedbackTime: lastFeedbackTime
-            useMetricUnits: useMetricUnits
+            useMetricUnits: useMetricUnits,
             lastFeedbackType: lastFeedbackType,
             lastFeedbackTime: lastFeedbackTime
         )
@@ -523,9 +519,7 @@ class LiveActivityManager: ObservableObject {
             songBPM: 0,
             isPlaying: false,
             elapsedTime: Date(),
-            lastFeedbackType: nil,
-            lastFeedbackTime: nil
-            useMetricUnits: false
+            useMetricUnits: false,
             lastFeedbackType: nil,
             lastFeedbackTime: nil
         )

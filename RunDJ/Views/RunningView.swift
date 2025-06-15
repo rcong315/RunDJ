@@ -30,8 +30,10 @@ struct RunningView: View {
     @State private var confirmationColor = Color.rundjMusicGreen
     @State private var isPlaylistButtonDisabled = true
     @State private var liveActivityUpdateTimer: Timer?
+    @State private var feedbackMonitorTimer: Timer?
     @State private var liveActivityObservers: [NSObjectProtocol] = []
     @State private var currentBPM: Double
+    @State private var lastFeedbackCheck: Date = Date()
     
     var bpm: Double
     
@@ -371,12 +373,10 @@ struct RunningView: View {
     private func updateLiveActivity() {
         Task {
             // Format pace properly for live activity
-            let paceString = runningStatsManager.currentPace < 0 ? "--:--" : runningStatsManager.formatPace(runningStatsManager.currentPace, perKm: settingsManager.useMetricUnits)
+            let paceString = runningStatsManager.currentPace < 0 ? "--:--" : runningStatsManager.formatPace(runningStatsManager.currentPace)
             
-            // Convert distance based on unit setting
-            let distanceValue = settingsManager.useMetricUnits ? 
-                runningStatsManager.totalDistance / 1000.0 : // Convert meters to kilometers
-                runningStatsManager.totalDistance / 1609.34   // Convert meters to miles
+            // Convert distance based on unit setting (assuming metric for now)
+            let distanceValue = runningStatsManager.totalDistance / 1609.34 // Convert meters to miles
             
             await liveActivityManager.updateActivity(
                 stepsPerMinute: Int(pedometerManager.stepsPerMinute),
@@ -387,7 +387,7 @@ struct RunningView: View {
                 currentArtist: spotifyManager.currentArtist.isEmpty ? "--" : spotifyManager.currentArtist,
                 songBPM: Int(spotifyManager.currentBPM),
                 isPlaying: spotifyManager.isPlaying,
-                useMetricUnits: settingsManager.useMetricUnits
+                useMetricUnits: false
             )
         }
     }
@@ -399,15 +399,42 @@ struct RunningView: View {
     }
     
     private func startLiveActivityUpdateTimer() {
+        // Regular updates every 1 second for stats
         liveActivityUpdateTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
             updateLiveActivity()
             processPendingFeedback()
+        }
+        
+        // Fast feedback monitoring every 0.1 seconds
+        startFeedbackMonitoring()
+    }
+    
+    private func startFeedbackMonitoring() {
+        feedbackMonitorTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
+            checkForImmediateFeedback()
         }
     }
     
     private func stopLiveActivityUpdateTimer() {
         liveActivityUpdateTimer?.invalidate()
         liveActivityUpdateTimer = nil
+        feedbackMonitorTimer?.invalidate()
+        feedbackMonitorTimer = nil
+    }
+    
+    private func checkForImmediateFeedback() {
+        guard let sharedDefaults = UserDefaults(suiteName: "group.com.rundj.RunDJ"),
+              let lastFeedbackTime = sharedDefaults.object(forKey: "lastFeedbackTime") as? Date else { return }
+        
+        // Check if there's new feedback since our last check
+        if lastFeedbackTime > lastFeedbackCheck {
+            lastFeedbackCheck = lastFeedbackTime
+            
+            // Trigger immediate Live Activity update
+            Task {
+                await updateLiveActivity()
+            }
+        }
     }
     
     private func processPendingFeedback() {
