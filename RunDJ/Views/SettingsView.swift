@@ -35,17 +35,61 @@ struct SettingsView: View {
                     .ignoresSafeArea()
                 
                 VStack(spacing: 0) {
-                    // Content
-                    VStack(spacing: 8) {
-                        ForEach(0..<sources.count, id: \.self) { index in
-                            SourceRow(
-                                source: $sources[index],
-                                hasChanges: $hasChanges,
-                                checkForChanges: checkForChanges
-                            )
+                    ScrollView {
+                        VStack(spacing: 20) {
+                            // Distance Units Section
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Distance Units")
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundColor(.rundjTextSecondary)
+                                    .padding(.horizontal, 16)
+                                
+                                HStack {
+                                    Text("Use Metric Units")
+                                        .font(.system(size: 16))
+                                        .foregroundColor(.rundjTextPrimary)
+                                    
+                                    Spacer()
+                                    
+                                    Toggle("", isOn: Binding(
+                                        get: { settingsManager.useMetricUnits },
+                                        set: { newValue in
+                                            settingsManager.useMetricUnits = newValue
+                                            hasChanges = true
+                                        }
+                                    ))
+                                    .labelsHidden()
+                                    .tint(.rundjMusicGreen)
+                                    
+                                    Text(settingsManager.useMetricUnits ? "km" : "mi")
+                                        .font(.system(size: 14, weight: .medium))
+                                        .foregroundColor(.rundjTextSecondary)
+                                        .frame(width: 30)
+                                }
+                                .padding(.vertical, 12)
+                                .padding(.horizontal, 16)
+                                .background(Color.rundjCardBackground)
+                                .cornerRadius(10)
+                            }
+                            
+                            // Music Sources Section
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Music Sources")
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundColor(.rundjTextSecondary)
+                                    .padding(.horizontal, 16)
+                                
+                                ForEach(0..<sources.count, id: \.self) { index in
+                                    SourceRow(
+                                        source: $sources[index],
+                                        hasChanges: $hasChanges,
+                                        checkForChanges: checkForChanges
+                                    )
+                                }
+                            }
                         }
+                        .padding()
                     }
-                    .padding()
                     
                     // Bottom Buttons
                     VStack(spacing: 12) {
@@ -81,7 +125,7 @@ struct SettingsView: View {
                     )
                 }
             }
-            .navigationTitle("Music Sources")
+            .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {

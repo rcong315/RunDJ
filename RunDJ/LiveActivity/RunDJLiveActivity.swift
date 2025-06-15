@@ -73,9 +73,9 @@ struct RunDJActivityAttributes: ActivityAttributes {
         var isPlaying: Bool
         var elapsedTime: Date // For timer
         
-        // Feedback state for visual feedback
         var lastFeedbackType: String? // "LIKE", "DISLIKE", or nil
         var lastFeedbackTime: Date? // When the feedback was given
+        var useMetricUnits: Bool
     }
     
     // Static content (set when activity starts)
@@ -114,7 +114,7 @@ struct RunDJLiveActivityWidget: Widget {
                 
                 DynamicIslandExpandedRegion(.trailing) {
                     VStack(alignment: .trailing, spacing: 4) {
-                        Text(context.state.distance.formatted(.number.precision(.fractionLength(1))) + " mi")
+                        Text(context.state.distance.formatted(.number.precision(.fractionLength(1))) + " \(context.state.useMetricUnits ? "km" : "mi")")
                             .font(.system(size: 18, weight: .semibold))
                             .foregroundColor(.rundjAccent)
                         Text(context.state.pace)
@@ -308,7 +308,7 @@ struct LockScreenLiveActivityView: View {
                     Text(context.state.distance.formatted(.number.precision(.fractionLength(1))))
                         .font(.system(size: 24, weight: .semibold))
                         .foregroundColor(.rundjAccent)
-                    Text("miles")
+                    Text(context.state.useMetricUnits ? "kilometers" : "miles")
                         .font(.caption)
                         .foregroundColor(.rundjTextSecondary)
                 }
@@ -318,7 +318,7 @@ struct LockScreenLiveActivityView: View {
                     Text(context.state.pace)
                         .font(.system(size: 20, weight: .semibold))
                         .foregroundColor(.rundjWarning)
-                    Text("min/mi")
+                    Text(context.state.useMetricUnits ? "min/km" : "min/mi")
                         .font(.caption)
                         .foregroundColor(.rundjTextSecondary)
                 }
@@ -436,6 +436,7 @@ class LiveActivityManager: ObservableObject {
             elapsedTime: Date(),
             lastFeedbackType: nil,
             lastFeedbackTime: nil
+            useMetricUnits: false
         )
         
         do {
@@ -461,7 +462,8 @@ class LiveActivityManager: ObservableObject {
         currentSong: String,
         currentArtist: String,
         songBPM: Int,
-        isPlaying: Bool
+        isPlaying: Bool,
+        useMetricUnits: Bool
     ) async {
         guard let activity = currentActivity else { return }
         
@@ -494,6 +496,7 @@ class LiveActivityManager: ObservableObject {
             elapsedTime: Date(),
             lastFeedbackType: lastFeedbackType,
             lastFeedbackTime: lastFeedbackTime
+            useMetricUnits: useMetricUnits
         )
         
         await activity.update(
@@ -519,6 +522,7 @@ class LiveActivityManager: ObservableObject {
             elapsedTime: Date(),
             lastFeedbackType: nil,
             lastFeedbackTime: nil
+            useMetricUnits: false
         )
         
         await activity.end(
