@@ -36,9 +36,7 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
     private var isSkipping = false
     private var queuedSongIds = Set<String>()
     private var playedSongIds = Set<String>()
-    
-    var onQueueLow: (() -> Void)?
-    
+        
     enum ConnectionState: Equatable {
         case connected
         case disconnected
@@ -581,7 +579,6 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
             Task {
                 await queueMoreSongs()
             }
-            onQueueLow?() // Keep the old callback for backward compatibility
         }
     }
     

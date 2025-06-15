@@ -27,19 +27,10 @@ struct RunDJApp: App {
         WindowGroup {
             BPMView()
                 .environmentObject(SettingsManager.shared)
-                .preferredColorScheme(.dark) // Force dark mode
+                .preferredColorScheme(.dark)
                 .onOpenURL { url in
                     logger.info("Received URL: \(url)")
-                    
-                    if url.absoluteString.contains("callback") {
-                        // Handle Spotify auth callbacks
-                        SpotifyManager.shared.handleURL(url)
-                    } else if url.scheme == "rundj" {
-                        // Handle Live Activity deep links
-                        LiveActivityManager.shared.handleDeepLink(url)
-                    } else {
-                        SpotifyManager.shared.handleURL(url)
-                    }
+                    SpotifyManager.shared.handleURL(url)
                 }
         }
     }

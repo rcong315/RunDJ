@@ -157,7 +157,7 @@ struct RunDJLiveActivityWidget: Widget {
                         // Helper function for Dynamic Island feedback appearance
                         let isRecentFeedback = {
                             guard let feedbackTime = context.state.lastFeedbackTime else { return false }
-                            return Date().timeIntervalSince(feedbackTime) < 1.5
+                            return Date().timeIntervalSince(feedbackTime) < 1
                         }()
                         
                         // Thumbs up button
@@ -228,7 +228,6 @@ struct RunDJLiveActivityWidget: Widget {
                     .font(.caption)
                     .foregroundColor(.rundjMusicGreen)
             }
-            .widgetURL(URL(string: "rundj://activity"))
             .keylineTint(Color.rundjMusicGreen)
         }
     }
@@ -239,10 +238,10 @@ struct RunDJLiveActivityWidget: Widget {
 struct LockScreenLiveActivityView: View {
     let context: ActivityViewContext<RunDJActivityAttributes>
     
-    // Helper to determine if feedback was recent (within 1.5 seconds)
+    // Helper to determine if feedback was recent (within 1 seconds)
     private var isRecentFeedback: Bool {
         guard let feedbackTime = context.state.lastFeedbackTime else { return false }
-        return Date().timeIntervalSince(feedbackTime) < 1.5
+        return Date().timeIntervalSince(feedbackTime) < 1
     }
     
     // Helper to get feedback button appearance
@@ -534,22 +533,6 @@ class LiveActivityManager: ObservableObject {
         }
     }
     
-    func handleDeepLink(_ url: URL) {
-        // Handle feedback URLs: rundj://feedback/thumbsup or rundj://feedback/thumbsdown
-        guard let host = url.host, host == "feedback" else { return }
-        
-        let pathComponents = url.pathComponents.filter { $0 != "/" }
-        guard let action = pathComponents.first else { return }
-        
-        switch action {
-        case "thumbsup":
-            NotificationCenter.default.post(name: .liveActivityThumbsUp, object: nil)
-        case "thumbsdown":
-            NotificationCenter.default.post(name: .liveActivityThumbsDown, object: nil)
-        default:
-            break
-        }
-    }
 }
 
 // MARK: - Error Types
@@ -568,10 +551,3 @@ enum LiveActivityError: LocalizedError {
     }
 }
 
-// MARK: - Notification Names
-
-extension Notification.Name {
-    static let liveActivityThumbsUp = Notification.Name("liveActivityThumbsUp")
-    static let liveActivityThumbsDown = Notification.Name("liveActivityThumbsDown")
-    static let liveActivityStopRun = Notification.Name("liveActivityStopRun")
-}
