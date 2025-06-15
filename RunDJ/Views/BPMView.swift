@@ -91,7 +91,7 @@ struct BPMView: View {
                             .foregroundColor(Color.rundjTextTertiary.opacity(0.3))
                         
                         Text("OR")
-                            .font(.system(size: 14, weight: .medium))
+                            .font(.system(size: 40, weight: .medium))
                             .foregroundColor(.rundjTextTertiary)
                             .padding(.horizontal, 12)
                         
@@ -169,7 +169,7 @@ struct BPMView: View {
                         }) {
                             Text("Start with Manual BPM")
                         }
-                        .buttonStyle(RundjPrimaryButtonStyle())
+                        .buttonStyle(RundjPrimaryButtonStyle(isMusic: true))
                         .padding(.horizontal, 40)
                     }
                     

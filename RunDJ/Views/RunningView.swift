@@ -30,12 +30,15 @@ struct RunningView: View {
     @State private var confirmationColor = Color.rundjMusicGreen
     @State private var isPlaylistButtonDisabled = true
     @State private var liveActivityUpdateTimer: Timer?
-    @State private var allAvailableSongs: [String: Double] = [:]
-    @State private var unqueuedSongIds: [String] = []
-    @State private var isLoadingMoreSongs = false
     @State private var liveActivityObservers: [NSObjectProtocol] = []
+    @State private var currentBPM: Double
     
     var bpm: Double
+    
+    init(bpm: Double) {
+        self.bpm = bpm
+        self._currentBPM = State(initialValue: bpm)
+    }
     
     var body: some View {
         ZStack {
@@ -43,13 +46,25 @@ struct RunningView: View {
                 .ignoresSafeArea()
             
             VStack(spacing: 12) {
-                // Spotify Connection Section
-                SpotifyConnectionPromptView(
-                    spotifyManager: spotifyManager,
-                    onRefreshSongs: refreshSongsBasedOnSettings
-                )
-                .padding(.horizontal)
-                .transition(.move(edge: .top).combined(with: .opacity))
+                // Spotify Connection or BPM Adjustment Section
+                if spotifyManager.connectionState == .connected {
+                    BPMAdjustmentView(
+                        currentBPM: $currentBPM,
+                        onBPMChange: { newBPM in
+                            currentBPM = newBPM
+                            refreshSongsWithNewBPM(newBPM)
+                        }
+                    )
+                    .padding(.horizontal)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                } else {
+                    SpotifyConnectionPromptView(
+                        spotifyManager: spotifyManager,
+                        onRefreshSongs: refreshSongsBasedOnSettings
+                    )
+                    .padding(.horizontal)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                }
                 
                 // Connection Status (Compact)
                 HStack {
@@ -76,7 +91,7 @@ struct RunningView: View {
                     rundjService: rundjService,
                     settingsManager: settingsManager,
                     token: token,
-                    bpm: bpm,
+                    bpm: currentBPM,
                     isPlaylistButtonDisabled: $isPlaylistButtonDisabled,
                     isThumbsUpSelected: $isThumbsUpSelected,
                     isThumbsDownSelected: $isThumbsDownSelected,
@@ -173,7 +188,7 @@ struct RunningView: View {
         .toolbar {
             ToolbarItem(placement: .principal) {
                 VStack(spacing: 0) {
-                    Text("\(Int(round(bpm)))")
+                    Text("\(Int(round(currentBPM)))")
                         .font(.system(size: 24, weight: .bold))
                         .foregroundColor(.rundjMusicGreen)
                     Text("BPM")
@@ -246,9 +261,25 @@ struct RunningView: View {
     }
     
     private func setupOnAppear() {
-        // Set up auto-queue callback
-        spotifyManager.onQueueLow = {
-            queueMoreSongs()
+        // Set up song update callback
+        spotifyManager.onSongsUpdated = { batch in
+            DispatchQueue.main.async {
+                if batch.isEmpty {
+                    // Starting new loop
+                    self.showConfirmationMessage("Starting new loop of songs!", color: .rundjAccent)
+                } else {
+                    // New batch queued
+                    let totalSongs = self.spotifyManager.totalAvailableSongs
+                    self.showConfirmationMessage("\(batch.count) more songs added! (\(totalSongs) total)", color: .rundjMusicGreen)
+                }
+            }
+        }
+        
+        // Set up queue status update callback
+        spotifyManager.onQueueStatusUpdate = { message, color in
+            DispatchQueue.main.async {
+                self.showConfirmationMessage(message, color: color)
+            }
         }
         
         if spotifyManager.connectionState == .connected {
@@ -271,80 +302,30 @@ struct RunningView: View {
         guard spotifyManager.connectionState == .connected else {
             return
         }
-        showConfirmationMessage("Flushing queue, please wait...", color: .rundjAccent)
         
-        rundjService.getSongsByBPM(accessToken: token, bpm: bpm, sources: settingsManager.musicSources) { fetchedSongs in
+        rundjService.getSongsByBPM(accessToken: token, bpm: currentBPM, sources: settingsManager.musicSources) { fetchedSongs in
             DispatchQueue.main.async {
-                if fetchedSongs.isEmpty {
-                    self.showConfirmationMessage("No songs found", color: .rundjWarning)
-                } else {
-                    // Store all available songs
-                    self.allAvailableSongs = fetchedSongs
-                    self.unqueuedSongIds = Array(fetchedSongs.keys).shuffled()
-                    
-                    Task {
-                        await self.spotifyManager.flushQueue()
-                        
-                        // Queue first batch of 10 songs
-                        let firstBatch = self.getNextBatchOfSongs(count: 10)
-                        if !firstBatch.isEmpty {
-                            await self.spotifyManager.queueSongs(firstBatch)
-                            self.showConfirmationMessage("\(firstBatch.count) of \(fetchedSongs.count) songs queued!", color: .rundjMusicGreen)
-                        }
-                    }
+                Task {
+                    await self.spotifyManager.refreshSongsAndQueue(with: fetchedSongs)
                 }
             }
         }
     }
     
-    func queueMoreSongs() {
-        guard !isLoadingMoreSongs else {
+    func refreshSongsWithNewBPM(_ newBPM: Double) {
+        guard spotifyManager.connectionState == .connected else {
             return
         }
         
-        if unqueuedSongIds.isEmpty && !allAvailableSongs.isEmpty {
-            unqueuedSongIds = Array(allAvailableSongs.keys)
-            spotifyManager.clearPlayedSongs()
-            showConfirmationMessage("Starting new loop of songs!", color: .rundjAccent)
-        }
-        
-        guard !unqueuedSongIds.isEmpty else {
-            return
-        }
-        
-        isLoadingMoreSongs = true
-        let nextBatch = getNextBatchOfSongs(count: 10)
-        
-        if !nextBatch.isEmpty {
-            Task {
-                await spotifyManager.queueSongs(nextBatch, skipAfterFirst: false)
-                DispatchQueue.main.async {
-                    self.isLoadingMoreSongs = false
-                    self.showConfirmationMessage("\(nextBatch.count) more songs added!", color: .rundjMusicGreen)
+        rundjService.getSongsByBPM(accessToken: token, bpm: newBPM, sources: settingsManager.musicSources) { fetchedSongs in
+            DispatchQueue.main.async {
+                Task {
+                    await self.spotifyManager.refreshSongsAndQueue(with: fetchedSongs)
                 }
             }
-        } else {
-            isLoadingMoreSongs = false
         }
     }
     
-    private func getNextBatchOfSongs(count: Int) -> [String: Double] {
-        var batch: [String: Double] = [:]
-        let songsToTake = min(count, unqueuedSongIds.count)
-        
-        // Take songs from the beginning to maintain order
-        let selectedSongIds = Array(unqueuedSongIds.prefix(songsToTake))
-        unqueuedSongIds.removeFirst(songsToTake)
-        
-        // Build batch maintaining the order
-        for songId in selectedSongIds {
-            if let bpm = allAvailableSongs[songId] {
-                batch[songId] = bpm
-            }
-        }
-        
-        return batch
-    }
     
     func showConfirmationMessage(_ message: String, color: Color = .rundjMusicGreen) {
         confirmationMessage = message
@@ -377,10 +358,10 @@ struct RunningView: View {
     private func startLiveActivity() {
         Task {
             do {
-                try await liveActivityManager.startActivity(targetBPM: Int(bpm))
+                try await liveActivityManager.startActivity(targetBPM: Int(currentBPM))
             } catch {
                 SentrySDK.capture(error: error) { scope in
-                    scope.setContext(value: ["targetBPM": bpm], key: "live_activity")
+                    scope.setContext(value: ["targetBPM": currentBPM], key: "live_activity")
                     scope.setLevel(.warning)
                 }
             }
@@ -915,6 +896,169 @@ struct RunStatsCompactView: View {
                 )
             }
         }
+    }
+}
+
+struct BPMAdjustmentView: View {
+    @Binding var currentBPM: Double
+    let onBPMChange: (Double) -> Void
+    
+    @State private var isRefetching = false
+    @State private var confirmRefetch = false
+    @State private var pulseAnimation = false
+    
+    var body: some View {
+        VStack(spacing: 12) {
+            // Header
+            HStack {
+                Image(systemName: "music.note")
+                    .font(.system(size: 16))
+                    .foregroundColor(.rundjMusicGreen)
+                Text("Adjust BPM & Refetch Songs")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.rundjTextPrimary)
+                Spacer()
+            }
+            
+            // BPM Controls
+            HStack(spacing: 16) {
+                Button(action: {
+                    let newBPM = max(100, currentBPM - 5)
+                    currentBPM = newBPM
+                }) {
+                    Image(systemName: "minus")
+                        .font(.system(size: 16, weight: .medium))
+                }
+                .buttonStyle(RundjIconButtonStyle(size: 32, isMusic: true))
+                
+                VStack(spacing: 2) {
+                    Text(String(Int(currentBPM)))
+                        .font(.system(size: 24, weight: .bold))
+                        .foregroundColor(.rundjMusicGreen)
+                        .frame(width: 60)
+                    
+                    Text("BPM")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(.rundjTextSecondary)
+                }
+                
+                Button(action: {
+                    let newBPM = min(200, currentBPM + 5)
+                    currentBPM = newBPM
+                }) {
+                    Image(systemName: "plus")
+                        .font(.system(size: 16, weight: .medium))
+                }
+                .buttonStyle(RundjIconButtonStyle(size: 32, isMusic: true))
+                
+                Spacer()
+                
+                // Refetch Button with tap-to-confirm
+                Button(action: {
+                    // Haptic feedback
+                    let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+                    impactFeedback.impactOccurred()
+                    
+                    if confirmRefetch {
+                        // Second tap - actually refetch
+                        isRefetching = true
+                        confirmRefetch = false
+                        pulseAnimation = false
+                        
+                        onBPMChange(currentBPM)
+                        
+                        // Reset refetching state after a delay
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                            isRefetching = false
+                        }
+                    } else {
+                        // First tap - show confirmation state
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            confirmRefetch = true
+                        }
+                        
+                        // Start pulse animation
+                        withAnimation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true)) {
+                            pulseAnimation = true
+                        }
+                        
+                        // Reset after 3 seconds if not confirmed
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                            if self.confirmRefetch {
+                                withAnimation(.easeInOut(duration: 0.2)) {
+                                    self.confirmRefetch = false
+                                    self.pulseAnimation = false
+                                }
+                            }
+                        }
+                    }
+                }) {
+                    HStack(spacing: 6) {
+                        if isRefetching {
+                            ProgressView()
+                                .scaleEffect(0.8)
+                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                        } else {
+                            Image(systemName: confirmRefetch ? "exclamationmark.triangle.fill" : "arrow.clockwise")
+                                .font(.system(size: 14))
+                                .animation(.spring(response: 0.3, dampingFraction: 0.6), value: confirmRefetch)
+                        }
+                        Text(isRefetching ? "Fetching..." : (confirmRefetch ? "Tap to Confirm" : "Refetch"))
+                            .font(.system(size: 14, weight: .semibold))
+                    }
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(confirmRefetch ? Color.rundjWarning : Color.rundjMusicGreen)
+                            .overlay(
+                                // Pulsing overlay for confirm state
+                                confirmRefetch ? 
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(Color.white.opacity(pulseAnimation ? 0.15 : 0))
+                                : nil
+                            )
+                    )
+                    .shadow(color: confirmRefetch ? Color.rundjWarning.opacity(pulseAnimation ? 0.5 : 0.3) : Color.black.opacity(0.15), 
+                            radius: confirmRefetch && pulseAnimation ? 8 : 3, 
+                            x: 0, y: 1)
+                }
+                .buttonStyle(PlainButtonStyle())
+                .scaleEffect(confirmRefetch && pulseAnimation ? 1.02 : 1.0)
+                .animation(.easeInOut(duration: 0.2), value: confirmRefetch)
+                .disabled(isRefetching)
+            }
+            
+            // Fine adjustment buttons
+            HStack(spacing: 8) {
+                Button("-1") {
+                    currentBPM = max(100, currentBPM - 1)
+                }
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(.rundjTextSecondary)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(Color.rundjCardBackground.opacity(0.6))
+                .cornerRadius(6)
+                
+                Button("+1") {
+                    currentBPM = min(200, currentBPM + 1)
+                }
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(.rundjTextSecondary)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(Color.rundjCardBackground.opacity(0.6))
+                .cornerRadius(6)
+                
+                Spacer()
+            }
+        }
+        .padding()
+        .frame(maxWidth: .infinity)
+        .background(Color.rundjCardBackground)
+        .cornerRadius(12)
     }
 }
 
