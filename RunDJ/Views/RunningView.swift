@@ -33,6 +33,7 @@ struct RunningView: View {
     @State private var allAvailableSongs: [String: Double] = [:]
     @State private var unqueuedSongIds: [String] = []
     @State private var isLoadingMoreSongs = false
+    @State private var liveActivityObservers: [NSObjectProtocol] = []
     
     var bpm: Double
     
@@ -129,9 +130,13 @@ struct RunningView: View {
         .onAppear {
             setupOnAppear()
             setupLiveActivityObservers()
+            processPendingFeedback()
         }
         .onDisappear {
             liveActivityUpdateTimer?.invalidate()
+            // Remove all live activity observers to prevent duplicates
+            liveActivityObservers.forEach { NotificationCenter.default.removeObserver($0) }
+            liveActivityObservers.removeAll()
         }
         .onChange(of: isRunning) { _, newValue in
             if newValue {
@@ -409,6 +414,7 @@ struct RunningView: View {
     private func startLiveActivityUpdateTimer() {
         liveActivityUpdateTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
             updateLiveActivity()
+            processPendingFeedback()
         }
     }
     
@@ -417,8 +423,60 @@ struct RunningView: View {
         liveActivityUpdateTimer = nil
     }
     
+    private func processPendingFeedback() {
+        guard let sharedDefaults = UserDefaults(suiteName: "group.com.rundj.RunDJ"),
+              let pendingFeedback = sharedDefaults.array(forKey: "pendingFeedback") as? [[String: String]],
+              !pendingFeedback.isEmpty,
+              !spotifyManager.currentId.isEmpty else { return }
+        
+        // Process each pending feedback
+        for feedback in pendingFeedback {
+            if let type = feedback["type"] {
+                switch type {
+                case "LIKE":
+                    isThumbsUpSelected = true
+                    isThumbsDownSelected = false
+                    showConfirmationMessage("Liked!", color: .rundjMusicGreen)
+                    rundjService.sendFeedback(accessToken: token, songId: spotifyManager.currentId, feedback: "LIKE") { success in
+                        if !success {
+                            DispatchQueue.main.async {
+                                self.isThumbsUpSelected = false
+                                self.showConfirmationMessage("Failed to like", color: .rundjError)
+                            }
+                        }
+                    }
+                case "DISLIKE":
+                    isThumbsDownSelected = true
+                    isThumbsUpSelected = false
+                    showConfirmationMessage("Skipping...", color: .rundjWarning)
+                    Task {
+                        async let skipTask: () = spotifyManager.skipToNextTrack()
+                        rundjService.sendFeedback(accessToken: token, songId: spotifyManager.currentId, feedback: "DISLIKE") { _ in }
+                        do {
+                            try await skipTask
+                        } catch {
+                            DispatchQueue.main.async {
+                                self.handleSpotifyError(error, message: "Failed to skip.")
+                            }
+                        }
+                    }
+                default:
+                    break
+                }
+            }
+        }
+        
+        // Clear processed feedback
+        sharedDefaults.removeObject(forKey: "pendingFeedback")
+    }
+    
     private func setupLiveActivityObservers() {
-        NotificationCenter.default.addObserver(
+        // Remove any existing observers first
+        liveActivityObservers.forEach { NotificationCenter.default.removeObserver($0) }
+        liveActivityObservers.removeAll()
+        
+        // Add thumbs up observer
+        let thumbsUpObserver = NotificationCenter.default.addObserver(
             forName: .liveActivityThumbsUp,
             object: nil,
             queue: .main
@@ -436,8 +494,10 @@ struct RunningView: View {
                 }
             }
         }
+        liveActivityObservers.append(thumbsUpObserver)
         
-        NotificationCenter.default.addObserver(
+        // Add thumbs down observer
+        let thumbsDownObserver = NotificationCenter.default.addObserver(
             forName: .liveActivityThumbsDown,
             object: nil,
             queue: .main
@@ -458,8 +518,10 @@ struct RunningView: View {
                 }
             }
         }
+        liveActivityObservers.append(thumbsDownObserver)
         
-        NotificationCenter.default.addObserver(
+        // Add stop run observer
+        let stopRunObserver = NotificationCenter.default.addObserver(
             forName: .liveActivityStopRun,
             object: nil,
             queue: .main
@@ -468,6 +530,7 @@ struct RunningView: View {
             self.runManager.stop()
             self.endLiveActivity()
         }
+        liveActivityObservers.append(stopRunObserver)
     }
 }
 

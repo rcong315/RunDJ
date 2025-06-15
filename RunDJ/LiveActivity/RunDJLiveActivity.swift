@@ -10,7 +10,45 @@ import SwiftUI
 import WidgetKit
 import AppIntents
 
-// MARK: - Activity Attributes
+// MARK: - App Intents for Background Feedback
+
+struct ThumbsUpIntent: AppIntent {
+    static var title: LocalizedStringResource = "Like Song"
+    static var description = IntentDescription("Send positive feedback for the current song")
+    
+    func perform() async throws -> some IntentResult {
+        // Store feedback request in shared UserDefaults
+        if let sharedDefaults = UserDefaults(suiteName: "group.com.rundj.RunDJ") {
+            var pendingFeedback = sharedDefaults.array(forKey: "pendingFeedback") as? [[String: String]] ?? []
+            let feedback: [String: String] = [
+                "type": "LIKE",
+                "timestamp": ISO8601DateFormatter().string(from: Date())
+            ]
+            pendingFeedback.append(feedback)
+            sharedDefaults.set(pendingFeedback, forKey: "pendingFeedback")
+        }
+        return .result()
+    }
+}
+
+struct ThumbsDownIntent: AppIntent {
+    static var title: LocalizedStringResource = "Dislike Song"
+    static var description = IntentDescription("Send negative feedback and skip to next song")
+    
+    func perform() async throws -> some IntentResult {
+        // Store feedback request in shared UserDefaults
+        if let sharedDefaults = UserDefaults(suiteName: "group.com.rundj.RunDJ") {
+            var pendingFeedback = sharedDefaults.array(forKey: "pendingFeedback") as? [[String: String]] ?? []
+            let feedback: [String: String] = [
+                "type": "DISLIKE",
+                "timestamp": ISO8601DateFormatter().string(from: Date())
+            ]
+            pendingFeedback.append(feedback)
+            sharedDefaults.set(pendingFeedback, forKey: "pendingFeedback")
+        }
+        return .result()
+    }
+}
 
 // MARK: - Activity Attributes
 
@@ -106,7 +144,7 @@ struct RunDJLiveActivityWidget: Widget {
                 DynamicIslandExpandedRegion(.bottom) {
                     HStack(spacing: 20) {
                         // Thumbs up button
-                        Link(destination: URL(string: "rundj://feedback/thumbsup")!) {
+                        Button(intent: ThumbsUpIntent()) {
                             Label("Like", systemImage: "hand.thumbsup.fill")
                                 .font(.caption)
                                 .foregroundColor(.rundjMusicGreen)
@@ -115,9 +153,10 @@ struct RunDJLiveActivityWidget: Widget {
                                 .background(Color.rundjMusicGreen.opacity(0.2))
                                 .cornerRadius(6)
                         }
+                        .buttonStyle(.plain)
                         
                         // Thumbs down button
-                        Link(destination: URL(string: "rundj://feedback/thumbsdown")!) {
+                        Button(intent: ThumbsDownIntent()) {
                             Label("Dislike", systemImage: "hand.thumbsdown.fill")
                                 .font(.caption)
                                 .foregroundColor(.rundjError)
@@ -126,6 +165,7 @@ struct RunDJLiveActivityWidget: Widget {
                                 .background(Color.rundjError.opacity(0.2))
                                 .cornerRadius(6)
                         }
+                        .buttonStyle(.plain)
                     }
                 }
             } compactLeading: {
@@ -241,7 +281,7 @@ struct LockScreenLiveActivityView: View {
                 
                 // Action buttons
                 HStack(spacing: 16) {
-                    Link(destination: URL(string: "rundj://feedback/thumbsup")!) {
+                    Button(intent: ThumbsUpIntent()) {
                         Image(systemName: "hand.thumbsup.fill")
                             .font(.body)
                             .foregroundColor(.rundjMusicGreen)
@@ -251,8 +291,9 @@ struct LockScreenLiveActivityView: View {
                                     .fill(Color.rundjMusicGreen.opacity(0.2))
                             )
                     }
+                    .buttonStyle(.plain)
                     
-                    Link(destination: URL(string: "rundj://feedback/thumbsdown")!) {
+                    Button(intent: ThumbsDownIntent()) {
                         Image(systemName: "hand.thumbsdown.fill")
                             .font(.body)
                             .foregroundColor(.rundjError)
@@ -262,6 +303,7 @@ struct LockScreenLiveActivityView: View {
                                     .fill(Color.rundjError.opacity(0.2))
                             )
                     }
+                    .buttonStyle(.plain)
                 }
             }
             .padding(.horizontal, 4)
