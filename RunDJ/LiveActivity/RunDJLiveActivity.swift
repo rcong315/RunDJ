@@ -71,11 +71,10 @@ struct RunDJActivityAttributes: ActivityAttributes {
         var currentArtist: String
         var songBPM: Int
         var isPlaying: Bool
-        var elapsedTime: Date // For timer
-        
-        var lastFeedbackType: String? // "LIKE", "DISLIKE", or nil
-        var lastFeedbackTime: Date? // When the feedback was given
+        var elapsedTime: Date
         var useMetricUnits: Bool
+        var lastFeedbackType: String?
+        var lastFeedbackTime: Date?
     }
     
     // Static content (set when activity starts)
@@ -437,6 +436,8 @@ class LiveActivityManager: ObservableObject {
             lastFeedbackType: nil,
             lastFeedbackTime: nil
             useMetricUnits: false
+            lastFeedbackType: nil,
+            lastFeedbackTime: nil
         )
         
         do {
@@ -497,6 +498,8 @@ class LiveActivityManager: ObservableObject {
             lastFeedbackType: lastFeedbackType,
             lastFeedbackTime: lastFeedbackTime
             useMetricUnits: useMetricUnits
+            lastFeedbackType: lastFeedbackType,
+            lastFeedbackTime: lastFeedbackTime
         )
         
         await activity.update(
@@ -523,6 +526,8 @@ class LiveActivityManager: ObservableObject {
             lastFeedbackType: nil,
             lastFeedbackTime: nil
             useMetricUnits: false
+            lastFeedbackType: nil,
+            lastFeedbackTime: nil
         )
         
         await activity.end(
