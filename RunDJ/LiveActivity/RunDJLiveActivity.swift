@@ -8,6 +8,9 @@
 import ActivityKit
 import SwiftUI
 import WidgetKit
+import AppIntents
+
+// MARK: - Activity Attributes
 
 // MARK: - Activity Attributes
 
@@ -103,25 +106,26 @@ struct RunDJLiveActivityWidget: Widget {
                 DynamicIslandExpandedRegion(.bottom) {
                     HStack(spacing: 20) {
                         // Thumbs up button
-                        Link(destination: URL(string: "rundj://thumbsup")!) {
+                        Link(destination: URL(string: "rundj://feedback/thumbsup")!) {
                             Label("Like", systemImage: "hand.thumbsup.fill")
                                 .font(.caption)
                                 .foregroundColor(.rundjMusicGreen)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(Color.rundjMusicGreen.opacity(0.2))
+                                .cornerRadius(6)
                         }
                         
                         // Thumbs down button
-                        Link(destination: URL(string: "rundj://thumbsdown")!) {
+                        Link(destination: URL(string: "rundj://feedback/thumbsdown")!) {
                             Label("Dislike", systemImage: "hand.thumbsdown.fill")
                                 .font(.caption)
                                 .foregroundColor(.rundjError)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(Color.rundjError.opacity(0.2))
+                                .cornerRadius(6)
                         }
-                        
-                        // End run button
-                        //                        Link(destination: URL(string: "rundj://stop")!) {
-                        //                            Label("End", systemImage: "stop.fill")
-                        //                                .font(.caption)
-                        //                                .foregroundColor(.rundjError)
-                        //                        }
                     }
                 }
             } compactLeading: {
@@ -237,16 +241,26 @@ struct LockScreenLiveActivityView: View {
                 
                 // Action buttons
                 HStack(spacing: 16) {
-                    Link(destination: URL(string: "rundj://thumbsup")!) {
+                    Link(destination: URL(string: "rundj://feedback/thumbsup")!) {
                         Image(systemName: "hand.thumbsup.fill")
                             .font(.body)
                             .foregroundColor(.rundjMusicGreen)
+                            .padding(8)
+                            .background(
+                                Circle()
+                                    .fill(Color.rundjMusicGreen.opacity(0.2))
+                            )
                     }
                     
-                    Link(destination: URL(string: "rundj://thumbsdown")!) {
+                    Link(destination: URL(string: "rundj://feedback/thumbsdown")!) {
                         Image(systemName: "hand.thumbsdown.fill")
                             .font(.body)
                             .foregroundColor(.rundjError)
+                            .padding(8)
+                            .background(
+                                Circle()
+                                    .fill(Color.rundjError.opacity(0.2))
+                            )
                     }
                 }
             }
@@ -364,15 +378,17 @@ class LiveActivityManager: ObservableObject {
     }
     
     func handleDeepLink(_ url: URL) {
-        guard let host = url.host else { return }
+        // Handle feedback URLs: rundj://feedback/thumbsup or rundj://feedback/thumbsdown
+        guard let host = url.host, host == "feedback" else { return }
         
-        switch host {
+        let pathComponents = url.pathComponents.filter { $0 != "/" }
+        guard let action = pathComponents.first else { return }
+        
+        switch action {
         case "thumbsup":
             NotificationCenter.default.post(name: .liveActivityThumbsUp, object: nil)
         case "thumbsdown":
             NotificationCenter.default.post(name: .liveActivityThumbsDown, object: nil)
-        case "stop":
-            NotificationCenter.default.post(name: .liveActivityStopRun, object: nil)
         default:
             break
         }

@@ -475,10 +475,10 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
     // or might use it internally for sub-steps if applicable.
     @MainActor
     func queueSongs(_ songs: [String: Double], skipAfterFirst: Bool = true) async {
-        self.songMap.merge(songs) { (_, new) in new } // Merge new songs with existing
+        self.songMap = songs
         if !self.songMap.isEmpty {
             self.hasQueuedSongs = true
-            let songIds = Array(songs.keys) // Don't shuffle here - already shuffled by caller
+            let songIds = Array(songs.keys)
             var enqueuedCount = 0
             var shouldSkip = skipAfterFirst
             
@@ -492,6 +492,7 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
                     try await self.enqueueTrack(id: songId)
                     queuedSongIds.insert(songId)
                     enqueuedCount += 1
+                    updateQueuedSongsCount()
                     
                     // Skip after first song is successfully queued
                     if shouldSkip && enqueuedCount == 1 {
@@ -519,8 +520,6 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
     private func updateQueuedSongsCount() {
         queuedSongsCount = queuedSongIds.subtracting(playedSongIds).count
         
-        // Trigger callback when queue is getting low (5 or fewer songs remaining)
-        // This gives time to queue more before running out
         if queuedSongsCount <= 5 && queuedSongsCount > 0 {
             onQueueLow?()
         }
@@ -571,6 +570,11 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
         self.playedSongIds.removeAll()
         self.queuedSongsCount = 0
         self.hasQueuedSongs = false
+    }
+    
+    func clearPlayedSongs() {
+        self.playedSongIds.removeAll()
+        updateQueuedSongsCount()
     }
     
     

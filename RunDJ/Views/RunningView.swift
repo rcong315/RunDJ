@@ -293,7 +293,17 @@ struct RunningView: View {
     }
     
     func queueMoreSongs() {
-        guard !isLoadingMoreSongs, !unqueuedSongIds.isEmpty else {
+        guard !isLoadingMoreSongs else {
+            return
+        }
+        
+        if unqueuedSongIds.isEmpty && !allAvailableSongs.isEmpty {
+            unqueuedSongIds = Array(allAvailableSongs.keys)
+            spotifyManager.clearPlayedSongs()
+            showConfirmationMessage("Starting new loop of songs!", color: .rundjAccent)
+        }
+        
+        guard !unqueuedSongIds.isEmpty else {
             return
         }
         
@@ -513,7 +523,7 @@ struct NowPlayingCompactView: View {
                 if spotifyManager.queuedSongsCount > 0 {
                     Text("\(spotifyManager.queuedSongsCount) songs in queue")
                         .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(spotifyManager.queuedSongsCount <= 10 ? .rundjWarning : .rundjTextSecondary)
+                        .foregroundColor(.rundjTextSecondary)
                 }
                 Spacer()
             }
@@ -521,7 +531,7 @@ struct NowPlayingCompactView: View {
             if !spotifyManager.hasQueuedSongs && spotifyManager.connectionState == .connected {
                 Text("Queueing Songs...")
                     .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.rundjWarning)
+                    .foregroundColor(.rundjTextSecondary)
                 
                 Text("Please wait")
                     .font(.system(size: 14))
