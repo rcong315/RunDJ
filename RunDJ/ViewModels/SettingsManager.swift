@@ -13,6 +13,7 @@ class SettingsManager: ObservableObject {
 
     @Published var musicSources: [String] = ["top_tracks", "saved_tracks", "playlists", "top_artists_top_tracks", "top_artists_albums", "followed_artists_top_tracks", "followed_artists_albums"]
     @Published var lastBPM: Double = 160.0
+    @Published var useMetricUnits: Bool = false
 
     private init() {
         loadSettings()
@@ -29,10 +30,13 @@ class SettingsManager: ObservableObject {
         } else {
             self.lastBPM = 160.0
         }
+        
+        self.useMetricUnits = UserDefaults.standard.bool(forKey: "useMetricUnits")
     }
 
     func saveSettings() {
         UserDefaults.standard.set(self.musicSources, forKey: "musicSources")
         UserDefaults.standard.set(self.lastBPM, forKey: "lastBPM")
+        UserDefaults.standard.set(self.useMetricUnits, forKey: "useMetricUnits")
     }
 }
