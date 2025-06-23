@@ -7,6 +7,7 @@
 
 import SpotifyiOS
 import Sentry
+import SwiftUI
 
 /// Manages Spotify interactions including authentication, playback, and song queuing
 class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRemotePlayerStateDelegate, SPTSessionManagerDelegate {
@@ -433,6 +434,35 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
     }
     
     @MainActor
+    func skipToNextTrackAndWaitForStateChange() async throws {
+        let currentTrackId = currentId
+        try await skipToNextTrack()
+        
+        // Wait for the state to actually change
+        await waitForTrackChange(from: currentTrackId, timeout: 5.0)
+    }
+    
+    @MainActor
+    private func waitForTrackChange(from previousId: String, timeout: TimeInterval) async {
+        let startTime = Date()
+        
+        while currentId == previousId && Date().timeIntervalSince(startTime) < timeout {
+            try? await Task.sleep(nanoseconds: 50_000_000) // 0.1s polling interval
+        }
+        
+        if currentId == previousId {
+            SentrySDK.capture(message: "Track state did not change after skip") { scope in
+                scope.setContext(value: [
+                    "previous_id": previousId,
+                    "current_id": self.currentId,
+                    "timeout": timeout
+                ], key: "skip_state_timeout")
+                scope.setLevel(.warning)
+            }
+        }
+    }
+    
+    @MainActor
     func rewindTrack() async throws {
         try await performPlayerAPICall(
             actionDescription: "rewind track",
@@ -474,17 +504,29 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
     // These methods have more complex logic than simple API calls and might not use the helper directly,
     // or might use it internally for sub-steps if applicable.
     @MainActor
-    func queueSongs(_ songs: [String: Double], skipAfterFirst: Bool = true) async {
-        self.songMap.merge(songs) { (_, new) in new } // Merge new songs with existing
-        if !self.songMap.isEmpty {
+    func queueSongs(_ songs: [String: Double], skipAfterFirst: Bool = true, allowRequeue: Bool = false) async {
+        // Note: songMap should already contain all songs from initializeSongBatching
+        // This method now only queues the specific batch of songs passed to it
+        
+        // Log queueing attempt for debugging
+        let breadcrumb = Breadcrumb(level: .info, category: "spotify_queue")
+        breadcrumb.message = "Attempting to queue \(songs.count) songs"
+        breadcrumb.data = [
+            "song_count": songs.count,
+            "skip_after_first": skipAfterFirst,
+            "already_queued_count": queuedSongIds.count
+        ]
+        SentrySDK.addBreadcrumb(breadcrumb)
+        
+        if !songs.isEmpty {
             self.hasQueuedSongs = true
-            let songIds = Array(songs.keys) // Don't shuffle here - already shuffled by caller
+            let songIds = Array(songs.keys)
             var enqueuedCount = 0
             var shouldSkip = skipAfterFirst
             
             for songId in songIds {
-                // Skip if already queued
-                if queuedSongIds.contains(songId) {
+                // Skip if already queued (unless we explicitly allow requeueing)
+                if queuedSongIds.contains(songId) && !allowRequeue {
                     continue
                 }
                 
@@ -493,11 +535,24 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
                     queuedSongIds.insert(songId)
                     enqueuedCount += 1
                     
+                    // Always increment the actual queue count when we successfully queue a song
+                    queuedSongsCount += 1
+                    
+                    // Log queue count for debugging
+                    let queueBreadcrumb = Breadcrumb(level: .info, category: "spotify_queue")
+                    queueBreadcrumb.message = "Song queued successfully - count now: \(queuedSongsCount)"
+                    queueBreadcrumb.data = [
+                        "song_id": songId,
+                        "queue_count": queuedSongsCount,
+                        "allow_requeue": allowRequeue
+                    ]
+                    SentrySDK.addBreadcrumb(queueBreadcrumb)
+                    
                     // Skip after first song is successfully queued
                     if shouldSkip && enqueuedCount == 1 {
                         shouldSkip = false
                         do {
-                            try await skipToNextTrack()
+                            try await skipToNextTrackAndWaitForStateChange()
                         } catch {
                             SentrySDK.capture(error: error) { scope in
                                 scope.setContext(value: ["action": "skip_after_first_enqueue"], key: "spotify_queue")
@@ -510,6 +565,7 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
                 }
             }
             
+            // Check if we need to queue more songs after this batch
             updateQueuedSongsCount()
         } else {
             self.hasQueuedSongs = false
@@ -517,12 +573,15 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
     }
     
     private func updateQueuedSongsCount() {
-        queuedSongsCount = queuedSongIds.subtracting(playedSongIds).count
+        // When a song is played, decrement the count
+        // Note: queuedSongsCount is now manually tracked when songs are queued
         
-        // Trigger callback when queue is getting low (5 or fewer songs remaining)
-        // This gives time to queue more before running out
         if queuedSongsCount <= 5 && queuedSongsCount > 0 {
-            onQueueLow?()
+            // Auto-queue more songs using the new batching system
+            Task {
+                await queueMoreSongs()
+            }
+            onQueueLow?() // Keep the old callback for backward compatibility
         }
     }
     
@@ -533,44 +592,238 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
         }
         let placeholderTrackId = "5kiJ9x6eX37H5J9lyyXkua"
         var skips = 0
-        let maxSkips = 100
+        let maxSkips = 50 // Reduced from 100 to prevent excessive skipping
         
         do {
-            try await enqueueTrack(id: placeholderTrackId) // Uses refactored method
+            try await enqueueTrack(id: placeholderTrackId)
+            
+            // Give a brief moment for the track to be available in queue
+            try await Task.sleep(nanoseconds: 100_000_000) // 0.5s initial delay
             
             while currentId != placeholderTrackId && skips < maxSkips {
                 if !isSkipping {
-                    try await skipToNextTrack() // Uses refactored method
-                    try? await Task.sleep(nanoseconds: 25_000_000) // 0.025s delay for state update
+                    try await skipToNextTrackAndWaitForStateChange()
                     skips += 1
                 } else {
-                    try? await Task.sleep(nanoseconds: 25_000_000) // 0.025s delay if already skipping
+                    // Already skipping, wait a short time and check again
+                    try await Task.sleep(nanoseconds: 50_000_000) // 0.1s delay while skipping
                 }
             }
             
+            // Final validation and cleanup
             if currentId == placeholderTrackId {
-                try await skipToNextTrack() // Uses refactored method
+                // Successfully reached placeholder, skip past it
+                try await skipToNextTrackAndWaitForStateChange()
             } else {
                 SentrySDK.capture(message: "Queue flush failed - placeholder track not reached") { scope in
                     scope.setContext(value: [
                         "skips_attempted": skips,
                         "current_id": self.currentId,
-                        "placeholder_id": placeholderTrackId
+                        "placeholder_id": placeholderTrackId,
+                        "max_skips_reached": skips >= maxSkips
                     ], key: "queue_flush")
                     scope.setLevel(.warning)
                 }
             }
         } catch {
             SentrySDK.capture(error: error) { scope in
-                scope.setContext(value: ["action": "queue_flush"], key: "spotify_queue")
+                scope.setContext(value: [
+                    "action": "queue_flush",
+                    "skips_completed": skips
+                ], key: "spotify_queue")
                 scope.setLevel(.error)
             }
         }
-        self.songMap.removeAll()
+        
+        // Clean up state regardless of success/failure
+        // Note: Don't clear songMap here as it contains BPM info for all available songs
         self.queuedSongIds.removeAll()
         self.playedSongIds.removeAll()
         self.queuedSongsCount = 0
         self.hasQueuedSongs = false
+    }
+    
+    func clearPlayedSongs() {
+        self.playedSongIds.removeAll()
+        updateQueuedSongsCount()
+    }
+    
+    /// Clear all song data (useful when switching BPM or sources)
+    func clearAllSongData() {
+        songMap.removeAll()
+        allAvailableSongs.removeAll()
+        unqueuedSongIds.removeAll()
+        queuedSongIds.removeAll()
+        playedSongIds.removeAll()
+        queuedSongsCount = 0
+        hasQueuedSongs = false
+        isLoadingMoreSongs = false
+    }
+    
+    // MARK: - Song Batching Management
+    
+    /// All available songs for the current BPM and sources
+    @Published private(set) var allAvailableSongs: [String: Double] = [:]
+    
+    /// Songs that haven't been queued yet
+    private var unqueuedSongIds: [String] = []
+    
+    /// Flag to prevent multiple concurrent batch loading operations
+    private var isLoadingMoreSongs = false
+    
+    /// Callback for when more songs are needed
+    var onSongsUpdated: (([String: Double]) -> Void)?
+    
+    /// Callback for status updates during the queueing process
+    var onQueueStatusUpdate: ((String, Color) -> Void)?
+    
+    /// Initialize song batching with fetched songs
+    /// - Parameter songs: Dictionary of song IDs to BPM values
+    func initializeSongBatching(with songs: [String: Double]) {
+        allAvailableSongs = songs
+        songMap = songs // Ensure songMap contains all songs for BPM lookup
+        unqueuedSongIds = Array(songs.keys).shuffled()
+        isLoadingMoreSongs = false
+    }
+    
+    /// Get the next batch of songs for queueing
+    /// - Parameter count: Number of songs to include in the batch (default: 10)
+    /// - Returns: Dictionary of song IDs to BPM values for the next batch
+    func getNextBatchOfSongs(count: Int = 10) -> [String: Double] {
+        var batch: [String: Double] = [:]
+        let songsToTake = min(count, unqueuedSongIds.count)
+        
+        // Take songs from the beginning to maintain order
+        let selectedSongIds = Array(unqueuedSongIds.prefix(songsToTake))
+        unqueuedSongIds.removeFirst(songsToTake)
+        
+        // Build batch maintaining the order
+        for songId in selectedSongIds {
+            if let bpm = allAvailableSongs[songId] {
+                batch[songId] = bpm
+            }
+        }
+        
+        return batch
+    }
+    
+    /// Queue the initial batch of songs after flushing
+    /// - Parameter count: Number of songs to queue initially (default: 10)
+    @MainActor
+    func queueInitialBatch(count: Int = 10) async {
+        let firstBatch = getNextBatchOfSongs(count: count)
+        if !firstBatch.isEmpty {
+            await queueSongs(firstBatch)
+            onSongsUpdated?(firstBatch)
+        }
+    }
+    
+    /// Automatically queue more songs when running low
+    /// - Parameter count: Number of songs to add (default: 10)
+    @MainActor
+    func queueMoreSongs(count: Int = 10) async {
+        guard !isLoadingMoreSongs else {
+            let breadcrumb = Breadcrumb(level: .info, category: "spotify_queue")
+            breadcrumb.message = "queueMoreSongs: Already loading, skipping"
+            SentrySDK.addBreadcrumb(breadcrumb)
+            return
+        }
+        
+        // Log the state before processing
+        let breadcrumb = Breadcrumb(level: .info, category: "spotify_queue")
+        breadcrumb.message = "queueMoreSongs: Starting with \(unqueuedSongIds.count) unqueued songs"
+        breadcrumb.data = [
+            "unqueued_count": unqueuedSongIds.count,
+            "total_available": allAvailableSongs.count,
+            "requested_count": count
+        ]
+        SentrySDK.addBreadcrumb(breadcrumb)
+        
+        // Track if we need to reshuffle (ran out of unqueued songs)
+        var needsReshuffle = false
+        
+        // If we've run out of unqueued songs, start a new loop by reshuffling all songs
+        if unqueuedSongIds.isEmpty && !allAvailableSongs.isEmpty {
+            let loopBreadcrumb = Breadcrumb(level: .info, category: "spotify_queue")
+            loopBreadcrumb.message = "queueMoreSongs: Starting new loop - reshuffling all songs (including already queued ones)"
+            loopBreadcrumb.data = ["total_songs": allAvailableSongs.count]
+            SentrySDK.addBreadcrumb(loopBreadcrumb)
+            
+            unqueuedSongIds = Array(allAvailableSongs.keys).shuffled()
+            needsReshuffle = true
+            // Don't clear playedSongs here - we want to requeue songs even if they haven't been played yet
+            onSongsUpdated?([:]) // Signal that we're starting a new loop
+        }
+        
+        guard !unqueuedSongIds.isEmpty else {
+            let emptyBreadcrumb = Breadcrumb(level: .warning, category: "spotify_queue")
+            emptyBreadcrumb.message = "queueMoreSongs: No songs available to queue"
+            emptyBreadcrumb.data = [
+                "unqueued_count": unqueuedSongIds.count,
+                "total_available": allAvailableSongs.count
+            ]
+            SentrySDK.addBreadcrumb(emptyBreadcrumb)
+            return
+        }
+        
+        isLoadingMoreSongs = true
+        let nextBatch = getNextBatchOfSongs(count: count)
+        
+        if !nextBatch.isEmpty {
+            let queueBreadcrumb = Breadcrumb(level: .info, category: "spotify_queue")
+            queueBreadcrumb.message = "queueMoreSongs: Queueing \(nextBatch.count) songs (allowRequeue: \(needsReshuffle))"
+            SentrySDK.addBreadcrumb(queueBreadcrumb)
+            
+            // Allow requeueing if we just reshuffled
+            await queueSongs(nextBatch, skipAfterFirst: false, allowRequeue: needsReshuffle)
+            onSongsUpdated?(nextBatch)
+        } else {
+            let emptyBatchBreadcrumb = Breadcrumb(level: .warning, category: "spotify_queue")
+            emptyBatchBreadcrumb.message = "queueMoreSongs: getNextBatchOfSongs returned empty batch"
+            SentrySDK.addBreadcrumb(emptyBatchBreadcrumb)
+        }
+        
+        isLoadingMoreSongs = false
+    }
+    
+    /// Get the total number of available songs
+    var totalAvailableSongs: Int {
+        return allAvailableSongs.count
+    }
+    
+    /// Get the number of unqueued songs remaining
+    var remainingUnqueuedSongs: Int {
+        return unqueuedSongIds.count
+    }
+    
+    /// Refresh songs and queue initial batch - handles the complete flow
+    /// - Parameters:
+    ///   - songs: Dictionary of song IDs to BPM values fetched from the API
+    ///   - initialBatchSize: Number of songs to queue initially (default: 10)
+    @MainActor
+    func refreshSongsAndQueue(with songs: [String: Double], initialBatchSize: Int = 10) async {
+        guard connectionState == .connected else {
+            onQueueStatusUpdate?("Not connected to Spotify", .rundjError)
+            return
+        }
+        
+        if songs.isEmpty {
+            onQueueStatusUpdate?("No songs found", .rundjWarning)
+            return
+        }
+        
+        // Update status
+        onQueueStatusUpdate?("Flushing queue, please wait...", .rundjAccent)
+        
+        // Initialize batching system
+        initializeSongBatching(with: songs)
+        
+        // Flush existing queue and queue initial batch
+        await flushQueue()
+        await queueInitialBatch(count: initialBatchSize)
+        
+        // Update status with success message
+        onQueueStatusUpdate?("\(initialBatchSize) of \(songs.count) songs queued!", .rundjMusicGreen)
     }
     
     
@@ -694,11 +947,43 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
                 let idToSet = String(trackId)
                 let previousId = self.currentId
                 self.currentId = idToSet
-                self.currentBPM = self.songMap[self.currentId] ?? 0.0
+                // Try songMap first (contains all songs), fallback to allAvailableSongs if needed
+                let bpmFromSongMap = self.songMap[self.currentId]
+                let bpmFromAllSongs = self.allAvailableSongs[self.currentId]
+                self.currentBPM = bpmFromSongMap ?? bpmFromAllSongs ?? 0.0
+                
+                // Log if BPM is missing for debugging
+                if self.currentBPM == 0.0 && !self.currentId.isEmpty {
+                    SentrySDK.capture(message: "BPM not found for current track") { scope in
+                        scope.setContext(value: [
+                            "track_id": self.currentId,
+                            "track_name": self.currentlyPlaying,
+                            "songMap_count": self.songMap.count,
+                            "allAvailableSongs_count": self.allAvailableSongs.count,
+                            "in_songMap": bpmFromSongMap != nil,
+                            "in_allAvailableSongs": bpmFromAllSongs != nil
+                        ], key: "bpm_lookup")
+                        scope.setLevel(.warning)
+                    }
+                }
                 
                 // Track played songs and update count
                 if previousId != idToSet && self.queuedSongIds.contains(previousId) {
                     self.playedSongIds.insert(previousId)
+                    // Decrement the queue count when a song finishes playing
+                    if self.queuedSongsCount > 0 {
+                        self.queuedSongsCount -= 1
+                        
+                        // Log queue count change for debugging
+                        let playBreadcrumb = Breadcrumb(level: .info, category: "spotify_queue")
+                        playBreadcrumb.message = "Song played - count now: \(self.queuedSongsCount)"
+                        playBreadcrumb.data = [
+                            "played_song_id": previousId,
+                            "new_song_id": idToSet,
+                            "queue_count": self.queuedSongsCount
+                        ]
+                        SentrySDK.addBreadcrumb(playBreadcrumb)
+                    }
                     self.updateQueuedSongsCount()
                 }
             }

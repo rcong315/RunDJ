@@ -8,6 +8,55 @@
 import ActivityKit
 import SwiftUI
 import WidgetKit
+import AppIntents
+
+// MARK: - App Intents for Background Feedback
+
+struct ThumbsUpIntent: AppIntent {
+    static var title: LocalizedStringResource = "Like Song"
+    static var description = IntentDescription("Send positive feedback for the current song")
+    
+    func perform() async throws -> some IntentResult {
+        // Store feedback request in shared UserDefaults
+        if let sharedDefaults = UserDefaults(suiteName: "group.com.rundj.RunDJ") {
+            var pendingFeedback = sharedDefaults.array(forKey: "pendingFeedback") as? [[String: String]] ?? []
+            let feedback: [String: String] = [
+                "type": "LIKE",
+                "timestamp": ISO8601DateFormatter().string(from: Date())
+            ]
+            pendingFeedback.append(feedback)
+            sharedDefaults.set(pendingFeedback, forKey: "pendingFeedback")
+            
+            // Store immediate feedback for Live Activity visual feedback
+            sharedDefaults.set("LIKE", forKey: "lastFeedbackType")
+            sharedDefaults.set(Date(), forKey: "lastFeedbackTime")
+        }
+        return .result()
+    }
+}
+
+struct ThumbsDownIntent: AppIntent {
+    static var title: LocalizedStringResource = "Dislike Song"
+    static var description = IntentDescription("Send negative feedback and skip to next song")
+    
+    func perform() async throws -> some IntentResult {
+        // Store feedback request in shared UserDefaults
+        if let sharedDefaults = UserDefaults(suiteName: "group.com.rundj.RunDJ") {
+            var pendingFeedback = sharedDefaults.array(forKey: "pendingFeedback") as? [[String: String]] ?? []
+            let feedback: [String: String] = [
+                "type": "DISLIKE",
+                "timestamp": ISO8601DateFormatter().string(from: Date())
+            ]
+            pendingFeedback.append(feedback)
+            sharedDefaults.set(pendingFeedback, forKey: "pendingFeedback")
+            
+            // Store immediate feedback for Live Activity visual feedback
+            sharedDefaults.set("DISLIKE", forKey: "lastFeedbackType")
+            sharedDefaults.set(Date(), forKey: "lastFeedbackTime")
+        }
+        return .result()
+    }
+}
 
 // MARK: - Activity Attributes
 
@@ -22,6 +71,10 @@ struct RunDJActivityAttributes: ActivityAttributes {
         var currentArtist: String
         var songBPM: Int
         var isPlaying: Bool
+        var elapsedTime: Date
+        var useMetricUnits: Bool
+        var lastFeedbackType: String?
+        var lastFeedbackTime: Date?
         var elapsedTime: Date // For timer
         var useMetricUnits: Bool
     }
@@ -103,26 +156,59 @@ struct RunDJLiveActivityWidget: Widget {
                 
                 DynamicIslandExpandedRegion(.bottom) {
                     HStack(spacing: 20) {
+                        // Helper function for Dynamic Island feedback appearance
+                        let isRecentFeedback = {
+                            guard let feedbackTime = context.state.lastFeedbackTime else { return false }
+                            return Date().timeIntervalSince(feedbackTime) < 1.5
+                        }()
+                        
                         // Thumbs up button
-                        Link(destination: URL(string: "rundj://thumbsup")!) {
+                        Button(intent: ThumbsUpIntent()) {
                             Label("Like", systemImage: "hand.thumbsup.fill")
                                 .font(.caption)
                                 .foregroundColor(.rundjMusicGreen)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 6)
+                                        .fill(Color.rundjMusicGreen.opacity(
+                                            isRecentFeedback && context.state.lastFeedbackType == "LIKE" ? 0.6 : 0.2
+                                        ))
+                                        .overlay(
+                                            isRecentFeedback && context.state.lastFeedbackType == "LIKE" ?
+                                            RoundedRectangle(cornerRadius: 6)
+                                                .stroke(Color.rundjMusicGreen, lineWidth: 1)
+                                            : nil
+                                        )
+                                )
+                                .scaleEffect(isRecentFeedback && context.state.lastFeedbackType == "LIKE" ? 1.05 : 1.0)
+                                .animation(.easeInOut(duration: 0.2), value: isRecentFeedback && context.state.lastFeedbackType == "LIKE")
                         }
+                        .buttonStyle(.plain)
                         
                         // Thumbs down button
-                        Link(destination: URL(string: "rundj://thumbsdown")!) {
+                        Button(intent: ThumbsDownIntent()) {
                             Label("Dislike", systemImage: "hand.thumbsdown.fill")
                                 .font(.caption)
                                 .foregroundColor(.rundjError)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 6)
+                                        .fill(Color.rundjError.opacity(
+                                            isRecentFeedback && context.state.lastFeedbackType == "DISLIKE" ? 0.6 : 0.2
+                                        ))
+                                        .overlay(
+                                            isRecentFeedback && context.state.lastFeedbackType == "DISLIKE" ?
+                                            RoundedRectangle(cornerRadius: 6)
+                                                .stroke(Color.rundjError, lineWidth: 1)
+                                            : nil
+                                        )
+                                )
+                                .scaleEffect(isRecentFeedback && context.state.lastFeedbackType == "DISLIKE" ? 1.05 : 1.0)
+                                .animation(.easeInOut(duration: 0.2), value: isRecentFeedback && context.state.lastFeedbackType == "DISLIKE")
                         }
-                        
-                        // End run button
-                        //                        Link(destination: URL(string: "rundj://stop")!) {
-                        //                            Label("End", systemImage: "stop.fill")
-                        //                                .font(.caption)
-                        //                                .foregroundColor(.rundjError)
-                        //                        }
+                        .buttonStyle(.plain)
                     }
                 }
             } compactLeading: {
@@ -154,6 +240,29 @@ struct RunDJLiveActivityWidget: Widget {
 
 struct LockScreenLiveActivityView: View {
     let context: ActivityViewContext<RunDJActivityAttributes>
+    
+    // Helper to determine if feedback was recent (within 1.5 seconds)
+    private var isRecentFeedback: Bool {
+        guard let feedbackTime = context.state.lastFeedbackTime else { return false }
+        return Date().timeIntervalSince(feedbackTime) < 1.5
+    }
+    
+    // Helper to get feedback button appearance
+    private func feedbackButtonAppearance(for type: String) -> (color: Color, opacity: Double, scale: Double) {
+        if isRecentFeedback && context.state.lastFeedbackType == type {
+            return (
+                color: type == "LIKE" ? .rundjMusicGreen : .rundjError,
+                opacity: 1.0,
+                scale: 1.1
+            )
+        } else {
+            return (
+                color: type == "LIKE" ? .rundjMusicGreen : .rundjError,
+                opacity: 0.2,
+                scale: 1.0
+            )
+        }
+    }
     
     var body: some View {
         VStack(spacing: 12) {
@@ -238,17 +347,53 @@ struct LockScreenLiveActivityView: View {
                 
                 // Action buttons
                 HStack(spacing: 16) {
-                    Link(destination: URL(string: "rundj://thumbsup")!) {
+                    let thumbsUpAppearance = feedbackButtonAppearance(for: "LIKE")
+                    Button(intent: ThumbsUpIntent()) {
                         Image(systemName: "hand.thumbsup.fill")
                             .font(.body)
-                            .foregroundColor(.rundjMusicGreen)
+                            .foregroundColor(thumbsUpAppearance.color)
+                            .padding(8)
+                            .background(
+                                Circle()
+                                    .fill(thumbsUpAppearance.color.opacity(thumbsUpAppearance.opacity))
+                                    .overlay(
+                                        // Pulsing ring for recent feedback
+                                        isRecentFeedback && context.state.lastFeedbackType == "LIKE" ?
+                                        Circle()
+                                            .stroke(thumbsUpAppearance.color, lineWidth: 2)
+                                            .scaleEffect(1.2)
+                                            .opacity(0.6)
+                                        : nil
+                                    )
+                            )
+                            .scaleEffect(thumbsUpAppearance.scale)
+                            .animation(.easeInOut(duration: 0.2), value: isRecentFeedback && context.state.lastFeedbackType == "LIKE")
                     }
+                    .buttonStyle(.plain)
                     
-                    Link(destination: URL(string: "rundj://thumbsdown")!) {
+                    let thumbsDownAppearance = feedbackButtonAppearance(for: "DISLIKE")
+                    Button(intent: ThumbsDownIntent()) {
                         Image(systemName: "hand.thumbsdown.fill")
                             .font(.body)
-                            .foregroundColor(.rundjError)
+                            .foregroundColor(thumbsDownAppearance.color)
+                            .padding(8)
+                            .background(
+                                Circle()
+                                    .fill(thumbsDownAppearance.color.opacity(thumbsDownAppearance.opacity))
+                                    .overlay(
+                                        // Pulsing ring for recent feedback
+                                        isRecentFeedback && context.state.lastFeedbackType == "DISLIKE" ?
+                                        Circle()
+                                            .stroke(thumbsDownAppearance.color, lineWidth: 2)
+                                            .scaleEffect(1.2)
+                                            .opacity(0.6)
+                                        : nil
+                                    )
+                            )
+                            .scaleEffect(thumbsDownAppearance.scale)
+                            .animation(.easeInOut(duration: 0.2), value: isRecentFeedback && context.state.lastFeedbackType == "DISLIKE")
                     }
+                    .buttonStyle(.plain)
                 }
             }
             .padding(.horizontal, 4)
@@ -290,7 +435,9 @@ class LiveActivityManager: ObservableObject {
             songBPM: targetBPM,
             isPlaying: false,
             elapsedTime: Date(),
-            useMetricUnits: false
+            useMetricUnits: false,
+            lastFeedbackType: nil,
+            lastFeedbackTime: nil
         )
         
         do {
@@ -321,6 +468,23 @@ class LiveActivityManager: ObservableObject {
     ) async {
         guard let activity = currentActivity else { return }
         
+        // Check for recent feedback from shared UserDefaults
+        var lastFeedbackType: String? = nil
+        var lastFeedbackTime: Date? = nil
+        
+        if let sharedDefaults = UserDefaults(suiteName: "group.com.rundj.RunDJ") {
+            lastFeedbackType = sharedDefaults.string(forKey: "lastFeedbackType")
+            lastFeedbackTime = sharedDefaults.object(forKey: "lastFeedbackTime") as? Date
+            
+            // Clear feedback if it's older than 2 seconds
+            if let feedbackTime = lastFeedbackTime, Date().timeIntervalSince(feedbackTime) > 2.0 {
+                sharedDefaults.removeObject(forKey: "lastFeedbackType")
+                sharedDefaults.removeObject(forKey: "lastFeedbackTime")
+                lastFeedbackType = nil
+                lastFeedbackTime = nil
+            }
+        }
+        
         let updatedState = RunDJActivityAttributes.ContentState(
             stepsPerMinute: stepsPerMinute,
             distance: distance,
@@ -331,7 +495,9 @@ class LiveActivityManager: ObservableObject {
             songBPM: songBPM,
             isPlaying: isPlaying,
             elapsedTime: Date(),
-            useMetricUnits: useMetricUnits
+            useMetricUnits: useMetricUnits,
+            lastFeedbackType: lastFeedbackType,
+            lastFeedbackTime: lastFeedbackTime
         )
         
         await activity.update(
@@ -355,7 +521,9 @@ class LiveActivityManager: ObservableObject {
             songBPM: 0,
             isPlaying: false,
             elapsedTime: Date(),
-            useMetricUnits: false
+            useMetricUnits: false,
+            lastFeedbackType: nil,
+            lastFeedbackTime: nil
         )
         
         await activity.end(
@@ -369,15 +537,17 @@ class LiveActivityManager: ObservableObject {
     }
     
     func handleDeepLink(_ url: URL) {
-        guard let host = url.host else { return }
+        // Handle feedback URLs: rundj://feedback/thumbsup or rundj://feedback/thumbsdown
+        guard let host = url.host, host == "feedback" else { return }
         
-        switch host {
+        let pathComponents = url.pathComponents.filter { $0 != "/" }
+        guard let action = pathComponents.first else { return }
+        
+        switch action {
         case "thumbsup":
             NotificationCenter.default.post(name: .liveActivityThumbsUp, object: nil)
         case "thumbsdown":
             NotificationCenter.default.post(name: .liveActivityThumbsDown, object: nil)
-        case "stop":
-            NotificationCenter.default.post(name: .liveActivityStopRun, object: nil)
         default:
             break
         }
