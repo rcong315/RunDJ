@@ -373,7 +373,12 @@ struct RunningView: View {
     private func updateLiveActivity() {
         Task {
             // Format pace properly for live activity
-            let paceString = runningStatsManager.currentPace < 0 ? "--:--" : runningStatsManager.formatPace(runningStatsManager.currentPace)
+            let paceString = runningStatsManager.currentPace < 0 ? "--:--" : runningStatsManager.formatPace(runningStatsManager.currentPace, perKm: settingsManager.useMetricUnits)
+            
+            // Convert distance based on unit setting
+            let distanceValue = settingsManager.useMetricUnits ? 
+                runningStatsManager.totalDistance / 1000.0 : // Convert meters to kilometers
+                runningStatsManager.totalDistance / 1609.34   // Convert meters to miles
             
             // Convert distance based on unit setting (assuming metric for now)
             let distanceValue = runningStatsManager.totalDistance / 1609.34 // Convert meters to miles
@@ -387,7 +392,7 @@ struct RunningView: View {
                 currentArtist: spotifyManager.currentArtist.isEmpty ? "--" : spotifyManager.currentArtist,
                 songBPM: Int(spotifyManager.currentBPM),
                 isPlaying: spotifyManager.isPlaying,
-                useMetricUnits: false
+                useMetricUnits: settingsManager.useMetricUnits
             )
         }
     }
