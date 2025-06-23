@@ -31,6 +31,7 @@ struct RunningView: View {
     @State private var isPlaylistButtonDisabled = true
     @State private var liveActivityUpdateTimer: Timer?
     @State private var feedbackMonitorTimer: Timer?
+    @State private var liveActivityObservers: [NSObjectProtocol] = []
     @State private var currentBPM: Double
     @State private var lastFeedbackCheck: Date = Date()
     
@@ -145,10 +146,14 @@ struct RunningView: View {
         }
         .onAppear {
             setupOnAppear()
+            setupLiveActivityObservers()
             processPendingFeedback()
         }
         .onDisappear {
             liveActivityUpdateTimer?.invalidate()
+            // Remove all live activity observers to prevent duplicates
+            liveActivityObservers.forEach { NotificationCenter.default.removeObserver($0) }
+            liveActivityObservers.removeAll()
         }
         .onChange(of: isRunning) { _, newValue in
             if newValue {
@@ -427,7 +432,7 @@ struct RunningView: View {
             
             // Trigger immediate Live Activity update
             Task {
-                updateLiveActivity()
+                await updateLiveActivity()
             }
         }
     }
@@ -479,6 +484,68 @@ struct RunningView: View {
         sharedDefaults.removeObject(forKey: "pendingFeedback")
     }
     
+    private func setupLiveActivityObservers() {
+        // Remove any existing observers first
+        liveActivityObservers.forEach { NotificationCenter.default.removeObserver($0) }
+        liveActivityObservers.removeAll()
+        
+        // Add thumbs up observer
+        let thumbsUpObserver = NotificationCenter.default.addObserver(
+            forName: .liveActivityThumbsUp,
+            object: nil,
+            queue: .main
+        ) { _ in
+            guard !self.spotifyManager.currentId.isEmpty else { return }
+            self.isThumbsUpSelected = true
+            self.isThumbsDownSelected = false
+            self.showConfirmationMessage("Liked!", color: .rundjMusicGreen)
+            self.rundjService.sendFeedback(accessToken: self.token, songId: self.spotifyManager.currentId, feedback: "LIKE") { success in
+                if !success {
+                    DispatchQueue.main.async {
+                        self.isThumbsUpSelected = false
+                        self.showConfirmationMessage("Failed to like", color: .rundjError)
+                    }
+                }
+            }
+        }
+        liveActivityObservers.append(thumbsUpObserver)
+        
+        // Add thumbs down observer
+        let thumbsDownObserver = NotificationCenter.default.addObserver(
+            forName: .liveActivityThumbsDown,
+            object: nil,
+            queue: .main
+        ) { _ in
+            guard !self.spotifyManager.currentId.isEmpty else { return }
+            self.isThumbsDownSelected = true
+            self.isThumbsUpSelected = false
+            self.showConfirmationMessage("Skipping...", color: .rundjWarning)
+            Task {
+                async let skipTask: () = self.spotifyManager.skipToNextTrack()
+                await self.rundjService.sendFeedback(accessToken: self.token, songId: self.spotifyManager.currentId, feedback: "DISLIKE") { _ in }
+                do { 
+                    try await skipTask 
+                } catch {
+                    DispatchQueue.main.async { 
+                        self.handleSpotifyError(error, message: "Failed to skip.")
+                    }
+                }
+            }
+        }
+        liveActivityObservers.append(thumbsDownObserver)
+        
+        // Add stop run observer
+        let stopRunObserver = NotificationCenter.default.addObserver(
+            forName: .liveActivityStopRun,
+            object: nil,
+            queue: .main
+        ) { _ in
+            self.isRunning = false
+            self.runManager.stop()
+            self.endLiveActivity()
+        }
+        liveActivityObservers.append(stopRunObserver)
+    }
 }
 
 // MARK: - Compact View Components
@@ -772,14 +839,14 @@ struct RunControlCompactView: View {
                     .fill(confirmStop || isRunning ? Color.rundjError : Color.rundjMusicGreen)
                     .overlay(
                         // Pulsing overlay for confirm state
-                        confirmStop ?
+                        confirmStop ? 
                         RoundedRectangle(cornerRadius: 12)
                             .fill(Color.white.opacity(pulseAnimation ? 0.15 : 0))
                         : nil
                     )
             )
-            .shadow(color: confirmStop ? Color.rundjError.opacity(pulseAnimation ? 0.5 : 0.3) : Color.black.opacity(0.15),
-                    radius: confirmStop && pulseAnimation ? 12 : 4,
+            .shadow(color: confirmStop ? Color.rundjError.opacity(pulseAnimation ? 0.5 : 0.3) : Color.black.opacity(0.15), 
+                    radius: confirmStop && pulseAnimation ? 12 : 4, 
                     x: 0, y: 2)
         }
         .buttonStyle(PlainButtonStyle()) // Use plain style to have full control
@@ -981,14 +1048,14 @@ struct BPMAdjustmentView: View {
                             .fill(confirmRefetch ? Color.rundjWarning : Color.rundjMusicGreen)
                             .overlay(
                                 // Pulsing overlay for confirm state
-                                confirmRefetch ?
+                                confirmRefetch ? 
                                 RoundedRectangle(cornerRadius: 8)
                                     .fill(Color.white.opacity(pulseAnimation ? 0.15 : 0))
                                 : nil
                             )
                     )
-                    .shadow(color: confirmRefetch ? Color.rundjWarning.opacity(pulseAnimation ? 0.5 : 0.3) : Color.black.opacity(0.15),
-                            radius: confirmRefetch && pulseAnimation ? 8 : 3,
+                    .shadow(color: confirmRefetch ? Color.rundjWarning.opacity(pulseAnimation ? 0.5 : 0.3) : Color.black.opacity(0.15), 
+                            radius: confirmRefetch && pulseAnimation ? 8 : 3, 
                             x: 0, y: 1)
                 }
                 .buttonStyle(PlainButtonStyle())

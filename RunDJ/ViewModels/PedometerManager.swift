@@ -17,43 +17,33 @@ class PedometerManager: ObservableObject {
     private let pedometer: CMPedometer
     
     /// The current steps per minute (cadence)
-    @Published private(set) var steps: Int = 0
     @Published private(set) var stepsPerMinute: Double = 0.0
-    @Published private(set) var pace: Double = 0.0
     
     /// Indicates if pedometer updates are active
     @Published private(set) var isActive: Bool = false
     
     /// Indicates if step counting is available on this device
     let isStepCountingAvailable: Bool
-    let isCadenceAvailable: Bool
-    let isPaceAvailable: Bool
-    
-    /// Start time of the current pedometer session
-    @Published private(set) var startTime: Date?
     
     // MARK: - Initialization
     
     init(pedometer: CMPedometer = CMPedometer()) {
         self.pedometer = pedometer
         self.isStepCountingAvailable = CMPedometer.isStepCountingAvailable()
-        self.isCadenceAvailable = CMPedometer.isCadenceAvailable()
-        self.isPaceAvailable = CMPedometer.isPaceAvailable()
         
-        self.startPedometerUpdates()
+        startPedometerUpdates()
     }
 
     // MARK: - Pedometer Control
     
     /// Start tracking pedometer updates
     func startPedometerUpdates() {
-        guard isCadenceAvailable && isPaceAvailable else {
+        guard isStepCountingAvailable else {
             return
         }
         
         isActive = true
-        startTime = Date()
-        pedometer.startUpdates(from: startTime!) { [weak self] data, error in
+        pedometer.startUpdates(from: Date()) { [weak self] data, error in
             guard let self = self else { return }
             
             if let error = error {
@@ -69,9 +59,7 @@ class PedometerManager: ObservableObject {
             }
             
             DispatchQueue.main.async {
-                self.steps = data.numberOfSteps.intValue
                 self.stepsPerMinute = (data.currentCadence?.doubleValue ?? 0.0) * 60
-                self.pace = data.currentPace?.doubleValue ?? 0.0
             }
         }
     }
@@ -79,7 +67,6 @@ class PedometerManager: ObservableObject {
     /// Stop pedometer updates
     func stopPedometerUpdates() {
         isActive = false
-        startTime = nil
         pedometer.stopUpdates()
     }
 }
