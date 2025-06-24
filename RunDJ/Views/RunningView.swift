@@ -380,9 +380,6 @@ struct RunningView: View {
                 runningStatsManager.totalDistance / 1000.0 : // Convert meters to kilometers
                 runningStatsManager.totalDistance / 1609.34   // Convert meters to miles
             
-            // Convert distance based on unit setting (assuming metric for now)
-            let distanceValue = runningStatsManager.totalDistance / 1609.34 // Convert meters to miles
-            
             await liveActivityManager.updateActivity(
                 stepsPerMinute: Int(pedometerManager.stepsPerMinute),
                 distance: distanceValue,

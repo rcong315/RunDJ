@@ -75,8 +75,6 @@ struct RunDJActivityAttributes: ActivityAttributes {
         var useMetricUnits: Bool
         var lastFeedbackType: String?
         var lastFeedbackTime: Date?
-        var elapsedTime: Date // For timer
-        var useMetricUnits: Bool
     }
     
     // Static content (set when activity starts)
