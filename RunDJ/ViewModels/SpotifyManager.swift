@@ -796,6 +796,10 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
         return unqueuedSongIds.count
     }
     
+    // DEPRECATED: This function is no longer used. The parallel execution of flush and fetch
+    // is now handled directly in RunningView for better performance.
+    // Keeping for reference but should not be used.
+    /*
     /// Refresh songs and queue initial batch - handles the complete flow
     /// - Parameters:
     ///   - songs: Dictionary of song IDs to BPM values fetched from the API
@@ -825,6 +829,7 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
         // Update status with success message
         onQueueStatusUpdate?("\(initialBatchSize) of \(songs.count) songs queued!", .rundjMusicGreen)
     }
+    */
     
     
     // MARK: - SPTSessionManagerDelegate

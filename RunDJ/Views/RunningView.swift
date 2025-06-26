@@ -305,10 +305,50 @@ struct RunningView: View {
             return
         }
         
-        rundjService.getSongsByBPM(accessToken: token, bpm: currentBPM, sources: settingsManager.musicSources) { fetchedSongs in
-            DispatchQueue.main.async {
-                Task {
-                    await self.spotifyManager.refreshSongsAndQueue(with: fetchedSongs)
+        Task {
+            // Show immediate feedback
+            await MainActor.run {
+                self.spotifyManager.onQueueStatusUpdate?("Flushing queue...", .rundjAccent)
+            }
+            
+            // Start both operations in parallel
+            async let flushTask: Void = spotifyManager.flushQueue()
+            async let fetchTask: [String: Double] = withCheckedContinuation { continuation in
+                rundjService.getSongsByBPM(
+                    accessToken: token, 
+                    bpm: currentBPM, 
+                    sources: settingsManager.musicSources
+                ) { fetchedSongs in
+                    continuation.resume(returning: fetchedSongs)
+                }
+            }
+            
+            do {
+                // Wait for both operations to complete
+                let (_, fetchedSongs) = try await (flushTask, fetchTask)
+                
+                // Now initialize and queue the new songs
+                if fetchedSongs.isEmpty {
+                    await MainActor.run {
+                        self.spotifyManager.onQueueStatusUpdate?("No songs found", .rundjWarning)
+                    }
+                } else {
+                    await MainActor.run {
+                        self.spotifyManager.initializeSongBatching(with: fetchedSongs)
+                    }
+                    await spotifyManager.queueInitialBatch()
+                    
+                    await MainActor.run {
+                        let initialBatchSize = min(10, fetchedSongs.count)
+                        self.spotifyManager.onQueueStatusUpdate?(
+                            "\(initialBatchSize) of \(fetchedSongs.count) songs queued!", 
+                            .rundjMusicGreen
+                        )
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    self.spotifyManager.onQueueStatusUpdate?("Failed to refresh songs", .rundjError)
                 }
             }
         }
@@ -319,10 +359,46 @@ struct RunningView: View {
             return
         }
         
-        rundjService.getSongsByBPM(accessToken: token, bpm: newBPM, sources: settingsManager.musicSources) { fetchedSongs in
-            DispatchQueue.main.async {
-                Task {
-                    await self.spotifyManager.refreshSongsAndQueue(with: fetchedSongs)
+        Task {
+            // Show immediate feedback
+            await MainActor.run {
+                self.spotifyManager.onQueueStatusUpdate?("Flushing queue...", .rundjAccent)
+            }
+            
+            // Start both operations in parallel
+            async let flushTask: Void = spotifyManager.flushQueue()
+            async let fetchTask: [String: Double] = withCheckedContinuation { continuation in
+                rundjService.getSongsByBPM(
+                    accessToken: token, 
+                    bpm: newBPM, 
+                    sources: settingsManager.musicSources
+                ) { fetchedSongs in
+                    continuation.resume(returning: fetchedSongs)
+                }
+            }
+            
+            do {
+                // Wait for both operations to complete
+                let (_, fetchedSongs) = try await (flushTask, fetchTask)
+                
+                // Now initialize and queue the new songs
+                if fetchedSongs.isEmpty {
+                    await MainActor.run {
+                        self.spotifyManager.onQueueStatusUpdate?("No songs found", .rundjWarning)
+                    }
+                } else {
+                    await MainActor.run {
+                        self.spotifyManager.initializeSongBatching(with: fetchedSongs)
+                    }
+                    await spotifyManager.queueInitialBatch()
+                    
+                    await MainActor.run {
+                        let initialBatchSize = min(10, fetchedSongs.count)
+                        self.spotifyManager.onQueueStatusUpdate?(
+                            "\(initialBatchSize) of \(fetchedSongs.count) songs queued!", 
+                            .rundjMusicGreen
+                        )
+                    }
                 }
             }
         }
@@ -959,7 +1035,7 @@ struct BPMAdjustmentView: View {
             // BPM Controls
             HStack(spacing: 16) {
                 Button(action: {
-                    let newBPM = max(100, currentBPM - 5)
+                    let newBPM = max(100, currentBPM - 1)
                     currentBPM = newBPM
                 }) {
                     Image(systemName: "minus")
@@ -979,7 +1055,7 @@ struct BPMAdjustmentView: View {
                 }
                 
                 Button(action: {
-                    let newBPM = min(200, currentBPM + 5)
+                    let newBPM = min(200, currentBPM + 1)
                     currentBPM = newBPM
                 }) {
                     Image(systemName: "plus")
@@ -1064,31 +1140,6 @@ struct BPMAdjustmentView: View {
                 .scaleEffect(confirmRefetch && pulseAnimation ? 1.02 : 1.0)
                 .animation(.easeInOut(duration: 0.2), value: confirmRefetch)
                 .disabled(isRefetching)
-            }
-            
-            // Fine adjustment buttons
-            HStack(spacing: 8) {
-                Button("-1") {
-                    currentBPM = max(100, currentBPM - 1)
-                }
-                .font(.system(size: 12, weight: .medium))
-                .foregroundColor(.rundjTextSecondary)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(Color.rundjCardBackground.opacity(0.6))
-                .cornerRadius(6)
-                
-                Button("+1") {
-                    currentBPM = min(200, currentBPM + 1)
-                }
-                .font(.system(size: 12, weight: .medium))
-                .foregroundColor(.rundjTextSecondary)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(Color.rundjCardBackground.opacity(0.6))
-                .cornerRadius(6)
-                
-                Spacer()
             }
         }
         .padding()
