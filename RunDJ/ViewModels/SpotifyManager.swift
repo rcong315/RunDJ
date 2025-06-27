@@ -796,42 +796,6 @@ class SpotifyManager: NSObject, ObservableObject, SPTAppRemoteDelegate, SPTAppRe
         return unqueuedSongIds.count
     }
     
-    // DEPRECATED: This function is no longer used. The parallel execution of flush and fetch
-    // is now handled directly in RunningView for better performance.
-    // Keeping for reference but should not be used.
-    /*
-    /// Refresh songs and queue initial batch - handles the complete flow
-    /// - Parameters:
-    ///   - songs: Dictionary of song IDs to BPM values fetched from the API
-    ///   - initialBatchSize: Number of songs to queue initially (default: 10)
-    @MainActor
-    func refreshSongsAndQueue(with songs: [String: Double], initialBatchSize: Int = 10) async {
-        guard connectionState == .connected else {
-            onQueueStatusUpdate?("Not connected to Spotify", .rundjError)
-            return
-        }
-        
-        if songs.isEmpty {
-            onQueueStatusUpdate?("No songs found", .rundjWarning)
-            return
-        }
-        
-        // Update status
-        onQueueStatusUpdate?("Flushing queue, please wait...", .rundjAccent)
-        
-        // Initialize batching system
-        initializeSongBatching(with: songs)
-        
-        // Flush existing queue and queue initial batch
-        await flushQueue()
-        await queueInitialBatch(count: initialBatchSize)
-        
-        // Update status with success message
-        onQueueStatusUpdate?("\(initialBatchSize) of \(songs.count) songs queued!", .rundjMusicGreen)
-    }
-    */
-    
-    
     // MARK: - SPTSessionManagerDelegate
     
     func sessionManager(manager: SPTSessionManager, didInitiate session: SPTSession) {

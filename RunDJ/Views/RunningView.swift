@@ -1063,8 +1063,6 @@ struct BPMAdjustmentView: View {
                 }
                 .buttonStyle(RundjIconButtonStyle(size: 32, isMusic: true))
                 
-                Spacer()
-                
                 // Refetch Button with tap-to-confirm
                 Button(action: {
                     // Haptic feedback
@@ -1115,11 +1113,11 @@ struct BPMAdjustmentView: View {
                                 .font(.system(size: 14))
                                 .animation(.spring(response: 0.3, dampingFraction: 0.6), value: confirmRefetch)
                         }
-                        Text(isRefetching ? "Fetching..." : (confirmRefetch ? "Tap to Confirm" : "Refetch"))
+                        Text(isRefetching ? "Fetching..." : (confirmRefetch ? "Confirm" : "Refetch"))
                             .font(.system(size: 14, weight: .semibold))
                     }
                     .foregroundColor(.white)
-                    .padding(.horizontal, 12)
+                    .padding(.horizontal, 16)
                     .padding(.vertical, 8)
                     .background(
                         RoundedRectangle(cornerRadius: 8)
